@@ -4,7 +4,7 @@
 
 ## Compatibility, Dependencies, and License
 
-Release `v1.20-UE5.8` targets **MassBattleFrame 1.20** on **Unreal Engine 5.8**. VAT authoring uses the `MassBattleATT` and `MassBattleATTEditor` modules included with MassBattleFrame 1.20.
+Release `v1.20` targets **MassBattleFrame 1.20** on **Unreal Engine 5.8**. VAT authoring uses the `MassBattleATT` and `MassBattleATTEditor` modules included with MassBattleFrame 1.20.
 
 Use the branch that matches your Unreal Engine version:
 

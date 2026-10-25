@@ -4,7 +4,7 @@
 
 ## 兼容版本、依赖与许可证
 
-发布版 `v1.20-UE5.8` 对应 **MassBattleFrame 1.20 + Unreal Engine 5.8**。VAT 制作使用 MassBattleFrame 1.20 内置的 `MassBattleATT` 和 `MassBattleATTEditor` 模块。
+发布版 `v1.20` 对应 **MassBattleFrame 1.20 + Unreal Engine 5.8**。VAT 制作使用 MassBattleFrame 1.20 内置的 `MassBattleATT` 和 `MassBattleATTEditor` 模块。
 
 请使用与 Unreal Engine 版本对应的分支：
 

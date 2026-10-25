@@ -1,7 +1,7 @@
 {
 	"FileVersion": 3,
 	"Version": 120,
-	"VersionName": "1.20-UE5.8",
+	"VersionName": "1.20",
 	"EngineVersion": "5.8.0",
 	"FriendlyName": "MassBattleEditorMCP",
 	"Description": "MCP editor support for MassBattleFrame 1.20 on Unreal Engine 5.8",
