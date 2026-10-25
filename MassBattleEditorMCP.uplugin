@@ -1,10 +1,10 @@
 {
 	"FileVersion": 3,
-	"Version": 1,
-	"VersionName": "1.0-UE5.8",
+	"Version": 120,
+	"VersionName": "1.20-UE5.8",
 	"EngineVersion": "5.8.0",
 	"FriendlyName": "MassBattleEditorMCP",
-	"Description": "MCP system support for MassBattle plugin",
+	"Description": "MCP editor support for MassBattleFrame 1.20 on Unreal Engine 5.8",
 	"Category": "Editor",
 	"CreatedBy": "Winyunq",
 	"CreatedByURL": "https://github.com/MassBattle",
@@ -36,10 +36,6 @@
 		},
 		{
 			"Name": "Niagara",
-			"Enabled": true
-		},
-		{
-			"Name": "AnimToTexture",
 			"Enabled": true
 		},
 		{

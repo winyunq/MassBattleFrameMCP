@@ -4,6 +4,8 @@
 
 ## 兼容版本、依赖与许可证
 
+发布版 `v1.20-UE5.8` 对应 **MassBattleFrame 1.20 + Unreal Engine 5.8**。VAT 制作使用 MassBattleFrame 1.20 内置的 `MassBattleATT` 和 `MassBattleATTEditor` 模块。
+
 请使用与 Unreal Engine 版本对应的分支：
 
 | 分支 | Unreal Engine | 范围 |
@@ -12,7 +14,7 @@
 | `5.7` | 5.7 | 兼容 UE 5.7 的 MassBattle 核心编辑器 MCP |
 | `5.6` | 5.6 | 兼容 UE 5.6 的 MassBattle 核心编辑器 MCP |
 
-在项目插件层面，MassBattleEditorMCP 只依赖 [Mass Battle Frame](https://github.com/MassBattle/MassBattleFrame)。其余原生依赖均为 Unreal Engine 自带模块或插件，包括 Niagara 与 AnimToTexture；它不依赖 Winyunq 或其他项目插件。可选的 Python bridge 需要 Python 3.10 或更高版本，以及 Python `mcp` 包。
+在项目插件层面，MassBattleEditorMCP 只依赖 [Mass Battle Frame](https://github.com/MassBattle/MassBattleFrame)。其余原生依赖均为 Unreal Engine 自带模块或插件，包括 Niagara；它不依赖 Winyunq 或其他项目插件。可选的 Python bridge 需要 Python 3.10 或更高版本，以及 Python `mcp` 包。
 
 MassBattleEditorMCP 按 [MIT License](LICENSE) 开源。
 

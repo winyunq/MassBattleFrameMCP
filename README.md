@@ -4,6 +4,8 @@
 
 ## Compatibility, Dependencies, and License
 
+Release `v1.20-UE5.8` targets **MassBattleFrame 1.20** on **Unreal Engine 5.8**. VAT authoring uses the `MassBattleATT` and `MassBattleATTEditor` modules included with MassBattleFrame 1.20.
+
 Use the branch that matches your Unreal Engine version:
 
 | Branch | Unreal Engine | Scope |
@@ -12,7 +14,7 @@ Use the branch that matches your Unreal Engine version:
 | `5.7` | 5.7 | Core MassBattle editor MCP compatible with UE 5.7 |
 | `5.6` | 5.6 | Core MassBattle editor MCP compatible with UE 5.6 |
 
-At the project-plugin level, MassBattleEditorMCP depends only on [Mass Battle Frame](https://github.com/MassBattle/MassBattleFrame). Its remaining native dependencies are modules and plugins shipped with Unreal Engine, including Niagara and AnimToTexture; it does not depend on Winyunq or another project plugin. The optional Python bridge requires Python 3.10 or newer and the `mcp` Python package.
+At the project-plugin level, MassBattleEditorMCP depends only on [Mass Battle Frame](https://github.com/MassBattle/MassBattleFrame). Its remaining native dependencies are modules and plugins shipped with Unreal Engine, including Niagara; it does not depend on Winyunq or another project plugin. The optional Python bridge requires Python 3.10 or newer and the `mcp` Python package.
 
 MassBattleEditorMCP is open source under the [MIT License](LICENSE).
 
