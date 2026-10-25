@@ -140,7 +140,7 @@ public:
 	 * @brief       创建存储动画帧数据的 Texture2D (40x1 RGBA16F)
 	 *
 	 * @param       参数名称: AnimsInfoJson                   数据类型:        const FString&
-	 *              说明: FAnimToTextureAnimInfo 数组的 JSON: [{"StartFrame": N, "EndFrame": N}, ...]
+	 *              说明: FMassBattleATTAnimInfo 数组的 JSON: [{"StartFrame": N, "EndFrame": N}, ...]
 	 * @param       参数名称: PackagePath                     数据类型:        const FString&
 	 * @param       参数名称: AssetName                       数据类型:        const FString&
 	 *
@@ -155,7 +155,7 @@ public:
 	 * @brief       使用 VAT DataAsset 将动画序列转换为 MassBattle 的 FAnimsData
 	 *
 	 * @param       参数名称: DataAssetPath                   数据类型:        const FString&
-	 *              说明: UAnimToTextureDataAsset 资产路径
+	 *              说明: UMassBattleATTDataAsset 资产路径
 	 * @param       参数名称: FoundAnimsJson                  数据类型:        const FString&
 	 *              说明: FFoundAnimSequences 的 JSON 序列化 (各分类的动画资产路径数组)
 	 *

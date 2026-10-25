@@ -19,7 +19,7 @@
 #include "NiagaraSystemInstance.h"
 #include "Fragments/Attack.h"
 #include "Fragments/Trace.h"
-#include "Renderers/MassBattleFxRenderer.h"
+#include "Rendering/MassBattleFxRenderer.h"
 #include "Subsystems/MassBattleSubsystem.h"
 #include "Tasks/MassBattleBPTaskAgentsChaseAttack.h"
 #include "TimerManager.h"

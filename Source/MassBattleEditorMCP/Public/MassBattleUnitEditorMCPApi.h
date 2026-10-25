@@ -3,9 +3,12 @@
 
 #include "CoreMinimal.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
+#include "MassBattleEditorVatSource.h"
 #include "MassBattleUnitEditorMCPApi.generated.h"
 
 DECLARE_LOG_CATEGORY_EXTERN(LogMassBattleUnitEditorMCPApi, Log, All);
+
+class UMassBattleATTDataAsset;
 
 /**
  * MCP version of the MassBattle editor workflow.
@@ -20,6 +23,31 @@ class MASSBATTLEEDITORMCP_API UMassBattleUnitEditorMCPApi : public UBlueprintFun
 	GENERATED_BODY()
 
 public:
+	/** Bake through AnimToTexture and refresh the baked static mesh's UV channel data. */
+	UFUNCTION(BlueprintCallable, Category = "MassBattleEditorMCP|VAT")
+	static bool BakeVatTextures(UMassBattleATTDataAsset* DataAsset, float SampleRate);
+
+	/** Resolve source-based defaults without generating assets; explicit non-empty values win. */
+	UFUNCTION(BlueprintCallable, Category = "MassBattleEditorMCP|VAT Source")
+	static bool ResolveVatSourceDefaults(
+		const FMassBattleMCPVatSource& Source,
+		const FString& SearchPath, const FString& PackagePath, const FString& UnitName,
+		USkeletalMesh*& OutPreviewSkeletalMesh,
+		FString& OutSearchPath, FString& OutPackagePath, FString& OutUnitName,
+		FString& OutErrorMessage);
+
+	/** Prepare a mesh or assemble an Actor through the existing MCP assembly workflow. */
+	UFUNCTION(BlueprintCallable, Category = "MassBattleEditorMCP|VAT Source")
+	static bool PrepareVatSourceMesh(
+		const FMassBattleMCPVatSource& Source,
+		UPARAM(ref) FString& SearchPath,
+		UPARAM(ref) FString& PackagePath,
+		UPARAM(ref) FString& UnitName,
+		USkeletalMesh*& OutSkeletalMesh,
+		bool& bOutUsedActor,
+		FString& OutSearchPath,
+		FString& OutErrorMessage);
+
 	/** List MCP editor profiles and authoring recipes. */
 	UFUNCTION(BlueprintCallable, Category = "MassBattleEditorMCP|UnitEditor")
 	static FString MCP_EditorListProfiles(const FString& OptionsJson);

@@ -3,8 +3,8 @@
 
 #include "Animation/AnimSequence.h"
 #include "Animation/Skeleton.h"
-#include "AnimToTextureBPLibrary.h"
-#include "AnimToTextureDataAsset.h"
+#include "MassBattleATTBakeLibrary.h"
+#include "MassBattleATTDataAsset.h"
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "AssetToolsModule.h"
 #include "DataAssets/MassBattleAgentConfigDataAsset.h"
@@ -1082,10 +1082,10 @@ static UTexture2D* CreateOrLoadTexture2DAsset(const FString& PackagePath, const 
 	return Texture;
 }
 
-static UAnimToTextureDataAsset* CreateOrLoadAnimToTextureDataAsset(const FString& PackagePath, const FString& AssetName, TArray<FString>& OutSavePaths)
+static UMassBattleATTDataAsset* CreateOrLoadMassBattleATTDataAsset(const FString& PackagePath, const FString& AssetName, TArray<FString>& OutSavePaths)
 {
 	const FString ObjectPath = MakeObjectPath(PackagePath, AssetName);
-	if (UAnimToTextureDataAsset* Existing = Cast<UAnimToTextureDataAsset>(FSoftObjectPath(EnsureObjectPath(ObjectPath)).TryLoad()))
+	if (UMassBattleATTDataAsset* Existing = Cast<UMassBattleATTDataAsset>(FSoftObjectPath(EnsureObjectPath(ObjectPath)).TryLoad()))
 	{
 		OutSavePaths.AddUnique(Existing->GetPathName());
 		return Existing;
@@ -1099,7 +1099,7 @@ static UAnimToTextureDataAsset* CreateOrLoadAnimToTextureDataAsset(const FString
 	}
 	Package->FullyLoad();
 
-	UAnimToTextureDataAsset* DataAsset = NewObject<UAnimToTextureDataAsset>(Package, *AssetName, RF_Public | RF_Standalone);
+	UMassBattleATTDataAsset* DataAsset = NewObject<UMassBattleATTDataAsset>(Package, *AssetName, RF_Public | RF_Standalone);
 	if (!DataAsset)
 	{
 		return nullptr;
@@ -1128,7 +1128,7 @@ static int32 SetMaterialStaticSwitch(UMaterialInstanceConstant* MaterialInstance
 static bool ConfigureAnimationSampling(
 	UAnimSequence* AnimSequence,
 	float SampleRate,
-	FAnimToTextureAnimSequenceInfo& OutInfo,
+	FMassBattleATTAnimSequenceInfo& OutInfo,
 	TSharedPtr<FJsonObject>& OutSamplingPlan,
 	FString& OutError)
 {
@@ -1193,7 +1193,7 @@ static void SetMaterialTextureParameter(UMaterialInstanceConstant* MaterialInsta
 	UMaterialEditingLibrary::SetMaterialInstanceTextureParameterValue(MaterialInstance, ParameterName, Texture, EMaterialParameterAssociation::LayerParameter);
 }
 
-static int32 UpdateVatMaterialsForLOD(UStaticMesh* StaticMesh, UAnimToTextureDataAsset* DataAsset, UTexture2D* AnimDataTexture, const FLODDataEd& LOD)
+static int32 UpdateVatMaterialsForLOD(UStaticMesh* StaticMesh, UMassBattleATTDataAsset* DataAsset, UTexture2D* AnimDataTexture, const FLODDataEd& LOD)
 {
 	if (!StaticMesh || !DataAsset)
 	{
@@ -1221,8 +1221,8 @@ static int32 UpdateVatMaterialsForLOD(UStaticMesh* StaticMesh, UAnimToTextureDat
 			continue;
 		}
 
-		UAnimToTextureBPLibrary::UpdateMaterialInstanceFromDataAsset(DataAsset, MaterialInstance);
-		UAnimToTextureBPLibrary::UpdateMaterialInstanceFromDataAsset(DataAsset, MaterialInstance, EMaterialParameterAssociation::LayerParameter);
+		UMassBattleATTBakeLibrary::UpdateMaterialInstanceFromDataAsset(DataAsset, MaterialInstance);
+		UMassBattleATTBakeLibrary::UpdateMaterialInstanceFromDataAsset(DataAsset, MaterialInstance, EMaterialParameterAssociation::LayerParameter);
 		if (AnimDataTexture)
 		{
 			SetMaterialTextureParameter(MaterialInstance, TEXT("AnimDataTex"), AnimDataTexture);
@@ -1246,9 +1246,9 @@ static int32 UpdateVatMaterialsForLOD(UStaticMesh* StaticMesh, UAnimToTextureDat
 		SetMaterialStaticSwitch(MaterialInstance, TEXT("UseUV2"), DataAsset->UVChannel == 2);
 		SetMaterialStaticSwitch(MaterialInstance, TEXT("UseUV3"), DataAsset->UVChannel == 3);
 		SetMaterialStaticSwitch(MaterialInstance, TEXT("UseTwoInfluences"),
-			LOD.Mode == EVATBakeMode::BoneMode && DataAsset->NumBoneInfluences == EAnimToTextureNumBoneInfluences::Two);
+			LOD.Mode == EVATBakeMode::BoneMode && DataAsset->NumBoneInfluences == EMassBattleATTNumBoneInfluences::Two);
 		SetMaterialStaticSwitch(MaterialInstance, TEXT("UseFourInfluences"),
-			LOD.Mode == EVATBakeMode::BoneMode && DataAsset->NumBoneInfluences == EAnimToTextureNumBoneInfluences::Four);
+			LOD.Mode == EVATBakeMode::BoneMode && DataAsset->NumBoneInfluences == EMassBattleATTNumBoneInfluences::Four);
 		SetMaterialStaticSwitch(MaterialInstance, TEXT("UseBlend2"), LOD.AnimBlendLevel == 2 || LOD.AnimBlendLevel == 3);
 		SetMaterialStaticSwitch(MaterialInstance, TEXT("UseBlend3"), LOD.AnimBlendLevel == 3);
 		SetMaterialStaticSwitch(MaterialInstance, TEXT("DebugMode"), false);
@@ -1288,7 +1288,7 @@ static TSharedPtr<FJsonObject> BakeVatWithMassBattleToolsFlow(
 	const int32 MaxHeight = FMath::Max(1, IntFieldByNamesOrDefault(Spec, { TEXT("vat_max_height"), TEXT("max_height") }, 8192));
 	const int32 MaxWidth = FMath::Max(1, IntFieldByNamesOrDefault(Spec, { TEXT("vat_max_width"), TEXT("max_width") }, 8192));
 
-	UAnimToTextureDataAsset* DataAsset = CreateOrLoadAnimToTextureDataAsset(GeneratedPackagePath, VatDataAssetName, OutSavePaths);
+	UMassBattleATTDataAsset* DataAsset = CreateOrLoadMassBattleATTDataAsset(GeneratedPackagePath, VatDataAssetName, OutSavePaths);
 	if (!DataAsset)
 	{
 		Root->SetBoolField(TEXT("success"), false);
@@ -1318,17 +1318,16 @@ static TSharedPtr<FJsonObject> BakeVatWithMassBattleToolsFlow(
 	DataAsset->StaticMesh = StaticMesh;
 	DataAsset->UVChannel = UVChannel;
 	DataAsset->bEnforcePowerOfTwo = bEnforcePowerOfTwo;
-	DataAsset->Precision = EAnimToTexturePrecision::SixteenBits;
+	DataAsset->Precision = EMassBattleATTPrecision::SixteenBits;
 	DataAsset->MaxHeight = MaxHeight;
 	DataAsset->MaxWidth = MaxWidth;
 	DataAsset->SampleRate = SampleRate;
-	DataAsset->bAutoPlay = false;
-	DataAsset->NumBoneInfluences = EAnimToTextureNumBoneInfluences::Four;
+	DataAsset->NumBoneInfluences = EMassBattleATTNumBoneInfluences::Four;
 	DataAsset->AnimSequences.Reset();
 	TArray<TSharedPtr<FJsonValue>> SamplingPlans;
 	for (UAnimSequence* AnimSequence : BakeSequences)
 	{
-		FAnimToTextureAnimSequenceInfo Info;
+		FMassBattleATTAnimSequenceInfo Info;
 		TSharedPtr<FJsonObject> SamplingPlan;
 		FString SamplingError;
 		if (!ConfigureAnimationSampling(AnimSequence, SampleRate, Info, SamplingPlan, SamplingError))
@@ -1399,7 +1398,7 @@ static TSharedPtr<FJsonObject> BakeVatWithMassBattleToolsFlow(
 
 	SetUnitPatchRenderLodFromSettings(UnitPatch, LODSettings);
 
-	TArray<FAnimToTextureAnimInfo> AnimDataForTexture;
+	TArray<FMassBattleATTAnimInfo> AnimDataForTexture;
 	UTexture2D* AnimDataTexture = nullptr;
 	int32 TotalMaterialUpdateCount = 0;
 
@@ -1407,7 +1406,7 @@ static TSharedPtr<FJsonObject> BakeVatWithMassBattleToolsFlow(
 	{
 		DataAsset->SkeletalLODIndex = LOD.LODIndex;
 		DataAsset->StaticLODIndex = LOD.LODIndex;
-		DataAsset->Mode = (LOD.Mode == EVATBakeMode::BoneMode) ? EAnimToTextureMode::Bone : EAnimToTextureMode::Vertex;
+		DataAsset->Mode = (LOD.Mode == EVATBakeMode::BoneMode) ? EMassBattleATTMode::Bone : EMassBattleATTMode::Vertex;
 
 		const FString LodSuffix = FString::Printf(TEXT("_LOD%d"), LOD.LODIndex);
 		if (LOD.Mode == EVATBakeMode::BoneMode)
@@ -1422,19 +1421,19 @@ static TSharedPtr<FJsonObject> BakeVatWithMassBattleToolsFlow(
 			DataAsset->VertexNormalTexture = CreateOrLoadTexture2DAsset(GeneratedPackagePath, FString::Printf(TEXT("VAT_%s_VertNormal%s"), *AssetSlug, *LodSuffix), OutSavePaths);
 		}
 
-		const bool bBakeSuccess = UAnimToTextureBPLibrary::AnimationToTexture(DataAsset);
+		const bool bBakeSuccess = UMassBattleUnitEditorMCPApi::BakeVatTextures(DataAsset, SampleRate);
 		TSharedPtr<FJsonObject> LodResult = MakeShared<FJsonObject>();
 		LodResult->SetNumberField(TEXT("lod_index"), LOD.LODIndex);
 		LodResult->SetStringField(TEXT("mode"), LOD.Mode == EVATBakeMode::BoneMode ? TEXT("BoneMode") : TEXT("VertexMode"));
 		LodResult->SetBoolField(TEXT("bake_success"), bBakeSuccess);
-		LodResult->SetStringField(TEXT("bake_helper"), TEXT("AnimToTextureEditor.AnimationToTexture"));
+		LodResult->SetStringField(TEXT("bake_helper"), TEXT("MassBattleATTEditor.AnimationToTexture"));
 		if (!bBakeSuccess)
 		{
 			Root->SetBoolField(TEXT("success"), false);
 			Root->SetStringField(
 				TEXT("error"),
 				FString::Printf(
-					TEXT("AnimToTexture VAT bake failed for LOD %d. Check LogAnimToTextureEditor for the rejected mesh, animation, or texture setting."),
+					TEXT("MassBattle ATT VAT bake failed for LOD %d. Check LogMassBattleATTEditor for the rejected mesh, animation, or texture setting."),
 					LOD.LODIndex));
 			LodResults.Add(MakeShared<FJsonValueObject>(LodResult));
 			Root->SetArrayField(TEXT("lod_results"), LodResults);
@@ -1458,7 +1457,6 @@ static TSharedPtr<FJsonObject> BakeVatWithMassBattleToolsFlow(
 		LodResults.Add(MakeShared<FJsonValueObject>(LodResult));
 	}
 
-	StaticMesh->UpdateUVChannelData(true);
 	DataAsset->MarkPackageDirty();
 	StaticMesh->MarkPackageDirty();
 
@@ -1802,13 +1800,21 @@ static UTexture2D* FindTextureParameter2D(UMaterialInterface* Material, const TA
 
 	for (const FName& ParameterName : ParameterNames)
 	{
-		if (UTexture2D* Texture = AsTexture2D(UMaterialEditingLibrary::GetMaterialInstanceTextureParameterValue(MaterialInstance, ParameterName)))
+		UTexture* Texture = nullptr;
+		if (MaterialInstance->GetTextureParameterValue(FHashedMaterialParameterInfo(ParameterName), Texture, true))
 		{
-			return Texture;
+			if (UTexture2D* Texture2D = AsTexture2D(Texture))
+			{
+				return Texture2D;
+			}
 		}
-		if (UTexture2D* Texture = AsTexture2D(UMaterialEditingLibrary::GetMaterialInstanceTextureParameterValue(MaterialInstance, ParameterName, EMaterialParameterAssociation::LayerParameter)))
+		Texture = nullptr;
+		if (MaterialInstance->GetTextureParameterValue(FHashedMaterialParameterInfo(ParameterName, EMaterialParameterAssociation::LayerParameter), Texture, true))
 		{
-			return Texture;
+			if (UTexture2D* Texture2D = AsTexture2D(Texture))
+			{
+				return Texture2D;
+			}
 		}
 	}
 	return nullptr;
@@ -1816,7 +1822,7 @@ static UTexture2D* FindTextureParameter2D(UMaterialInterface* Material, const TA
 
 static bool TextureNameMatchesAnyToken(UTexture2D* Texture, const TArray<FString>& Tokens)
 {
-	if (!Texture)
+	if (!Texture || Texture->GetPathName().StartsWith(TEXT("/InterchangeAssets/gltf/Textures/T_White_srgb")))
 	{
 		return false;
 	}
@@ -3124,7 +3130,7 @@ static TSharedPtr<FJsonObject> BuildCreateVatUnitSpecFromSelection(const TShared
 
 	USkeletalMesh* SelectedSkeletalMesh = nullptr;
 	UMassBattleAgentConfigDataAsset* SelectedUnit = nullptr;
-	UAnimToTextureDataAsset* SelectedVatData = nullptr;
+	UMassBattleATTDataAsset* SelectedVatData = nullptr;
 	UNiagaraSystem* SelectedNiagara = nullptr;
 	FString SelectedRendererClassPath;
 	TArray<UMaterialInterface*> SelectedMaterials;
@@ -3164,7 +3170,7 @@ static TSharedPtr<FJsonObject> BuildCreateVatUnitSpecFromSelection(const TShared
 			continue;
 		}
 
-		if (UAnimToTextureDataAsset* VatData = Cast<UAnimToTextureDataAsset>(Object))
+		if (UMassBattleATTDataAsset* VatData = Cast<UMassBattleATTDataAsset>(Object))
 		{
 			if (!SelectedVatData)
 			{
@@ -3793,6 +3799,26 @@ static void AddAnimRenamePreviews(const TSharedPtr<FJsonObject>& AnimResult, con
 	}
 }
 } // namespace MassBattleUnitEditorMCP
+
+bool UMassBattleUnitEditorMCPApi::BakeVatTextures(UMassBattleATTDataAsset* DataAsset, float SampleRate)
+{
+	if (!IsValid(DataAsset) || !FMath::IsFinite(SampleRate) || SampleRate <= 0.0f)
+	{
+		return false;
+	}
+
+	DataAsset->SampleRate = SampleRate;
+	if (!UMassBattleATTBakeLibrary::AnimationToTexture(DataAsset))
+	{
+		return false;
+	}
+
+	if (UStaticMesh* StaticMesh = DataAsset->StaticMesh.LoadSynchronous())
+	{
+		StaticMesh->UpdateUVChannelData(true);
+	}
+	return true;
+}
 
 FString UMassBattleUnitEditorMCPApi::MCP_EditorListProfiles(const FString& OptionsJson)
 {
@@ -5319,8 +5345,8 @@ FString UMassBattleUnitEditorMCPApi::MCP_EditorPlanCreateVatUnit(const FString& 
 	MassBattleUnitEditorMCP::AddStep(Steps, TEXT("create_materials"), TEXT("MCP_CreateMaterialInstanceForStaticMeshWithLODs"), ParentMaterialPath.IsEmpty() ? TEXT("blocked") : TEXT("planned"), TEXT("Create material instances for the generated static mesh LOD material slots."));
 	MassBattleUnitEditorMCP::AddStep(Steps, TEXT("resolve_material_texture_sources"), TEXT("MCP_EditorApplyCreateVatUnit.material_overrides"), MassBattleUnitEditorMCP::HasMaterialOverrides(Spec) ? TEXT("planned") : TEXT("skipped"), TEXT("Use explicit source materials to populate VAT texture inputs while preserving generated VAT material instances."));
 	MassBattleUnitEditorMCP::AddStep(Steps, TEXT("create_vat_data_and_textures"), TEXT("MassBattleTools.CreateDataAsset/CreateVATTextures"), TEXT("planned"), TEXT("Create or reuse AnimToTextureDataAsset and VAT Texture2D assets."));
-	MassBattleUnitEditorMCP::AddStep(Steps, TEXT("bake_vat_textures"), TEXT("UAnimToTextureBPLibrary.AnimationToTexture"), TEXT("planned"), TEXT("Bake animation frames into VAT textures through the official AnimToTexture editor API while preserving source model-space root transforms and refreshing the UV cache."));
-	MassBattleUnitEditorMCP::AddStep(Steps, TEXT("update_vat_materials"), TEXT("UAnimToTextureBPLibrary.UpdateMaterialInstanceFromDataAsset"), TEXT("planned"), TEXT("Write baked VAT and AnimData texture parameters into generated material instances."));
+	MassBattleUnitEditorMCP::AddStep(Steps, TEXT("bake_vat_textures"), TEXT("UMassBattleATTBakeLibrary.AnimationToTexture"), TEXT("planned"), TEXT("Bake animation frames into VAT textures through the MassBattle ATT editor API while preserving source model-space root transforms and refreshing the UV cache."));
+	MassBattleUnitEditorMCP::AddStep(Steps, TEXT("update_vat_materials"), TEXT("UMassBattleATTBakeLibrary.UpdateMaterialInstanceFromDataAsset"), TEXT("planned"), TEXT("Write baked VAT and AnimData texture parameters into generated material instances."));
 	MassBattleUnitEditorMCP::AddStep(Steps, TEXT("duplicate_renderer"), TEXT("MCP_DuplicateClassAsset"), TEXT("planned"), TEXT("Duplicate or reuse a renderer Blueprint class for the unit subtype."));
 	MassBattleUnitEditorMCP::AddStep(Steps, TEXT("set_renderer_defaults"), TEXT("MCP_SetClassDefaultProperties"), TEXT("planned"), TEXT("Set renderer CDO mesh, Niagara system, and SubType after generated assets exist."));
 	MassBattleUnitEditorMCP::AddStep(Steps, TEXT("merge_unit_data"), TEXT("MCP_UnitPlanMergeUpdate"), ExistingUnitPath.IsEmpty() ? TEXT("planned_after_clone") : TEXT("done"), TEXT("Union-merge Visualize, LODShared, AnimShared, and any user unit_patch fields."));
@@ -5557,7 +5583,7 @@ FString UMassBattleUnitEditorMCPApi::MCP_EditorValidateCreateVatUnit(const FStri
 
 	const bool bBakeVat = MassBattleUnitEditorMCP::BoolFieldByNamesOrDefault(Spec, { TEXT("bake_vat"), TEXT("refresh_vat_data"), TEXT("run_anim_to_texture") }, true);
 	MassBattleUnitEditorMCP::AddExecutionPreview(ExecutionPreview, TEXT("create_vat_data_and_textures"), bBakeVat ? TEXT("would_run") : TEXT("skipped"), TEXT("Create or reuse AnimToTextureDataAsset and VAT Texture2D assets."));
-	MassBattleUnitEditorMCP::AddExecutionPreview(ExecutionPreview, TEXT("bake_vat_textures"), bBakeVat ? TEXT("would_run") : TEXT("skipped"), TEXT("Run UAnimToTextureBPLibrary::AnimationToTexture for each LOD setting."));
+	MassBattleUnitEditorMCP::AddExecutionPreview(ExecutionPreview, TEXT("bake_vat_textures"), bBakeVat ? TEXT("would_run") : TEXT("skipped"), TEXT("Run UMassBattleATTBakeLibrary::AnimationToTexture for each LOD setting."));
 	MassBattleUnitEditorMCP::AddExecutionPreview(ExecutionPreview, TEXT("update_vat_materials"), bBakeVat ? TEXT("would_run") : TEXT("skipped"), TEXT("Update VAT material instance parameters from the baked DataAsset."));
 
 	if (!RendererClassPath.IsEmpty() && MassBattleUnitEditorMCP::AssetExists(RendererClassPath))
@@ -5781,7 +5807,7 @@ FString UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnit(const FString&
 
 	bool bOverwriteExisting = false;
 	Spec->TryGetBoolField(TEXT("overwrite_existing"), bOverwriteExisting);
-	bool bGenerateLightmapUVs = true;
+	bool bGenerateLightmapUVs = false;
 	Spec->TryGetBoolField(TEXT("generate_lightmap_uvs"), bGenerateLightmapUVs);
 	double LightmapIndexNumber = 0.0;
 	Spec->TryGetNumberField(TEXT("lightmap_index"), LightmapIndexNumber);
@@ -5887,7 +5913,7 @@ FString UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnit(const FString&
 	bool bVatBakeCompleted = false;
 	if (bBakeVat)
 	{
-		TSharedPtr<FJsonObject> Step = MassBattleUnitEditorMCP::AddExecutionStep(ExecutionSteps, TEXT("bake_vat_textures"), TEXT("MassBattleTools.CreateVATTextures -> AnimToTextureEditor.AnimationToTexture -> UpdateMaterialInstance"), TEXT("running"), TEXT("Baking VAT textures through the official AnimToTexture editor API and updating generated material instances."));
+		TSharedPtr<FJsonObject> Step = MassBattleUnitEditorMCP::AddExecutionStep(ExecutionSteps, TEXT("bake_vat_textures"), TEXT("MassBattleTools.CreateVATTextures -> MassBattleATTEditor.AnimationToTexture -> UpdateMaterialInstance"), TEXT("running"), TEXT("Baking VAT textures through the MassBattle ATT editor API and updating generated material instances."));
 		TSharedPtr<FJsonObject> BakeResult = MassBattleUnitEditorMCP::BakeVatWithMassBattleToolsFlow(Spec, Discovery, SkeletalMeshPath, StaticMeshPath, GeneratedPackagePath, AssetSlug, VatDataAssetName, UnitPatch, GeneratedVatSavePaths);
 		Step->SetObjectField(TEXT("result"), BakeResult);
 		if (!BakeResult.IsValid() || !BakeResult->GetBoolField(TEXT("success")))

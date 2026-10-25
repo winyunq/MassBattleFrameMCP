@@ -2,7 +2,7 @@
 
 #include "MassBattleUnitEditorMCPApi.h"
 
-#include "AnimToTextureDataAsset.h"
+#include "MassBattleATTDataAsset.h"
 #include "AnimPose.h"
 #include "Animation/AnimSequence.h"
 #include "Animation/Skeleton.h"
@@ -279,6 +279,7 @@ static FBox TransformBox(const FBox& Box, const FTransform& Transform)
 struct FActorAssemblyContext
 {
 	AActor* Actor = nullptr;
+	bool bOwnsActor = false;
 	USkeletalMeshComponent* RootSkeletalComponent = nullptr;
 	TArray<USkeletalMeshComponent*> SkeletalComponents;
 	TArray<UStaticMeshComponent*> StaticComponents;
@@ -292,7 +293,7 @@ struct FActorAssemblyContext
 
 	~FActorAssemblyContext()
 	{
-		if (Actor && IsValid(Actor))
+		if (bOwnsActor && IsValid(Actor))
 		{
 			Actor->Destroy();
 		}
@@ -856,52 +857,65 @@ static void DescribeComponents(FActorAssemblyContext& Context)
 	}
 }
 
-static bool SpawnAndInspect(const TSharedPtr<FJsonObject>& Spec, FActorAssemblyContext& Context)
+static bool SpawnAndInspect(const TSharedPtr<FJsonObject>& Spec, FActorAssemblyContext& Context, AActor* SourceActor = nullptr)
 {
-	FString ActorPath = GetStringField(Spec, TEXT("actor_class"));
-	if (ActorPath.IsEmpty())
+	if (SourceActor)
 	{
-		ActorPath = GetStringField(Spec, TEXT("actor"));
+		if (!IsValid(SourceActor) || SourceActor->IsTemplate())
+		{
+			AddIssue(Context.Issues, TEXT("error"), TEXT("invalid_actor_instance"), TEXT("Select a valid Actor instance."));
+			return false;
+		}
+		Context.Actor = SourceActor;
 	}
-	if (ActorPath.IsEmpty())
+	else
 	{
-		AddIssue(Context.Issues, TEXT("error"), TEXT("missing_actor_class"), TEXT("actor_class is required."), TEXT("actor_class"));
-		return false;
+		FString ActorPath = GetStringField(Spec, TEXT("actor_class"));
+		if (ActorPath.IsEmpty())
+		{
+			ActorPath = GetStringField(Spec, TEXT("actor"));
+		}
+		if (ActorPath.IsEmpty())
+		{
+			AddIssue(Context.Issues, TEXT("error"), TEXT("missing_actor_class"), TEXT("actor_class is required."), TEXT("actor_class"));
+			return false;
+		}
+
+		UClass* ActorClass = LoadActorClass(ActorPath);
+		if (!ActorClass)
+		{
+			AddIssue(Context.Issues, TEXT("error"), TEXT("actor_class_not_found"),
+				FString::Printf(TEXT("Actor class or Blueprint could not be loaded: %s"), *ActorPath),
+				TEXT("actor_class"));
+			return false;
+		}
+		if (!GEditor)
+		{
+			AddIssue(Context.Issues, TEXT("error"), TEXT("editor_unavailable"), TEXT("GEditor is unavailable; Actor assembly requires an editor world."));
+			return false;
+		}
+
+		UWorld* World = GEditor->GetEditorWorldContext().World();
+		if (!World)
+		{
+			AddIssue(Context.Issues, TEXT("error"), TEXT("editor_world_unavailable"), TEXT("The editor world is unavailable; Actor assembly cannot spawn the source Actor."));
+			return false;
+		}
+
+		FActorSpawnParameters SpawnParameters;
+		SpawnParameters.ObjectFlags |= RF_Transient;
+		SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		SpawnParameters.bHideFromSceneOutliner = true;
+		Context.Actor = World->SpawnActor<AActor>(ActorClass, FTransform::Identity, SpawnParameters);
+		if (!Context.Actor)
+		{
+			AddIssue(Context.Issues, TEXT("error"), TEXT("actor_spawn_failed"), FString::Printf(TEXT("Failed to spawn Actor class: %s"), *ActorClass->GetPathName()));
+			return false;
+		}
+		Context.bOwnsActor = true;
 	}
 
-	UClass* ActorClass = LoadActorClass(ActorPath);
-	if (!ActorClass)
-	{
-		AddIssue(Context.Issues, TEXT("error"), TEXT("actor_class_not_found"),
-			FString::Printf(TEXT("Actor class or Blueprint could not be loaded: %s"), *ActorPath),
-			TEXT("actor_class"));
-		return false;
-	}
-	if (!GEditor)
-	{
-		AddIssue(Context.Issues, TEXT("error"), TEXT("editor_unavailable"), TEXT("GEditor is unavailable; Actor assembly requires an editor world."));
-		return false;
-	}
-
-	UWorld* World = GEditor->GetEditorWorldContext().World();
-	if (!World)
-	{
-		AddIssue(Context.Issues, TEXT("error"), TEXT("editor_world_unavailable"), TEXT("The editor world is unavailable; Actor assembly cannot spawn the source Actor."));
-		return false;
-	}
-
-	FActorSpawnParameters SpawnParameters;
-	SpawnParameters.ObjectFlags |= RF_Transient;
-	SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-	SpawnParameters.bHideFromSceneOutliner = true;
-	Context.Actor = World->SpawnActor<AActor>(ActorClass, FTransform::Identity, SpawnParameters);
-	if (!Context.Actor)
-	{
-		AddIssue(Context.Issues, TEXT("error"), TEXT("actor_spawn_failed"), FString::Printf(TEXT("Failed to spawn Actor class: %s"), *ActorClass->GetPathName()));
-		return false;
-	}
-
-	ApplyComponentOverrides(Spec, Context);
+	if (Context.bOwnsActor) ApplyComponentOverrides(Spec, Context);
 	Context.Actor->UpdateComponentTransforms();
 
 	TInlineComponentArray<USkeletalMeshComponent*> AllSkeletalComponents(Context.Actor);
@@ -1291,9 +1305,9 @@ static bool ResolveAssemblyOutput(
 	return true;
 }
 
-static TSharedPtr<FJsonObject> BuildInspectionResult(const TSharedPtr<FJsonObject>& Spec, FActorAssemblyContext& Context)
+static TSharedPtr<FJsonObject> BuildInspectionResult(const TSharedPtr<FJsonObject>& Spec, FActorAssemblyContext& Context, AActor* SourceActor = nullptr)
 {
-	const bool bCanAssemble = SpawnAndInspect(Spec, Context);
+	const bool bCanAssemble = SpawnAndInspect(Spec, Context, SourceActor);
 	TSharedPtr<FJsonObject> Result = MakeResult(true);
 	Result->SetStringField(TEXT("inspection_type"), TEXT("actor_unit_assembly"));
 	Result->SetStringField(TEXT("actor_class"), Context.Actor ? Context.Actor->GetClass()->GetPathName() : GetStringField(Spec, TEXT("actor_class")));
@@ -1555,7 +1569,7 @@ static FString RootLockModeName(ERootMotionRootLock::Type Mode)
 }
 
 static TSharedPtr<FJsonObject> BuildAnimationGroundingAudit(
-	UAnimToTextureDataAsset* DataAsset,
+	UMassBattleATTDataAsset* DataAsset,
 	USkeletalMesh* SkeletalMesh,
 	double GroundTolerance)
 {
@@ -1622,7 +1636,7 @@ static TSharedPtr<FJsonObject> BuildAnimationGroundingAudit(
 	TArray<TSharedPtr<FJsonValue>> Animations;
 	for (int32 AnimationIndex = 0; AnimationIndex < DataAsset->AnimSequences.Num(); ++AnimationIndex)
 	{
-		const FAnimToTextureAnimSequenceInfo& SequenceInfo = DataAsset->AnimSequences[AnimationIndex];
+		const FMassBattleATTAnimSequenceInfo& SequenceInfo = DataAsset->AnimSequences[AnimationIndex];
 		UAnimSequence* AnimationSequence = SequenceInfo.AnimSequence;
 		if (!SequenceInfo.bEnabled || !AnimationSequence)
 		{
@@ -1861,7 +1875,7 @@ static int32 CountChangedFramePairs(
 	return ChangedPairs;
 }
 
-static TSharedPtr<FJsonObject> BuildVertexMotionAudit(UAnimToTextureDataAsset* DataAsset)
+static TSharedPtr<FJsonObject> BuildVertexMotionAudit(UMassBattleATTDataAsset* DataAsset)
 {
 	TSharedPtr<FJsonObject> Result = MakeShared<FJsonObject>();
 	Result->SetBoolField(TEXT("valid"), false);
@@ -1871,7 +1885,7 @@ static TSharedPtr<FJsonObject> BuildVertexMotionAudit(UAnimToTextureDataAsset* D
 		return Result;
 	}
 
-	const bool bBoneMode = DataAsset->Mode == EAnimToTextureMode::Bone;
+	const bool bBoneMode = DataAsset->Mode == EMassBattleATTMode::Bone;
 	UTexture2D* PositionTexture = bBoneMode
 		? DataAsset->BonePositionTexture.LoadSynchronous()
 		: DataAsset->VertexPositionTexture.LoadSynchronous();
@@ -1911,7 +1925,7 @@ static TSharedPtr<FJsonObject> BuildVertexMotionAudit(UAnimToTextureDataAsset* D
 	TArray<TSharedPtr<FJsonValue>> AnimationAudits;
 	for (int32 Index = 0; Index < DataAsset->Animations.Num(); ++Index)
 	{
-		const FAnimToTextureAnimInfo& AnimInfo = DataAsset->Animations[Index];
+		const FMassBattleATTAnimInfo& AnimInfo = DataAsset->Animations[Index];
 		TSharedPtr<FJsonObject> Animation = MakeShared<FJsonObject>();
 		Animation->SetNumberField(TEXT("index"), Index);
 		if (DataAsset->AnimSequences.IsValidIndex(Index) && DataAsset->AnimSequences[Index].AnimSequence)
@@ -2102,7 +2116,7 @@ static TArray<FString> GetSourceMaterialTexturePaths(UMaterialInterface* Materia
 static TSharedPtr<FJsonObject> BuildVatMaterialAudit(
 	UStaticMesh* StaticMesh,
 	USkeletalMesh* SourceSkeletalMesh,
-	UAnimToTextureDataAsset* DataAsset)
+	UMassBattleATTDataAsset* DataAsset)
 {
 	TSharedPtr<FJsonObject> Result = MakeShared<FJsonObject>();
 	TArray<TSharedPtr<FJsonValue>> Materials;
@@ -2110,7 +2124,7 @@ static TSharedPtr<FJsonObject> BuildVatMaterialAudit(
 	int32 ValidMaterialCount = 0;
 	int32 SourceComparisonCount = 0;
 	int32 BaseColorSourceMismatchCount = 0;
-	const bool bBoneMode = DataAsset && DataAsset->Mode == EAnimToTextureMode::Bone;
+	const bool bBoneMode = DataAsset && DataAsset->Mode == EMassBattleATTMode::Bone;
 	TMap<FName, bool> ExpectedSwitches;
 	ExpectedSwitches.Add(TEXT("UseVAT"), true);
 	ExpectedSwitches.Add(TEXT("BoneMode"), bBoneMode);
@@ -2119,8 +2133,8 @@ static TSharedPtr<FJsonObject> BuildVatMaterialAudit(
 	ExpectedSwitches.Add(TEXT("UseUV1"), DataAsset && DataAsset->UVChannel == 1);
 	ExpectedSwitches.Add(TEXT("UseUV2"), DataAsset && DataAsset->UVChannel == 2);
 	ExpectedSwitches.Add(TEXT("UseUV3"), DataAsset && DataAsset->UVChannel == 3);
-	ExpectedSwitches.Add(TEXT("UseTwoInfluences"), bBoneMode && DataAsset->NumBoneInfluences == EAnimToTextureNumBoneInfluences::Two);
-	ExpectedSwitches.Add(TEXT("UseFourInfluences"), bBoneMode && DataAsset->NumBoneInfluences == EAnimToTextureNumBoneInfluences::Four);
+	ExpectedSwitches.Add(TEXT("UseTwoInfluences"), bBoneMode && DataAsset->NumBoneInfluences == EMassBattleATTNumBoneInfluences::Two);
+	ExpectedSwitches.Add(TEXT("UseFourInfluences"), bBoneMode && DataAsset->NumBoneInfluences == EMassBattleATTNumBoneInfluences::Four);
 	if (StaticMesh)
 	{
 		for (int32 SlotIndex = 0; SlotIndex < StaticMesh->GetStaticMaterials().Num(); ++SlotIndex)
@@ -2683,10 +2697,10 @@ static USkeletalMesh* CreatePersistentAssembledSkeletalMesh(
 	return AssembledMesh;
 }
 
-static TSharedPtr<FJsonObject> CreateAssembledSkeletalMesh(const TSharedPtr<FJsonObject>& Spec, bool bSaveAssets)
+static TSharedPtr<FJsonObject> CreateAssembledSkeletalMesh(const TSharedPtr<FJsonObject>& Spec, bool bSaveAssets, AActor* SourceActor = nullptr)
 {
 	FActorAssemblyContext Context;
-	TSharedPtr<FJsonObject> Inspection = BuildInspectionResult(Spec, Context);
+	TSharedPtr<FJsonObject> Inspection = BuildInspectionResult(Spec, Context, SourceActor);
 	bool bCanAssemble = false;
 	Inspection->TryGetBoolField(TEXT("can_assemble"), bCanAssemble);
 	if (!bCanAssemble)
@@ -2833,7 +2847,115 @@ static TSharedPtr<FJsonObject> CreateAssembledSkeletalMesh(const TSharedPtr<FJso
 	Result->SetObjectField(TEXT("inspection"), Inspection);
 	return Result;
 }
+static TSharedPtr<FJsonObject> MakeVatSourceSpec(const FMassBattleMCPVatSource& Source, FString& OutError)
+{
+	TSharedPtr<FJsonObject> Spec = MakeShared<FJsonObject>();
+	if (Source.SourceType == EMassBattleMCPVatSourceType::ActorInstance)
+	{
+		if (!IsValid(Source.ActorInstance) || Source.ActorInstance->IsTemplate())
+		{
+			OutError = TEXT("Source is Actor Instance, but no valid Actor is selected.");
+			return nullptr;
+		}
+		return Spec;
+	}
+	UClass* ActorClass = Source.ActorBlueprint ? Source.ActorBlueprint->GeneratedClass.Get() : Source.ActorClass.Get();
+	if (Source.SourceType != EMassBattleMCPVatSourceType::ActorBlueprint
+		|| !ActorClass || !ActorClass->IsChildOf(AActor::StaticClass()) || ActorClass->HasAnyClassFlags(CLASS_Abstract))
+	{
+		OutError = TEXT("Source is Actor Blueprint, but no valid Actor Blueprint is selected.");
+		return nullptr;
+	}
+	Spec->SetStringField(TEXT("actor_class"), ActorClass->GetPathName());
+	return Spec;
+}
+
 } // namespace MassBattleActorUnitEditorMCP
+
+bool UMassBattleUnitEditorMCPApi::ResolveVatSourceDefaults(
+	const FMassBattleMCPVatSource& Source,
+	const FString& SearchPath, const FString& PackagePath, const FString& UnitName,
+	USkeletalMesh*& OutPreviewSkeletalMesh,
+	FString& OutSearchPath, FString& OutPackagePath, FString& OutUnitName,
+	FString& OutErrorMessage)
+{
+	using namespace MassBattleActorUnitEditorMCP;
+	OutPreviewSkeletalMesh = nullptr;
+	OutSearchPath = SearchPath.TrimStartAndEnd();
+	OutPackagePath = PackagePath.TrimStartAndEnd();
+	OutPackagePath.RemoveFromEnd(TEXT("/"));
+	OutUnitName = ObjectTools::SanitizeObjectName(UnitName.TrimStartAndEnd());
+	OutErrorMessage.Reset();
+	if (Source.SourceType == EMassBattleMCPVatSourceType::SkeletalMesh)
+	{
+		OutPreviewSkeletalMesh = Source.SkeletalMesh;
+	}
+	else
+	{
+		TSharedPtr<FJsonObject> Spec = MakeVatSourceSpec(Source, OutErrorMessage);
+		if (!Spec) return false;
+		FActorAssemblyContext Context;
+		AActor* Instance = Source.SourceType == EMassBattleMCPVatSourceType::ActorInstance ? Source.ActorInstance.Get() : nullptr;
+		TSharedPtr<FJsonObject> Inspection = BuildInspectionResult(Spec, Context, Instance);
+		if (!Inspection->GetBoolField(TEXT("can_assemble")))
+		{
+			OutErrorMessage = ToJsonString(Inspection);
+			return false;
+		}
+		OutPreviewSkeletalMesh = Context.RootSkeletalComponent->GetSkeletalMeshAsset();
+	}
+	if (!IsValid(OutPreviewSkeletalMesh))
+	{
+		OutErrorMessage = TEXT("The selected source has no valid Skeletal Mesh.");
+		return false;
+	}
+	const FString SourceDirectory = FPackageName::GetLongPackagePath(OutPreviewSkeletalMesh->GetOutermost()->GetName());
+	if (OutUnitName.IsEmpty()) OutUnitName = ObjectTools::SanitizeObjectName(OutPreviewSkeletalMesh->GetName());
+	if (OutSearchPath.IsEmpty()) OutSearchPath = SourceDirectory;
+	if (OutPackagePath.IsEmpty()) OutPackagePath = SourceDirectory / (TEXT("Gen_") + OutUnitName);
+	return !OutUnitName.IsEmpty() && !OutPackagePath.IsEmpty();
+}
+
+bool UMassBattleUnitEditorMCPApi::PrepareVatSourceMesh(
+	const FMassBattleMCPVatSource& Source,
+	FString& SearchPath, FString& PackagePath, FString& UnitName,
+	USkeletalMesh*& OutSkeletalMesh, bool& bOutUsedActor,
+	FString& OutSearchPath, FString& OutErrorMessage)
+{
+	using namespace MassBattleActorUnitEditorMCP;
+	OutSkeletalMesh = nullptr;
+	bOutUsedActor = Source.SourceType != EMassBattleMCPVatSourceType::SkeletalMesh;
+	OutSearchPath.Reset();
+	USkeletalMesh* PreviewMesh = nullptr;
+	FString ResolvedSearchPath, ResolvedPackagePath, ResolvedUnitName;
+	if (!ResolveVatSourceDefaults(Source, SearchPath, PackagePath, UnitName,
+		PreviewMesh, ResolvedSearchPath, ResolvedPackagePath, ResolvedUnitName, OutErrorMessage)) return false;
+	SearchPath = MoveTemp(ResolvedSearchPath);
+	PackagePath = MoveTemp(ResolvedPackagePath);
+	UnitName = MoveTemp(ResolvedUnitName);
+	OutSearchPath = SearchPath;
+	if (!bOutUsedActor)
+	{
+		OutSkeletalMesh = PreviewMesh;
+		return true;
+	}
+	TSharedPtr<FJsonObject> Spec = MakeVatSourceSpec(Source, OutErrorMessage);
+	if (!Spec) return false;
+	Spec->SetStringField(TEXT("target_package_path"), PackagePath);
+	Spec->SetStringField(TEXT("unit_name"), UnitName);
+	Spec->SetStringField(TEXT("assembled_skeletal_mesh_name"), TEXT("SKM_") + UnitName + TEXT("_ActorSource"));
+	Spec->SetBoolField(TEXT("overwrite_existing"), true);
+	AActor* Instance = Source.SourceType == EMassBattleMCPVatSourceType::ActorInstance ? Source.ActorInstance.Get() : nullptr;
+	TSharedPtr<FJsonObject> Result = CreateAssembledSkeletalMesh(Spec, true, Instance);
+	if (!Result->GetBoolField(TEXT("success")))
+	{
+		OutErrorMessage = ToJsonString(Result);
+		return false;
+	}
+	OutSkeletalMesh = LoadAsset<USkeletalMesh>(GetStringField(Result, TEXT("assembled_skeletal_mesh")));
+	if (!OutSkeletalMesh) OutErrorMessage = TEXT("The assembled Skeletal Mesh could not be resolved.");
+	return OutSkeletalMesh != nullptr;
+}
 
 FString UMassBattleUnitEditorMCPApi::MCP_EditorInspectActorAssembly(const FString& ActorPath, const FString& OptionsJson)
 {
@@ -2864,7 +2986,7 @@ FString UMassBattleUnitEditorMCPApi::MCP_EditorInspectVatAnimation(const FString
 	{
 		VatDataPath = MassBattleActorUnitEditorMCP::GetStringField(Spec, TEXT("anim_to_texture_data_asset"));
 	}
-	UAnimToTextureDataAsset* VatData = MassBattleActorUnitEditorMCP::LoadAsset<UAnimToTextureDataAsset>(VatDataPath);
+	UMassBattleATTDataAsset* VatData = MassBattleActorUnitEditorMCP::LoadAsset<UMassBattleATTDataAsset>(VatDataPath);
 	if (!VatData)
 	{
 		return MassBattleActorUnitEditorMCP::MakeError(FString::Printf(
@@ -2903,7 +3025,7 @@ FString UMassBattleUnitEditorMCPApi::MCP_EditorInspectVatAnimation(const FString
 	TArray<TSharedPtr<FJsonValue>> BakedAnimations;
 	for (int32 Index = 0; Index < VatData->AnimSequences.Num(); ++Index)
 	{
-		const FAnimToTextureAnimSequenceInfo& Info = VatData->AnimSequences[Index];
+		const FMassBattleATTAnimSequenceInfo& Info = VatData->AnimSequences[Index];
 		if (!Info.bEnabled || !Info.AnimSequence)
 		{
 			continue;
@@ -3003,7 +3125,7 @@ FString UMassBattleUnitEditorMCPApi::MCP_EditorInspectVatAnimation(const FString
 	Result->SetStringField(TEXT("inspection_type"), TEXT("vat_animation_readiness"));
 	Result->SetBoolField(TEXT("healthy"), bHealthy);
 	Result->SetStringField(TEXT("vat_data_asset"), VatData->GetPathName());
-	Result->SetStringField(TEXT("mode"), VatData->Mode == EAnimToTextureMode::Vertex ? TEXT("VertexMode") : TEXT("BoneMode"));
+	Result->SetStringField(TEXT("mode"), VatData->Mode == EMassBattleATTMode::Vertex ? TEXT("VertexMode") : TEXT("BoneMode"));
 	Result->SetStringField(TEXT("skeletal_mesh"), SkeletalMesh ? SkeletalMesh->GetPathName() : FString());
 	Result->SetStringField(TEXT("static_mesh"), StaticMesh ? StaticMesh->GetPathName() : FString());
 	Result->SetNumberField(TEXT("sample_rate"), VatData->SampleRate);

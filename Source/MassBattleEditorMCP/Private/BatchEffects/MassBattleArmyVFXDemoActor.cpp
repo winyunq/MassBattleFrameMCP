@@ -15,7 +15,7 @@
 #include "NiagaraEmitterInstance.h"
 #include "NiagaraSystem.h"
 #include "NiagaraSystemInstance.h"
-#include "Renderers/MassBattleFxRenderer.h"
+#include "Rendering/MassBattleFxRenderer.h"
 #include "Subsystems/MassBattleSubsystem.h"
 #include "TimerManager.h"
 

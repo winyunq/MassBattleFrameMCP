@@ -5,7 +5,7 @@
 #include "Kismet2/KismetEditorUtilities.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 
-#include "AnimToTextureDataAsset.h"
+#include "MassBattleATTDataAsset.h"
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "AssetToolsModule.h"
 #include "DataAssets/MassBattleAgentConfigDataAsset.h"
@@ -24,7 +24,7 @@
 #include "Misc/Paths.h"
 #include "NiagaraSystem.h"
 #include "ObjectTools.h"
-#include "Renderers/MassBattleAgentRenderer.h"
+#include "Rendering/MassBattleAgentRenderer.h"
 #include "Serialization/JsonReader.h"
 #include "Serialization/JsonSerializer.h"
 #include "Serialization/JsonWriter.h"
@@ -3469,7 +3469,7 @@ FString UMassBattleUnitMCPApi::MCP_UnitFindAssets(const FString& QueryJson)
 	AddObjectClassFilter(Filter, UStaticMesh::StaticClass());
 	AddObjectClassFilter(Filter, USkeletalMesh::StaticClass());
 	AddObjectClassFilter(Filter, UNiagaraSystem::StaticClass());
-	AddObjectClassFilter(Filter, UAnimToTextureDataAsset::StaticClass());
+	AddObjectClassFilter(Filter, UMassBattleATTDataAsset::StaticClass());
 	AddObjectClassFilter(Filter, UBlueprint::StaticClass());
 	Filter.bRecursiveClasses = true;
 

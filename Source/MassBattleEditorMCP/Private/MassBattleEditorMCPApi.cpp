@@ -5,7 +5,7 @@
 #include "Fragments/Animation.h"
 #include "Fragments/Render.h"
 #include "Fragments/LOD.h"
-#include "AnimToTextureDataAsset.h"
+#include "MassBattleATTDataAsset.h"
 #include "AssetToolsModule.h"
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "Components/SkeletalMeshComponent.h"
@@ -19,7 +19,7 @@
 #include "NiagaraSystem.h"
 #include "Materials/MaterialInterface.h"
 #include "Rendering/SkeletalMeshRenderData.h"
-#include "Renderers/MassBattleAgentRenderer.h"
+#include "Rendering/MassBattleAgentRenderer.h"
 #include "StaticMeshAttributes.h"
 #include "Dom/JsonObject.h"
 #include "Engine/Blueprint.h"
@@ -1094,7 +1094,7 @@ FString UMassBattleEditorMCPApi::MCP_FindAndFillLODSettings(const FString& Skele
 FString UMassBattleEditorMCPApi::MCP_CreateAnimDataTexture(const FString& AnimsInfoJson, const FString& PackagePath, const FString& AssetName)
 {
 	/// 解析动画帧信息 JSON
-	TArray<FAnimToTextureAnimInfo> Anims;
+	TArray<FMassBattleATTAnimInfo> Anims;
 
 	TArray<TSharedPtr<FJsonValue>> JsonArray;
 	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(AnimsInfoJson);
@@ -1108,7 +1108,7 @@ FString UMassBattleEditorMCPApi::MCP_CreateAnimDataTexture(const FString& AnimsI
 		const TSharedPtr<FJsonObject>* Obj;
 		if (!Val->TryGetObject(Obj)) continue;
 
-		FAnimToTextureAnimInfo Info;
+		FMassBattleATTAnimInfo Info;
 		Info.StartFrame = (*Obj)->GetIntegerField(TEXT("StartFrame"));
 		Info.EndFrame = (*Obj)->GetIntegerField(TEXT("EndFrame"));
 		Anims.Add(Info);
@@ -1138,7 +1138,7 @@ FString UMassBattleEditorMCPApi::MCP_CreateAnimDataTexture(const FString& AnimsI
 FString UMassBattleEditorMCPApi::MCP_CreateAnimsDataFromSequences(const FString& DataAssetPath, const FString& FoundAnimsJson)
 {
 	/// 加载 DataAsset
-	UAnimToTextureDataAsset* DataAsset = LoadObject<UAnimToTextureDataAsset>(nullptr, *DataAssetPath);
+	UMassBattleATTDataAsset* DataAsset = LoadObject<UMassBattleATTDataAsset>(nullptr, *DataAssetPath);
 	if (!DataAsset)
 	{
 		return MakeErrorJson(FString::Printf(TEXT("Failed to load AnimToTextureDataAsset: %s"), *DataAssetPath));
