@@ -190,6 +190,8 @@ Strict non-selection VAT create requires canonical complete inputs: `skeletal_me
 
 MassBattleTools DoAll correspondence for VAT units:
 
+The `Content/ActorToMassBattleUnitEditor/MassBattleTools` widget uses the MCP-owned `MassBattleMCPVatSource` and `PrepareVatSourceMesh` entry point for skeletal meshes, Actor Blueprints, and Actor instances. Actor preparation reuses the MCP assembly implementation; caller-owned instances are never destroyed. The widget and MCP both call `BakeVatTextures`, which uses the official AnimToTexture API. These paths do not require the ordinary-edition `MassBattleVatSource`, `TryPrepareVatSourceMesh`, or `BakeMassBattleVAT` additions. Run the `MassBattle.MCP.MassBattleTools` editor automation test after framework updates to verify Blueprint compilation, widget construction, and source failure handling.
+
 1. `FillTex`, `FillLod`, and `FillAnim` resolve textures, LOD settings, and animation arrays.
 2. `CreateStaticMeshAndMat` converts the skeletal mesh and creates VAT material instances.
 3. `CreateVATTextures` creates or updates the AnimToTexture DataAsset, bakes VAT textures, writes AnimDataTex, and updates material instances.
