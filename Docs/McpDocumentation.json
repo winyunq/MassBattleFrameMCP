@@ -19,5 +19,41 @@
     ],
     "output": "Saved/Documentation/Website",
     "translation_directory": "Docs/TranslationMemory"
-  }
+  },
+  "data": [
+    {
+      "name": "DocumentationTranslations",
+      "fields": {
+        "reviewed": {
+          "type": "boolean"
+        },
+        "translated_source_hash": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "source_text": {
+          "type": "string"
+        },
+        "file": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "translation": {
+          "type": "string"
+        },
+        "source_hash": {
+          "type": "string"
+        },
+        "field": {
+          "type": "string"
+        }
+      },
+      "path": "Docs/TranslationMemory/zh-CN.json",
+      "key": "id"
+    }
+  ]
 }
