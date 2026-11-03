@@ -125,29 +125,28 @@ async def massbattle_ping() -> Dict[str, Any]:
 
 @mcp.tool()
 async def unit_get_api_status() -> Dict[str, Any]:
-    """List available unit tools.
-    MCP tool: `unit_get_api_status`. Returns the native unit API identity and categorized tools with their descriptions. This is capability discovery and does not load or modify a unit asset.
-    
-    Returns: JSON with success, api_name, module, dependency_note and categorized tool metadata."""
+    """Discover the unit operations available in the connected editor.
+    Returns the native unit API identity and categorized tools with their descriptions. This is capability discovery and does not load or modify a unit asset.
+    Returns: The unit API's identity, implementation module, dependency notes and tools grouped by capability."""
     return await get_connection().send_command("MCP_UnitGetApiStatus")
 
 
 @mcp.tool()
 async def unit_list(options: Any = None) -> Dict[str, Any]:
-    """List unit configuration assets.
-    MCP tool: `unit_list`. Scans unit config assets, filters their object paths by query, and returns compact balance summaries. load_fields controls whether assets are loaded for authored values. The returned total_scanned counts candidates before the query and result limit.
+    """Find unit assets and their balance values by path.
+    Scans unit config assets, filters their object paths by query, and returns compact balance summaries. load_fields controls whether assets are loaded for authored values. The returned total_scanned counts candidates before the query and result limit.
     OptionsJson: JSON object; pass {} to use the defaults. query is case-insensitive path text; limit is clamped to 1..2000; load_fields defaults to true.
-    Returns: JSON with success, count, total_scanned, units, roots and default_ignore_policy. Invalid JSON returns success=false with error."""
+    Returns: Unit summaries and search metadata; count is the returned item count, while total_scanned counts candidates before filtering and limiting."""
     return await get_connection().send_command("MCP_UnitList", {"OptionsJson": _json_arg(options)})
 
 
 @mcp.tool()
 async def unit_get(unit_path: str, options: Any = None) -> Dict[str, Any]:
-    """Read a unit configuration.
-    MCP tool: `unit_get`. Loads the requested unit or Unit Source Actor and returns source-aligned authored Data. The default simple view omits runtime, system and deprecated fields; a source Actor response also identifies export_path, exported_unit and last_report.
+    """Inspect authored unit data and source Actor export information.
+    Loads the requested unit or Unit Source Actor and returns source-aligned authored Data. The default simple view omits runtime, system and deprecated fields; a source Actor response also identifies export_path, exported_unit and last_report.
     UnitPath: Unreal object path of the existing MassBattle unit config or supported Unit Source Actor Blueprint.
     OptionsJson: JSON object; pass {} to use the defaults. Select the requested detail/object view and field inclusion policy; the response reports detail and default_ignore_policy.
-    Returns: JSON with success, AssetName, ObjectPath, Class, detail and Data. Invalid JSON or an unresolved unit returns success=false and error."""
+    Returns: The unit's identity and authored configuration in Data, with detail identifying the selected field view."""
     return await get_connection().send_command(
         "MCP_UnitGet",
         {"UnitPath": unit_path, "OptionsJson": _json_arg(options)},
@@ -156,30 +155,30 @@ async def unit_get(unit_path: str, options: Any = None) -> Dict[str, Any]:
 
 @mcp.tool()
 async def unit_get_schema(options: Any = None) -> Dict[str, Any]:
-    """Read editable unit fields.
-    MCP tool: `unit_get_schema`. Builds the editable property schema of UMassBattleAgentConfigDataAsset and applies the same default field-ignore policy as unit reads. Recursive mode expands nested struct fields so a caller can build a patch from real property names.
+    """Identify field names, types and nested structures accepted by unit patches.
+    Builds the editable property schema of UMassBattleAgentConfigDataAsset and applies the same default field-ignore policy as unit reads. Recursive mode expands nested struct fields so a caller can build a patch from real property names.
     OptionsJson: JSON object; pass {} to use the defaults. recursive defaults to true; depth defaults to 3 in recursive mode and 0 otherwise, and is clamped to 0..8.
-    Returns: JSON with success, asset_class, fields and default_ignore_policy. Invalid JSON returns success=false and error."""
+    Returns: The supported unit class and editable field definitions, including their types, nested structure and default field filtering policy."""
     return await get_connection().send_command("MCP_UnitGetSchema", {"OptionsJson": _json_arg(options)})
 
 
 @mcp.tool()
 async def unit_export(options: Any = None) -> Dict[str, Any]:
-    """Export a unit balance table.
-    MCP tool: `unit_export`. Reads the selected unit balance fields and writes a JSON or CSV table. With no output_path, files are placed under the project Saved/MassBattleEditorMCP/Exports directory. The response identifies the created file and exported unit count.
+    """Produce JSON or CSV balance data for comparison and tuning.
+    Reads the selected unit balance fields and writes a JSON or CSV table. With no output_path, files are placed under the project Saved/MassBattleEditorMCP/Exports directory. The response identifies the created file and exported unit count.
     OptionsJson: JSON object; pass {} to use the defaults. format chooses JSON or CSV; output_path selects the destination file. Unit scan and field options choose table contents.
-    Returns: JSON with success, format, output_path and unit_count. Invalid options or a file-save failure returns success=false and error."""
+    Returns: The exported file's output_path, format and unit_count; failures identify invalid options or a file that could not be saved."""
     return await get_connection().send_command("MCP_UnitExport", {"OptionsJson": _json_arg(options)})
 
 
 @mcp.tool()
 async def unit_write(unit_path: str, unit_data: Any, save_assets: bool = True) -> Dict[str, Any]:
-    """Update selected unit fields.
-    MCP tool: `unit_write`. Plans a union-merge, checks success and applicable, then applies the returned plan automatically. It retains omitted fields and returns the planning result when validation blocks application.
+    """Change selected unit fields while retaining unspecified data.
+    Plans a union-merge, checks success and applicable, then applies the returned plan automatically. It retains omitted fields and returns the planning result when validation blocks application.
     UnitPath: Unreal object path of the existing MassBattle unit config or supported Unit Source Actor Blueprint.
     UnitDataJson: Partial source-aligned authored unit data. Obtain exact editable field names from the unit schema.
-    bSaveAssets: Whether to save the modified or newly created assets to disk. The MCP tool supplies its documented save_assets default; false leaves changes in editor memory.
-    Returns: The planning error or the apply response, including success, saved and applied_diff.
+    bSaveAssets: Whether to save the assets modified or created by this operation to disk.
+    Returns: The applied field changes and persistence result, or the planning result when the proposed update cannot be applied.
     UMassBattleUnitMCPApi::MCP_UnitGetSchema for editable fields."""
     return await get_connection().send_command(
         "MCP_UnitMergeUpdate",
@@ -189,11 +188,11 @@ async def unit_write(unit_path: str, unit_data: Any, save_assets: bool = True) -
 
 @mcp.tool()
 async def unit_create(create_spec: Any, save_assets: bool = True) -> Dict[str, Any]:
-    """Create a unit from a template.
-    MCP tool: `unit_create`. Creates a unit from the default or explicit template and optionally merges initial authored data. asset_type=source_actor creates a Unit Source Actor Blueprint; the ordinary branch creates the unit config. Target names must resolve to an unoccupied Unreal asset path.
+    """Use a template to create unit data or a Unit Source Actor.
+    Creates a unit from the default or explicit template and optionally merges initial authored data. asset_type=source_actor creates a Unit Source Actor Blueprint; the ordinary branch creates the unit config. Target names must resolve to an unoccupied Unreal asset path.
     CreateSpecJson: JSON with either unit_path/new_unit_path or both asset_name and package_path. template_unit selects a template; unit_data supplies initial authored values. asset_type=source_actor enables the source Blueprint branch and export_path configures its output.
-    bSaveAssets: Whether to save the modified or newly created assets to disk. The MCP tool supplies its documented save_assets default; false leaves changes in editor memory.
-    Returns: The create/apply JSON response identifying the created asset and saved state. Invalid target paths, occupied assets or initial-data merge errors return success=false and error."""
+    bSaveAssets: Whether to save the assets modified or created by this operation to disk.
+    Returns: The created asset's identity and persistence result; failures explain destination conflicts or initial-data merge problems."""
     return await get_connection().send_command(
         "MCP_UnitCreate",
         {"CreateSpecJson": _json_arg(create_spec), "bSaveAssets": save_assets},
@@ -202,11 +201,11 @@ async def unit_create(create_spec: Any, save_assets: bool = True) -> Dict[str, A
 
 @mcp.tool()
 async def unit_delete(unit_path: str, options: Any = None) -> Dict[str, Any]:
-    """Delete a unit configuration asset.
-    MCP tool: `unit_delete`. Builds the explicit unit deletion plan. dry_run=true returns would_delete and the plan without changing the asset; dry_run=false applies an applicable plan through the same mutation API.
+    """Preview or execute a unit asset deletion plan.
+    Builds the explicit unit deletion plan. dry_run=true returns would_delete and the plan without changing the asset; dry_run=false applies an applicable plan through the same mutation API.
     UnitPath: Unreal object path of the existing MassBattle unit config or supported Unit Source Actor Blueprint.
     OptionsJson: JSON object; pass {} to use the defaults. dry_run defaults to true. Deletion mode and plan validation are handled by the explicit unit deletion plan.
-    Returns: A deletion plan with dry_run and would_delete, or the applied deletion result. Invalid JSON or an inapplicable plan reports success=false/error or applicable=false."""
+    Returns: A deletion preview with would_delete, or the actual deletion result; dry_run distinguishes the two and applicable explains whether the plan can execute."""
     return await get_connection().send_command(
         "MCP_UnitDelete",
         {"UnitPath": unit_path, "OptionsJson": _json_arg(options)},
@@ -215,28 +214,27 @@ async def unit_delete(unit_path: str, options: Any = None) -> Dict[str, Any]:
 
 @mcp.tool()
 async def unit_find_assets(query: Any) -> Dict[str, Any]:
-    """Find assets for unit authoring.
-    MCP tool: `unit_find_assets`. Searches meshes, renderers, Niagara systems, AnimToTexture assets and existing unit configs, then sorts matches by object path for stable authoring discovery.
+    """Locate meshes, renderers and effects for unit authoring.
+    Searches meshes, renderers, Niagara systems, AnimToTexture assets and existing unit configs, then sorts matches by object path for stable authoring discovery.
     QueryJson: JSON query object containing query text and limit. Results identify asset name, path, class, package_path and inferred style_family.
-    Returns: JSON with success, count and assets. Invalid query JSON returns success=false and error."""
+    Returns: Matching asset names, object paths, classes, package folders and inferred style families, with the returned count."""
     return await get_connection().send_command("MCP_UnitFindAssets", {"QueryJson": _json_arg(query)})
 
 
 @mcp.tool()
 async def projectile_get_api_status() -> Dict[str, Any]:
-    """List available projectile tools.
-    MCP tool: `projectile_get_api_status`. Returns projectile DataAsset capabilities, native parameter names and write-contract metadata. It identifies the schema, CRUD and validation entries available to the connected editor.
-    
-    Returns: JSON with success, api_name, version, asset_class, write_contract and tools."""
+    """Discover projectile editing and validation operations in the editor.
+    Returns projectile DataAsset capabilities, native parameter names and write-contract metadata. It identifies the schema, CRUD and validation entries available to the connected editor.
+    Returns: The projectile API version, supported asset type, write contract and available tools."""
     return await get_connection().send_command("MCP_ProjectileGetApiStatus")
 
 
 @mcp.tool()
 async def projectile_list(options: Any = None) -> Dict[str, Any]:
-    """List projectile configurations.
-    MCP tool: `projectile_list`. Scans projectile configuration DataAssets, filters object paths by query and returns stable asset summaries. load_fields selects whether authored fields are loaded for each result.
+    """Filter projectile assets by path and inspect their configuration summaries.
+    Scans projectile configuration DataAssets, filters object paths by query and returns stable asset summaries. load_fields selects whether authored fields are loaded for each result.
     OptionsJson: JSON object; pass {} to use the defaults. query filters paths; limit bounds the result count; load_fields controls summary detail. Scan roots select the content scope.
-    Returns: JSON with success, count, total_scanned, roots and projectiles, or success=false/error for invalid options."""
+    Returns: Matching projectile summaries and searched roots; count is the returned item count and total_scanned is the number scanned."""
     return await get_connection().send_command(
         "MCP_ProjectileList",
         {"OptionsJson": _json_arg(options)},
@@ -245,10 +243,10 @@ async def projectile_list(options: Any = None) -> Dict[str, Any]:
 
 @mcp.tool()
 async def projectile_query(query: Any = None) -> Dict[str, Any]:
-    """Find projectile configurations.
-    MCP tool: `projectile_query`. Uses the projectile listing query path to find configurations by path or name. It returns the same stable summaries and scan metadata as the projectile list entry.
+    """Locate projectile configuration assets by name or path.
+    Uses the projectile listing query path to find configurations by path or name. It returns the same stable summaries and scan metadata as the projectile list entry.
     QueryJson: JSON object; pass {} to use the defaults. Uses the projectile-list query and scope options.
-    Returns: The projectile-list response with success, counts, roots and matching projectiles."""
+    Returns: Projectile search results in the same format as projectile_list, including matching assets, counts and searched roots."""
     return await get_connection().send_command(
         "MCP_ProjectileQuery",
         {"QueryJson": _json_arg(query)},
@@ -257,11 +255,11 @@ async def projectile_query(query: Any = None) -> Dict[str, Any]:
 
 @mcp.tool()
 async def projectile_get(projectile_path: str, options: Any = None) -> Dict[str, Any]:
-    """Read a projectile configuration.
-    MCP tool: `projectile_get`. Loads one projectile DataAsset and returns source-aligned authored data. The active view selects fields relevant to the configured movement and damage modes; the full view can include inactive fields. Validation and referencing assets can be included in the same read.
+    """Inspect active projectile data with optional validation and references.
+    Loads one projectile DataAsset and returns source-aligned authored data. The active view selects fields relevant to the configured movement and damage modes; the full view can include inactive fields. Validation and referencing assets can be included in the same read.
     ProjectilePath: Unreal object path of the projectile configuration DataAsset.
     OptionsJson: JSON object; pass {} to use the defaults. view/detail and include_inactive select the field view; include_validation and include_referencers request the corresponding reports.
-    Returns: JSON with success, asset_name, object_path, class, view, movement_mode, damage_mode and data, plus requested validation/referencers."""
+    Returns: The authored configuration in data and its movement and damage modes; view identifies the field view, with validation and referencers included when requested."""
     return await get_connection().send_command(
         "MCP_ProjectileGet",
         {"ProjectilePath": projectile_path, "OptionsJson": _json_arg(options)},
@@ -270,10 +268,10 @@ async def projectile_get(projectile_path: str, options: Any = None) -> Dict[str,
 
 @mcp.tool()
 async def projectile_get_schema(options: Any = None) -> Dict[str, Any]:
-    """Read editable projectile fields.
-    MCP tool: `projectile_get_schema`. Reflects projectile field names, types, enums, edit conditions and tooltips. It returns movement/damage-mode field groups and the source-aligned write, damage-ownership and lifecycle rules needed to form a valid patch. Array writes merge by index and reject appending by default; options.append_arrays=true permits append and options.array_mode=replace requests replacement. The returned ownership rule assigns normal projectile attack damage to the projectile DataAsset with Agent Attack.TimeOfHitAction=None; the lifecycle rule identifies duplicate full explosions in OnHit and OnRemoval.
+    """Obtain field types and write rules for movement and damage modes.
+    Reflects projectile field names, types, enums, edit conditions and tooltips. It returns movement/damage-mode field groups and the source-aligned write, damage-ownership and lifecycle rules needed to form a valid patch. Array writes merge by index and reject appending by default; options.append_arrays=true permits append and options.array_mode=replace requests replacement. The returned ownership rule assigns normal projectile attack damage to the projectile DataAsset with Agent Attack.TimeOfHitAction=None; the lifecycle rule identifies duplicate full explosions in OnHit and OnRemoval.
     OptionsJson: JSON object; pass {} to use the defaults. depth selects the nested schema expansion depth.
-    Returns: JSON with success, class, field_count, fields, movement_mode_fields, damage_mode_fields, array_write_rule, damage_ownership_rule and lifecycle_rule."""
+    Returns: Field definitions and mode-specific field groups, together with array-write, damage-ownership and lifecycle rules."""
     return await get_connection().send_command(
         "MCP_ProjectileGetSchema",
         {"OptionsJson": _json_arg(options)},
@@ -282,11 +280,11 @@ async def projectile_get_schema(options: Any = None) -> Dict[str, Any]:
 
 @mcp.tool()
 async def projectile_create(create_spec: Any, save_assets: bool = True) -> Dict[str, Any]:
-    """Create a projectile configuration.
-    MCP tool: `projectile_create`. Builds a transient preview from the requested template or class defaults, applies initial source-aligned data and validates it before creating the real projectile DataAsset. It rejects an invalid or occupied destination instead of replacing that asset.
+    """Create a validated projectile config from a template or class defaults.
+    Builds a transient preview from the requested template or class defaults, applies initial source-aligned data and validates it before creating the real projectile DataAsset. It rejects an invalid or occupied destination instead of replacing that asset.
     CreateSpecJson: JSON with asset_name (alias name), package_path (alias target_package_path) and optional template_path/template plus initial projectile data. package_path must be an Unreal package path beginning with /.
-    bSaveAssets: Whether to save the modified or newly created assets to disk. The MCP tool supplies its documented save_assets default; false leaves changes in editor memory.
-    Returns: JSON with success, asset_path, template_path, saved, changed_paths and data. Invalid input, preflight failures or asset creation errors return success=false/error."""
+    bSaveAssets: Whether to save the assets modified or created by this operation to disk.
+    Returns: The new asset and template paths, resulting configuration and changed field paths; saved indicates whether the asset was written to disk."""
     return await get_connection().send_command(
         "MCP_ProjectileCreate",
         {"CreateSpecJson": _json_arg(create_spec), "bSaveAssets": save_assets},
@@ -299,12 +297,12 @@ async def projectile_write(
     patch: Any,
     save_assets: bool = True,
 ) -> Dict[str, Any]:
-    """Update selected projectile fields.
-    MCP tool: `projectile_write`. Applies the partial source-aligned patch to a transient copy and validates the candidate before mutating the real projectile configuration. Omitted fields are retained; use the schema write rules when changing arrays or nested authored structs.
+    """Validate a partial update before changing the projectile asset.
+    Applies the partial source-aligned patch to a transient copy and validates the candidate before mutating the real projectile configuration. Omitted fields are retained; use the schema write rules when changing arrays or nested authored structs.
     ProjectilePath: Unreal object path of the existing projectile DataAsset.
     PatchJson: Nonempty partial projectile JSON using real source field names. Read the projectile schema for enum values, conditions and array write rules. options.append_arrays and options.array_mode explicitly select array append/replacement behavior.
-    bSaveAssets: Whether to save the modified or newly created assets to disk. The MCP tool supplies its documented save_assets default; false leaves changes in editor memory.
-    Returns: JSON with success, asset_path, saved, changed_paths, data and validation, or success=false/error for invalid fields, failed preflight or saving.
+    bSaveAssets: Whether to save the assets modified or created by this operation to disk.
+    Returns: The actual changed field paths, resulting configuration and validation report; saved identifies persistence, and failures report field, preflight or save errors.
     UMassBattleProjectileMCPApi::MCP_ProjectileGetSchema for exact field/write rules."""
     return await get_connection().send_command(
         "MCP_ProjectileWrite",
@@ -318,11 +316,11 @@ async def projectile_write(
 
 @mcp.tool()
 async def projectile_validate(projectile_path: str, options: Any = None) -> Dict[str, Any]:
-    """Validate a projectile configuration.
-    MCP tool: `projectile_validate`. Checks movement configuration, damage ownership, trigger/lifetime behavior, lifecycle effects and duplicate explosion risks on the requested projectile. It does not rewrite the configuration.
+    """Find movement, damage ownership and lifecycle effect configuration issues.
+    Checks movement configuration, damage ownership, trigger/lifetime behavior, lifecycle effects and duplicate explosion risks on the requested projectile. It does not rewrite the configuration.
     ProjectilePath: Unreal object path of the projectile DataAsset to inspect.
     OptionsJson: JSON object; pass {} to use the defaults. include_referencers includes assets that reference the projectile.
-    Returns: JSON with success and validation, plus requested referencers. An invalid path or options object returns success=false/error."""
+    Returns: The projectile validation conclusion and findings in validation, with referencing assets included when requested."""
     return await get_connection().send_command(
         "MCP_ProjectileValidate",
         {"ProjectilePath": projectile_path, "OptionsJson": _json_arg(options)},
@@ -331,11 +329,11 @@ async def projectile_validate(projectile_path: str, options: Any = None) -> Dict
 
 @mcp.tool()
 async def projectile_delete(projectile_path: str, options: Any = None) -> Dict[str, Any]:
-    """Delete a projectile configuration.
-    MCP tool: `projectile_delete`. Builds a deletion/trash move report and checks references. dry_run=true returns the report without changing the DataAsset; an explicit executable request performs the selected supported mode and returns the actual move/delete outcome.
+    """Check references before previewing or executing asset removal.
+    Builds a deletion/trash move report and checks references. dry_run=true returns the report without changing the DataAsset; an explicit executable request performs the selected supported mode and returns the actual move/delete outcome.
     ProjectilePath: Unreal object path of the projectile configuration to remove.
     OptionsJson: JSON object; pass {} to use the defaults. dry_run defaults to true. mode chooses the supported deletion path; trash_root selects trash placement. Referenced/unsafe/hard operations require their corresponding allow_referenced, allow_unsafe_asset_move or allow_hard_delete option.
-    Returns: JSON with dry_run, mode, source_path, referencers, applicable and blocked_reason; executed requests add moved/trash_path or deleted/deleted_count and any error."""
+    Returns: The removal report with referencers, applicability and blocking reasons; execution adds the actual trash destination or deletion count."""
     return await get_connection().send_command(
         "MCP_ProjectileDelete",
         {"ProjectilePath": projectile_path, "OptionsJson": _json_arg(options)},
@@ -344,47 +342,46 @@ async def projectile_delete(projectile_path: str, options: Any = None) -> Dict[s
 
 @mcp.tool()
 async def style_summarize_units(options: Any = None) -> Dict[str, Any]:
-    """Summarize units by style.
-    MCP tool: `style_summarize_units`. Scans the selected unit assets and aggregates their authored style indices, inferred style families and path categories. It reports organization counts without moving assets.
+    """Count units by style family, style index and path category.
+    Scans the selected unit assets and aggregates their authored style indices, inferred style families and path categories. It reports organization counts without moving assets.
     OptionsJson: JSON object; pass {} to use the defaults. Use the unit scan options to choose the assets included in the summary.
-    Returns: JSON with success, unit_count, style_families, path_categories and style_indices."""
+    Returns: The unit count and distributions across style families, path categories and style indices."""
     return await get_connection().send_command("MCP_StyleSummarizeUnits", {"OptionsJson": _json_arg(options)})
 
 
 @mcp.tool()
 async def style_plan_organize_units(options: Any = None) -> Dict[str, Any]:
-    """Plan unit folders by style.
-    MCP tool: `style_plan_organize_units`. Calculates destination folders from each unit style family and style index. It produces a reviewable move list only; this entry does not execute AssetTools moves.
+    """Calculate destination folders and a move list from unit styles.
+    Calculates destination folders from each unit style family and style index. It produces a reviewable move list only; this entry does not execute AssetTools moves.
     OptionsJson: JSON object; pass {} to use the defaults. target_root selects the organization root; unit scan options select the source assets.
-    Returns: JSON with success, plan_type, target_root, dry_run_only=true and moves containing source and destination paths."""
+    Returns: A move proposal containing source and destination paths under target_root; dry_run_only=true identifies it as a plan rather than executed moves."""
     return await get_connection().send_command("MCP_StylePlanOrganizeUnits", {"OptionsJson": _json_arg(options)})
 
 
 @mcp.tool()
 async def editor_get_status() -> Dict[str, Any]:
-    """List available unit editor tools.
-    MCP tool: `editor_get_status`. Returns categorized capabilities for the non-UI counterpart of the MassBattleTools editor widget. The list describes available profile, VAT, Actor assembly and organization workflows without executing them.
-    
-    Returns: JSON with success, api_name, description and categorized tools."""
+    """Discover VAT authoring and asset organization capabilities in the editor.
+    Returns categorized capabilities for the non-UI counterpart of the MassBattleTools editor widget. The list describes available profile, VAT, Actor assembly and organization workflows without executing them.
+    Returns: The editor API identity, capability description and tools grouped by authoring workflow."""
     return await get_connection().send_command("MCP_EditorGetStatus")
 
 
 @mcp.tool()
 async def editor_list_profiles(options: Any = None) -> Dict[str, Any]:
-    """List unit styles and recipes.
-    MCP tool: `editor_list_profiles`. Reads the installed unit style profiles and authoring recipes so a caller can choose an existing profile id before constructing a VAT or organization spec.
+    """Choose styles and recipes for VAT unit authoring.
+    Reads the installed unit style profiles and authoring recipes so a caller can choose an existing profile id before constructing a VAT or organization spec.
     OptionsJson: JSON object; pass {} to use the defaults. This entry parses the options object before enumerating installed profiles.
-    Returns: JSON with success and profiles. Malformed options returns success=false and error."""
+    Returns: Available style and recipe profiles used to select profile IDs for authoring requests."""
     return await get_connection().send_command("MCP_EditorListProfiles", {"OptionsJson": _json_arg(options)})
 
 
 @mcp.tool()
 async def editor_get_profile(profile_type: str, profile_id: str) -> Dict[str, Any]:
-    """Read a unit style or recipe.
-    MCP tool: `editor_get_profile`. Resolves a style or recipe profile by its type and id, reads its JSON file and returns both the file identity and complete profile contents.
+    """Inspect the complete JSON settings of a style or recipe.
+    Resolves a style or recipe profile by its type and id, reads its JSON file and returns both the file identity and complete profile contents.
     ProfileType: Profile kind: style or recipe.
     ProfileId: Existing profile id returned by the profile-list tool.
-    Returns: JSON with success, file and profile. A missing profile or invalid profile JSON returns success=false and error.
+    Returns: The selected profile's complete JSON settings and source file path; an unavailable or malformed profile produces an error.
     UMassBattleUnitEditorMCPApi::MCP_EditorListProfiles to discover ids."""
     return await get_connection().send_command(
         "MCP_EditorGetProfile",
@@ -394,20 +391,20 @@ async def editor_get_profile(profile_type: str, profile_id: str) -> Dict[str, An
 
 @mcp.tool()
 async def editor_plan_create_vat_unit(spec: Any) -> Dict[str, Any]:
-    """Preview VAT unit generation.
-    MCP tool: `editor_plan_create_vat_unit`. Resolves source mesh, recipe/style settings, animation and texture discovery, and generated-asset layout without writing generated assets. This is a diagnostic preview; its discovery aliases or inferred values do not replace the complete canonical fields required by strict apply.
-    SpecJson: JSON describing the source skeletal_mesh and unit_name, discovery paths, optional recipe_id/style_profile and intended generated asset layout. Use canonical fields skeletal_mesh, unit_name, target_package_path, parent_material, source_renderer_class, niagara_system, vat_sample_rate and a nonempty animations category-to-AnimSequence mapping. Supply target_unit to update a unit, or template_unit, target_unit_package_path and subtype to create one. Strict execution rejects legacy aliases and missing-asset/static fallback switches.
-    Returns: The planning JSON with resolved_layout, discovery, applicability, warnings and proposed steps, or success=false and error for invalid input/profile resolution.
+    """Inspect source assets and output layout before VAT generation.
+    Output paths are derived from the source mesh, unit name and target layout. Recipe defaults, generated mesh/animation/LOD references and the explicit unit_patch are merged in that order to form the proposed unit configuration.
+    SpecJson: JSON object describing the source skeletal_mesh and unit_name, target_package_path and optional recipe_id/style_profile, animation discovery paths and unit_patch. target_unit selects an existing unit; template_unit and target_unit_package_path describe a new unit.
+    Returns: The resolved output layout, discovered inputs and proposed generation steps, with applicability and warnings describing unresolved problems.
     UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnit for the primary generation entry."""
     return await get_connection().send_command("MCP_EditorPlanCreateVatUnit", {"SpecJson": _json_arg(spec)})
 
 
 @mcp.tool()
 async def editor_validate_create_vat_unit(spec: Any) -> Dict[str, Any]:
-    """Validate VAT unit generation inputs.
-    MCP tool: `editor_validate_create_vat_unit`. Checks the strict canonical VAT contract, resolves referenced assets and generates a diagnostic execution preview. It reports field-level issues and does not create, bake or save assets.
-    SpecJson: Complete canonical VAT generation JSON. Use canonical fields skeletal_mesh, unit_name, target_package_path, parent_material, source_renderer_class, niagara_system, vat_sample_rate and a nonempty animations category-to-AnimSequence mapping. Supply target_unit to update a unit, or template_unit, target_unit_package_path and subtype to create one. Strict execution rejects legacy aliases and missing-asset/static fallback switches.
-    Returns: JSON with success, validation_type=create_vat_unit, valid, issues and execution_preview. Check valid before interpreting the workflow as executable."""
+    """Check required VAT fields and referenced assets.
+    Resolves the skeletal mesh, parent material, renderer and Niagara asset references, checks the animation category mapping and VAT settings, and combines the findings with the planned execution steps.
+    SpecJson: VAT generation specification using the fields documented by UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnit. Mesh, animation, material, renderer, output and subtype settings are checked without generating assets.
+    Returns: The validation conclusion in valid, field problems in issues and proposed workflow in execution_preview."""
     return await get_connection().send_command("MCP_EditorValidateCreateVatUnit", {"SpecJson": _json_arg(spec)})
 
 
@@ -417,11 +414,11 @@ async def editor_apply_create_vat_unit(
     save_assets: bool = True,
     compact_response: bool = True,
 ) -> Dict[str, Any]:
-    """Generate a VAT unit from a specification.
-    MCP tool: `editor_apply_create_vat_unit`. Validates complete canonical inputs before running the MassBattleTools DoAll-equivalent skeletal-mesh VAT workflow. It creates or updates the required VAT data, materials, renderer and unit through MassBattleEditor. dry_run/preview_only requests validation and execution preview instead of asset writes. The MCP tool defaults compact_response to true; an explicit value in spec overrides that default.
-    SpecJson: Complete canonical VAT generation JSON. Use canonical fields skeletal_mesh, unit_name, target_package_path, parent_material, source_renderer_class, niagara_system, vat_sample_rate and a nonempty animations category-to-AnimSequence mapping. Supply target_unit to update a unit, or template_unit, target_unit_package_path and subtype to create one. Strict execution rejects legacy aliases and missing-asset/static fallback switches. Optional dry_run/preview_only controls preview, overwrite_existing controls existing generated outputs, and compact_response selects compact results.
-    bSaveAssets: Whether to save the modified or newly created assets to disk. The MCP tool supplies its documented save_assets default; false leaves changes in editor memory.
-    Returns: JSON with success, dry_run, save_assets and execution_steps or a compact apply summary. Validation failures include valid=false, issues and execution_preview; step failures return their actual result.
+    """Create a unit that plays baked skeletal animation through a static mesh.
+    The skeletal mesh is converted into a static mesh with LODs and instances of the parent material. For each LOD, bone or vertex mode samples the animations into VAT textures; these textures, an animation-index texture and decoding parameters are assigned to that LOD's materials so the static mesh can reproduce the animation. The renderer receives the mesh, Niagara system and subtype; the unit receives Visualize.RendererClass, AnimShared.AnimData and the baked animation sample rate. New units are created through UMassBattleUnitMCPApi::MCP_UnitCreate, then configuration is written through UMassBattleUnitMCPApi::MCP_UnitPlanMergeUpdate and UMassBattleUnitMCPApi::MCP_UnitApplyPlan.
+    SpecJson: JSON specification containing skeletal_mesh, unit_name, target_package_path, parent_material, source_renderer_class, niagara_system, vat_sample_rate and a nonempty animations category-to-AnimSequence mapping. target_unit selects an existing unit; otherwise template_unit, target_unit_package_path and subtype describe creation. dry_run/preview_only selects a preview; overwrite_existing controls replacement of generated outputs. compact_response selects result detail: false in this native entry, true by default in the MCP wrapper, with an explicit JSON value taking precedence.
+    bSaveAssets: Whether to save the assets modified or created by this operation to disk.
+    Returns: Generation-step results or a compact summary; previews return the plan and validation. Validation failures are described by validation.valid and validation.issues; execution_steps records completed and failed steps when execution stops.
     Validation is performed automatically; diagnostic plan/validate calls are optional before this primary entry."""
     return await get_connection().send_command(
         "MCP_EditorApplyCreateVatUnit",
@@ -431,11 +428,11 @@ async def editor_apply_create_vat_unit(
 
 @mcp.tool()
 async def unit_plan_write(unit_path: str, unit_data: Any) -> Dict[str, Any]:
-    """Preview unit configuration changes.
-    MCP tool: `unit_plan_write`. Builds and stores a union-merge plan from a partial source-aligned unit object. Omitted unit fields are retained. The asset is not modified; applicable and merge_errors describe whether the planned field changes can be applied.
+    """Review field changes before writing a partial unit update.
+    Builds and stores a union-merge plan from a partial source-aligned unit object. Omitted unit fields are retained. The asset is not modified; applicable and merge_errors describe whether the planned field changes can be applied.
     UnitPath: Unreal object path of the existing MassBattle unit config or supported Unit Source Actor Blueprint.
     UnitDataJson: Partial unit JSON using source property names. Include the fields to change; a Unit Source Actor patch may also contain export_path.
-    Returns: JSON with plan_id, plan_path, merge_semantics, patches, diff, merge_errors and applicable. Invalid JSON, an unresolved asset or no mergeable fields returns success=false and error."""
+    Returns: A stored update plan: plan_id identifies it for later review or application, diff describes field changes, and applicable with merge_errors explains whether it can run."""
     return await get_connection().send_command(
         "MCP_UnitPlanMergeUpdate",
         {"UnitPath": unit_path, "UnitDataJson": _json_arg(unit_data)},
@@ -444,10 +441,10 @@ async def unit_plan_write(unit_path: str, unit_data: Any) -> Dict[str, Any]:
 
 @mcp.tool()
 async def unit_preview_plan(plan_id: str) -> Dict[str, Any]:
-    """Read a unit plan and its changes.
-    MCP tool: `unit_preview_plan`. Loads a previously stored mutation plan and returns its complete diff and applicability without applying it. This is the review step between planning and an explicit apply.
+    """Inspect a stored plan's full diff and applicability.
+    Loads a previously stored mutation plan and returns its complete diff and applicability without applying it. This is the review step between planning and an explicit apply.
     PlanId: plan_id returned by a unit planning operation.
-    Returns: JSON with success, plan_id, type, applicable, diff/diff_from_template and the complete plan. A missing or unreadable plan returns success=false and error.
+    Returns: The complete stored plan and its diff, with applicable indicating whether it is executable; an unavailable plan produces an error.
     Before calling: Obtain PlanId from a planning operation such as UMassBattleUnitMCPApi::MCP_UnitPlanMergeUpdate."""
     return await get_connection().send_command(
         "MCP_UnitPreviewDiff",
@@ -457,11 +454,11 @@ async def unit_preview_plan(plan_id: str) -> Dict[str, Any]:
 
 @mcp.tool()
 async def unit_apply_plan(plan_id: str, save_assets: bool = True) -> Dict[str, Any]:
-    """Apply a unit modification plan.
-    MCP tool: `unit_apply_plan`. Loads the stored plan, rejects a plan marked inapplicable, and executes its supported mutation type. The result records applied changes and the requested persistence behavior.
+    """Write the changes recorded in a reviewed unit plan.
+    Loads the stored plan, rejects a plan marked inapplicable, and executes its supported mutation type. The result records applied changes and the requested persistence behavior.
     PlanId: Identifier of the reviewed stored unit mutation plan.
-    bSaveAssets: Whether to save the modified or newly created assets to disk. The MCP tool supplies its documented save_assets default; false leaves changes in editor memory.
-    Returns: JSON containing the mutation result, plan_id, saved and applied_diff, or success=false and error for an invalid plan, failed mutation or save failure.
+    bSaveAssets: Whether to save the assets modified or created by this operation to disk.
+    Returns: The executed plan's ID, applied_diff and saved state; rejected plans, failed mutations and save errors report their failure.
     Before calling: Inspect the diff with UMassBattleUnitMCPApi::MCP_UnitPreviewDiff before submitting a reviewed plan."""
     return await get_connection().send_command(
         "MCP_UnitApplyPlan",
@@ -471,10 +468,10 @@ async def unit_apply_plan(plan_id: str, save_assets: bool = True) -> Dict[str, A
 
 @mcp.tool()
 async def editor_plan_create_vat_unit_from_selection(options: Any = None) -> Dict[str, Any]:
-    """Preview VAT generation for selected assets.
-    MCP tool: `editor_plan_create_vat_unit_from_selection`. Resolves current editor-selected assets, or the explicit selected_assets override, into a VAT creation spec and returns the resulting diagnostic plan. It exposes the resolved inputs for review without generating assets.
+    """Inspect the VAT specification resolved from selected assets.
+    The editor selection or selected_assets is resolved into a source mesh and animation set, then passed as a specification to UMassBattleUnitEditorMCPApi::MCP_EditorPlanCreateVatUnit.
     OptionsJson: JSON object; pass {} to use the defaults. selected_assets supplies an explicit selection. Additional generation options feed the selection resolver and returned resolved_spec.
-    Returns: JSON with success, selection, resolved_spec, create_plan and ready_to_apply. Empty/unresolvable selections return error information."""
+    Returns: The resolved selection, VAT specification and generation plan; ready_to_apply identifies whether the resolved request is ready for execution."""
     return await get_connection().send_command(
         "MCP_EditorPlanCreateVatUnitFromSelection",
         {"OptionsJson": _json_arg(options)},
@@ -487,11 +484,11 @@ async def editor_apply_create_vat_unit_from_selection(
     save_assets: bool = True,
     compact_response: bool = True,
 ) -> Dict[str, Any]:
-    """Generate a VAT unit from selected assets.
-    MCP tool: `editor_apply_create_vat_unit_from_selection`. Builds the canonical VAT spec from the current selection or selected_assets and executes the same primary DoAll generation workflow. The MCP tool defaults compact_response to true; explicit options override that value. The selection and resolved inputs remain visible in the response.
-    OptionsJson: JSON object; pass {} to use the defaults. selected_assets overrides editor selection; generation options and compact_response are passed to the resolved VAT workflow.
-    bSaveAssets: Whether to save the modified or newly created assets to disk. The MCP tool supplies its documented save_assets default; false leaves changes in editor memory.
-    Returns: JSON with success, selection, resolved_spec and apply_result or apply_summary; failed selection resolution or generation returns the corresponding error."""
+    """Resolve selected source assets into a specification and generate a VAT unit.
+    Selection resolution produces the mesh, animation and output settings used by UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnit. The resolved selection and specification are included with the generation result.
+    OptionsJson: JSON options for selection resolution and VAT generation. selected_assets overrides the current selection. compact_response controls response detail; its MCP wrapper default is true and an explicit JSON value takes precedence.
+    bSaveAssets: Whether to save the assets modified or created by this operation to disk.
+    Returns: The resolved selection and specification together with apply_result or apply_summary; failures identify selection resolution or generation problems."""
     return await get_connection().send_command(
         "MCP_EditorApplyCreateVatUnitFromSelection",
         {"OptionsJson": _json_arg_with_defaults(options, {"compact_response": compact_response}), "bSaveAssets": save_assets},
@@ -500,11 +497,11 @@ async def editor_apply_create_vat_unit_from_selection(
 
 @mcp.tool()
 async def editor_inspect_actor_assembly(actor_path: str, options: Any = None) -> Dict[str, Any]:
-    """Inspect an Actor's meshes and weapon bindings.
-    MCP tool: `editor_inspect_actor_assembly`. Spawns/resolves the requested Actor for inspection, evaluates included skeletal/static components, effective materials and weapon bind bones, and reports whether the assembly can be produced. Bounds are reported in root-skeleton model space without recentering. No generated assets are written.
+    """Check component materials and weapon bones before assembling an Actor.
+    Spawns/resolves the requested Actor for inspection, evaluates included skeletal/static components, effective materials and weapon bind bones, and reports whether the assembly can be produced. Bounds are reported in root-skeleton model space without recentering. No generated assets are written.
     ActorPath: Actor Blueprint or class object path. When supplied, it becomes actor_class in the inspection spec.
     OptionsJson: JSON object; pass {} to use the defaults. Optional component_overrides selects assembly participation and component-specific authoring overrides.
-    Returns: JSON with success, inspection_type, actor_class, root_component, component counts, components, body_bounds, can_assemble and issues."""
+    Returns: An assembly inspection containing components, materials, weapon binding information, bounds and issues; can_assemble indicates assembly feasibility."""
     return await get_connection().send_command(
         "MCP_EditorInspectActorAssembly",
         {"ActorPath": actor_path, "OptionsJson": _json_arg(options)},
@@ -513,10 +510,10 @@ async def editor_inspect_actor_assembly(actor_path: str, options: Any = None) ->
 
 @mcp.tool()
 async def editor_inspect_vat_animation(spec: Any) -> Dict[str, Any]:
-    """Inspect VAT animation baking results.
-    MCP tool: `editor_inspect_vat_animation`. Loads the VAT data and referenced skeletal/static meshes, audits deforming skin weights, position-frame motion and lookup UVs, and compares baked animation paths with the selected soldier animation profile. This entry reports evidence without baking or editing assets.
+    """Check skin weights, frame motion, lookup UVs and animation settings.
+    Loads the VAT data and referenced skeletal/static meshes, audits deforming skin weights, position-frame motion and lookup UVs, and compares baked animation paths with the selected soldier animation profile. This entry reports evidence without baking or editing assets.
     SpecJson: JSON containing vat_data_asset (or anim_to_texture_data_asset); skeletal_mesh and static_mesh select the meshes explicitly. ground_tolerance_uu configures the ground audit tolerance in Unreal units.
-    Returns: The VAT animation audit JSON, including validity, deforming-weight and motion findings, animation evidence and mesh/UV issues. Invalid JSON or unresolved inputs return success=false and error."""
+    Returns: The VAT animation audit, including skin-weight, frame-motion, animation-resource and UV evidence together with detected issues."""
     return await get_connection().send_command(
         "MCP_EditorInspectVatAnimation",
         {"SpecJson": _json_arg(spec)},
@@ -525,10 +522,10 @@ async def editor_inspect_vat_animation(spec: Any) -> Dict[str, Any]:
 
 @mcp.tool()
 async def editor_plan_create_vat_unit_from_actor(spec: Any) -> Dict[str, Any]:
-    """Preview VAT unit generation from an Actor.
-    MCP tool: `editor_plan_create_vat_unit_from_actor`. Inspects the Actor assembly, resolves animation/sample-rate/LOD defaults, validates the required VAT fields and assembly output, then returns a canonical resolved_vat_spec. It reports collisions and assembly issues without creating generated assets.
-    SpecJson: JSON with actor_class and optional component_overrides, plus the canonical VAT unit fields. assembled_skeletal_mesh_path chooses the assembly asset explicitly; otherwise target_package_path and unit_name produce SKM_<unit_name>_Assembled, overridable by assembled_skeletal_mesh_name. overwrite_existing controls replacing an assembly output. Required VAT settings include unit_name, target_package_path, parent_material, source_renderer_class, niagara_system, positive vat_sample_rate, animations, and either target_unit or template_unit/target_unit_package_path/subtype.
-    Returns: JSON with applicable, assembled_skeletal_mesh, assembly_status, inspection, animation_resolution, vat_sample_rate_resolution, vat_lod_resolution, resolved_vat_spec and issues."""
+    """Inspect an Actor assembly plan and its resolved VAT specification.
+    Actor inspection supplies component meshes, materials and weapon bindings. Animation, sample-rate and LOD settings are resolved together with the proposed assembled mesh path to produce resolved_vat_spec.
+    SpecJson: JSON object with actor_class, optional component_overrides and the desired output folder/name. VAT settings use the fields documented by UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnit; animation, sample-rate and LOD values are resolved from the Actor and supplied settings.
+    Returns: The resolved_vat_spec, proposed assembled mesh and resolved animation, sample-rate and LOD settings; applicable and issues describe executability."""
     return await get_connection().send_command(
         "MCP_EditorPlanCreateVatUnitFromActor",
         {"SpecJson": _json_arg(spec)},
@@ -541,11 +538,11 @@ async def editor_apply_create_vat_unit_from_actor(
     save_assets: bool = True,
     compact_response: bool = True,
 ) -> Dict[str, Any]:
-    """Assemble an Actor into a VAT unit.
-    MCP tool: `editor_apply_create_vat_unit_from_actor`. Builds and validates the Actor assembly plan, creates the animation-compatible assembled SkeletalMesh, and passes the resolved canonical spec to the primary VAT generation entry. dry_run/preview_only returns the plan without creating outputs. The MCP tool defaults compact_response to true, overridable in spec.
-    SpecJson: JSON with actor_class and optional component_overrides, plus the canonical VAT unit fields. assembled_skeletal_mesh_path chooses the assembly asset explicitly; otherwise target_package_path and unit_name produce SKM_<unit_name>_Assembled, overridable by assembled_skeletal_mesh_name. overwrite_existing controls replacing an assembly output. Includes the canonical VAT inputs documented by the Actor planning entry, plus dry_run/preview_only and compact_response.
-    bSaveAssets: Whether to save the modified or newly created assets to disk. The MCP tool supplies its documented save_assets default; false leaves changes in editor memory.
-    Returns: JSON with the plan or assembly result, skeletal_mesh, resolved_vat_spec and vat_result. Inapplicable plans or failed assembly/VAT steps return their actual errors.
+    """Combine an Actor's components and weapon into an animated VAT unit.
+    The resolved Actor components and weapon are assembled into an animation-compatible skeletal mesh. That mesh and the resolved VAT specification are then passed to UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnit to build the unit resources.
+    SpecJson: JSON object with actor_class, optional component_overrides and VAT generation settings. assembled_skeletal_mesh_path selects the assembly output; otherwise target_package_path and unit_name determine it, with assembled_skeletal_mesh_name overriding the name. overwrite_existing selects replacement and dry_run/preview_only selects preview. compact_response controls response detail; its MCP wrapper default is true and an explicit JSON value takes precedence.
+    bSaveAssets: Whether to save the assets modified or created by this operation to disk.
+    Returns: The plan for a preview request, or the assembled skeletal mesh, resolved VAT specification and vat_result after execution; failures report the relevant assembly or VAT step.
     UMassBattleUnitEditorMCPApi::MCP_EditorPlanCreateVatUnitFromActor for the resolved inputs and assembly preview."""
     return await get_connection().send_command(
         "MCP_EditorApplyCreateVatUnitFromActor",
@@ -555,11 +552,11 @@ async def editor_apply_create_vat_unit_from_actor(
 
 @mcp.tool()
 async def editor_plan_organize_unit_assets(unit_path: str, options: Any = None) -> Dict[str, Any]:
-    """Preview unit asset folder organization.
-    MCP tool: `editor_plan_organize_unit_assets`. Resolves the style layout and discovers the unit and linked generated/source assets selected by the organization policy. It calculates source/destination moves and collision status without moving or saving assets.
+    """Inspect destination folders for a unit and its linked assets.
+    Resolves the style layout and discovers the unit and linked generated/source assets selected by the organization policy. It calculates source/destination moves and collision status without moving or saving assets.
     UnitPath: Unreal object path of the existing MassBattle unit config or supported Unit Source Actor Blueprint.
     OptionsJson: JSON object; pass {} to use the defaults. style_profile chooses defaults; target_root or target_package_path selects the destination. unit_name, use_family_folder, generated_folder_name/target_folder_name and managed_roots customize the existing layout policy.
-    Returns: A reviewable organization plan with moves, source/destination paths, resolved layout and per-move status, or success=false and error."""
+    Returns: A move list giving source paths, destination paths and checks for each asset, together with the resolved style layout."""
     return await get_connection().send_command(
         "MCP_EditorPlanOrganizeUnitAssets",
         {"UnitPath": unit_path, "OptionsJson": _json_arg(options)},
@@ -572,12 +569,12 @@ async def editor_apply_organize_unit_assets(
     options: Any = None,
     save_assets: bool = True,
 ) -> Dict[str, Any]:
-    """Apply a unit asset organization plan.
-    MCP tool: `editor_apply_organize_unit_assets`. Rebuilds the same organization plan and returns it by default because dry_run=true. With dry_run=false it executes the eligible AssetTools moves and reports each performed move and actual failure.
+    """Move a unit and its linked source and generated assets into a style layout.
+    Rebuilds the same organization plan and returns it by default because dry_run=true. With dry_run=false it executes the eligible AssetTools moves and reports each performed move and actual failure.
     UnitPath: Unreal object path of the existing MassBattle unit config or supported Unit Source Actor Blueprint.
     OptionsJson: JSON object; pass {} to use the defaults. Uses the same layout options as the organization planner. dry_run defaults to true; preview_only is also accepted.
-    bSaveAssets: Whether to save the modified or newly created assets to disk. The MCP tool supplies its documented save_assets default; false leaves changes in editor memory.
-    Returns: JSON with dry_run, plan, execution_steps, moved_count and moved; execution failures include success=false/error and the actual move report."""
+    bSaveAssets: Whether to save the assets modified or created by this operation to disk.
+    Returns: The move plan for a preview, or per-step results and the actual moved count after execution; failure reports retain the performed move results."""
     return await get_connection().send_command(
         "MCP_EditorApplyOrganizeUnitAssets",
         {"UnitPath": unit_path, "OptionsJson": _json_arg(options), "bSaveAssets": save_assets},
@@ -586,29 +583,28 @@ async def editor_apply_organize_unit_assets(
 
 @mcp.tool()
 async def effect_asset_get_api_status() -> Dict[str, Any]:
-    """List available effect asset tools.
-    MCP tool: `effect_asset_get_api_status`. Lists the asset discovery, typed inspection, deterministic text export, additive duplication and renderer-default primitives used to assemble a MassBattle FX authoring workflow.
-    
-    Returns: JSON with success, api_name, version, model and tools including native parameters."""
+    """Discover effect asset operations available in the connected editor.
+    Lists the asset discovery, typed inspection, deterministic text export, additive duplication and renderer-default primitives used to assemble a MassBattle FX authoring workflow.
+    Returns: The effect asset API version and operating model together with supported tools and native parameter definitions."""
     return await get_connection().send_command("MCP_EffectAssetGetApiStatus")
 
 
 @mcp.tool()
 async def effect_asset_query(query: Any) -> Dict[str, Any]:
-    """Find effect assets.
-    MCP tool: `effect_asset_query`. Queries supported visual-effect asset classes by path/name text and root. Class filters and recursive_classes control which related asset types are returned for subsequent inspection.
+    """Locate supported effect assets by folder, name and class.
+    Queries supported visual-effect asset classes by path/name text and root. Class filters and recursive_classes control which related asset types are returned for subsequent inspection.
     QueryJson: JSON object with query text, path/root, limit and optional classes array and recursive_classes. Use Unreal class paths for explicit class filters.
-    Returns: JSON with success, query, root, count and matching assets. Invalid JSON returns success=false and error."""
+    Returns: Matching effect assets and their count, with the effective search root and query."""
     return await get_connection().send_command("MCP_EffectAssetQuery", {"QueryJson": _json_arg(query)})
 
 
 @mcp.tool()
 async def effect_asset_read_summary(asset_path: str, options: Any = None) -> Dict[str, Any]:
-    """Read an effect asset summary.
-    MCP tool: `effect_asset_read_summary`. Loads the requested visual-effect asset and selects the typed summary appropriate to its actual class. The result supplies asset identity and the class-specific data needed before duplication or conversion.
+    """Inspect system, material or Blueprint data for the asset's actual type.
+    Loads the requested visual-effect asset and selects the typed summary appropriate to its actual class. The result supplies asset identity and the class-specific data needed before duplication or conversion.
     AssetPath: Unreal object path of the supported effect-related asset.
     OptionsJson: JSON object; pass {} to use the defaults. Selects the inspection detail supported by the asset summary implementation.
-    Returns: The typed summary JSON for the loaded asset, or success=false/error for invalid options, unresolved paths or unsupported inspection input."""
+    Returns: Inspection data selected for the asset's actual type, including its identity and relevant system, material or Blueprint data."""
     return await get_connection().send_command(
         "MCP_EffectAssetReadSummary",
         {"AssetPath": asset_path, "OptionsJson": _json_arg(options)},
@@ -617,11 +613,11 @@ async def effect_asset_read_summary(asset_path: str, options: Any = None) -> Dic
 
 @mcp.tool()
 async def effect_asset_export_text(asset_path: str, options: Any = None) -> Dict[str, Any]:
-    """Export an effect asset as text.
-    MCP tool: `effect_asset_export_text`. Loads the asset, includes reflected property/dependency information in its typed summary and produces a deterministic text representation for detailed comparison. write_file controls writing the text artifact in addition to returning it.
+    """Export asset properties and dependencies for comparison.
+    Loads the asset, includes reflected property/dependency information in its typed summary and produces a deterministic text representation for detailed comparison. write_file controls writing the text artifact in addition to returning it.
     AssetPath: Unreal object path of the effect-related asset to export.
     OptionsJson: JSON object; pass {} to use the defaults. write_file selects whether to write the exported text to disk.
-    Returns: JSON containing the asset summary and text, with text_path when written. Invalid JSON or a failed load/export returns success=false and error."""
+    Returns: The inspected asset summary and comparable text; text_path is included when a file is written."""
     return await get_connection().send_command(
         "MCP_EffectAssetExportText",
         {"AssetPath": asset_path, "OptionsJson": _json_arg(options)},
@@ -630,11 +626,11 @@ async def effect_asset_export_text(asset_path: str, options: Any = None) -> Dict
 
 @mcp.tool()
 async def effect_asset_soft_delete(asset_path: str, options: Any = None) -> Dict[str, Any]:
-    """Move an asset to the trash folder.
-    MCP tool: `effect_asset_soft_delete`. Builds a trash-move report, checks hard/soft referencers and blocks a referenced asset unless the explicit corresponding override is supplied. The default dry run returns the proposed destination; an executable request uses AssetTools to move the asset and reports the outcome.
+    """Check asset references before moving it to the trash folder.
+    Builds a trash-move report, checks hard/soft referencers and blocks a referenced asset unless the explicit corresponding override is supplied. The default dry run returns the proposed destination; an executable request uses AssetTools to move the asset and reports the outcome.
     AssetPath: Unreal object path of the existing effect-related asset.
     OptionsJson: JSON object; pass {} to use the defaults. dry_run defaults to true; preview_only also requests a preview. trash_package_path/trash_root select the destination. allow_referenced and allow_unsafe_asset_move/force explicitly opt into the supported exceptional moves.
-    Returns: JSON with dry_run, source_path, applicable, blocked_reason and trash_path; execution adds moved and any success/error result."""
+    Returns: A trash-move report: applicable and blocked_reason explain executability, trash_path is the proposed destination, and moved records execution when requested."""
     return await get_connection().send_command(
         "MCP_EffectAssetSoftDelete",
         {"AssetPath": asset_path, "OptionsJson": _json_arg(options)},
@@ -643,13 +639,13 @@ async def effect_asset_soft_delete(asset_path: str, options: Any = None) -> Dict
 
 @mcp.tool()
 async def effect_duplicate_asset(source_asset_path: str, new_asset_name: str, package_path: str, save_assets: bool = True) -> Dict[str, Any]:
-    """Duplicate an effect asset.
-    MCP tool: `effect_duplicate_asset`. Uses AssetTools to duplicate the source asset into the requested package and name. The duplicate preserves the source-owned visual data. When left unsaved, it is tracked by this editor session so the matching discard tool can roll it back.
+    """Preserve the source effect by creating a copy for conversion.
+    Uses AssetTools to duplicate the source asset into the requested package and name. The duplicate preserves the source-owned visual data. When left unsaved, it is tracked by this editor session so the matching discard tool can roll it back.
     SourceAssetPath: Unreal object path of the existing source effect asset.
     NewAssetName: Name of the new duplicate asset.
     PackagePath: Destination Unreal package folder, such as /Game/Effects.
-    bSaveAssets: Whether to save the modified or newly created assets to disk. The MCP tool supplies its documented save_assets default; false leaves changes in editor memory.
-    Returns: JSON with success, asset_path, package and saved, or success=false and error if loading, duplication or saving fails."""
+    bSaveAssets: Whether to save the assets modified or created by this operation to disk.
+    Returns: The duplicate's object path and package, with saved indicating whether it has been persisted."""
     return await get_connection().send_command(
         "MCP_EffectDuplicateAsset",
         {
@@ -663,10 +659,10 @@ async def effect_duplicate_asset(source_asset_path: str, new_asset_name: str, pa
 
 @mcp.tool()
 async def batch_fx_read_renderer_defaults(target_class_path: str) -> Dict[str, Any]:
-    """Read batch effect renderer defaults.
-    MCP tool: `batch_fx_read_renderer_defaults`. Reads the class-default object of the selected MassBattle FX renderer class. These defaults are the authoring settings inherited by newly placed renderer actors.
+    """Inspect effect settings inherited by newly placed renderers.
+    Reads the class-default object of the selected MassBattle FX renderer class. These defaults are the authoring settings inherited by newly placed renderer actors.
     TargetClassPath: Unreal Blueprint/class path resolving to AMassBattleFxRenderer or a derived class.
-    Returns: JSON with success and defaults, or success=false/error if the class or default object cannot be resolved."""
+    Returns: The class defaults in defaults, including its Blueprint/default object, effect system, Burst channel, subtype, batch size and cooldown; unassigned asset references are empty strings."""
     return await get_connection().send_command(
         "MCP_BatchFxReadRendererDefaults",
         {"TargetClassPath": target_class_path},
@@ -683,16 +679,16 @@ async def batch_fx_set_renderer_defaults(
     pooling_cooldown: float = 3.0,
     save_assets: bool = True,
 ) -> Dict[str, Any]:
-    """Configure batch effect renderer defaults.
-    MCP tool: `batch_fx_set_renderer_defaults`. Updates the renderer class-default object, recompiles its Blueprint when applicable, marks the package dirty and optionally saves it. Empty system/channel paths keep the existing reference; numeric sentinel values keep the corresponding existing setting.
+    """Set shared effect systems, channels and batch settings for newly placed renderers.
+    Updates the renderer class-default object, recompiles its Blueprint when applicable, marks the package dirty and optionally saves it. Empty system/channel paths keep the existing reference; numeric sentinel values keep the corresponding existing setting.
     TargetClassPath: MassBattle FX renderer Blueprint/class path whose defaults will be edited.
     NiagaraSystemPath: NiagaraSystem object path; an empty string keeps the existing system.
     NdcBurstFxPath: NiagaraDataChannelAsset object path; an empty string keeps the current Burst channel.
     SubType: FX subtype index. A negative value keeps the existing index.
     RenderBatchSize: Positive batch size, or a non-positive value to keep it. The MCP tool default is 2048.
     PoolingCooldown: Pooling cooldown in seconds; a negative value keeps it. The MCP tool default is 3.0.
-    bSaveAssets: Whether to save the modified or newly created assets to disk. The MCP tool supplies its documented save_assets default; false leaves changes in editor memory.
-    Returns: JSON with success, class_path, niagara_system, ndc_burst_fx, subtype, render_batch_size, pooling_cooldown and saved. Invalid asset references or save errors return success=false/error."""
+    bSaveAssets: Whether to save the assets modified or created by this operation to disk.
+    Returns: The effective renderer class and effect settings after the update, including system, channel, subtype, batch size and cooldown; saved identifies persistence."""
     return await get_connection().send_command(
         "MCP_BatchFxSetRendererDefaults",
         {
@@ -709,29 +705,28 @@ async def batch_fx_set_renderer_defaults(
 
 @mcp.tool()
 async def niagara_get_api_status() -> Dict[str, Any]:
-    """List available Niagara tools.
-    MCP tool: `niagara_get_api_status`. Returns native Niagara tool capabilities and parameter names for querying, inspecting, comparing and editing existing systems. The entries are graph/property primitives used to construct an explicit authoring workflow.
-    
-    Returns: JSON with success, api_name, version, model and tools."""
+    """Discover Niagara query and editing operations in the connected editor.
+    Returns native Niagara tool capabilities and parameter names for querying, inspecting, comparing and editing existing systems. The entries are graph/property primitives used to construct an explicit authoring workflow.
+    Returns: The Niagara API version and operating model, together with supported inspection and graph-editing tools."""
     return await get_connection().send_command("MCP_NiagaraGetApiStatus")
 
 
 @mcp.tool()
 async def niagara_query(query: Any) -> Dict[str, Any]:
-    """Find Niagara systems.
-    MCP tool: `niagara_query`. Scans NiagaraSystem assets under the requested root, filters by path/name text and sorts candidates by object path. matched counts all query matches and returned records the bounded result count.
+    """Locate Niagara systems by name or folder.
+    Scans NiagaraSystem assets under the requested root, filters by path/name text and sorts candidates by object path. matched counts all query matches and returned records the bounded result count.
     QueryJson: JSON object with query text, path/root and limit.
-    Returns: JSON with success, matched, returned and systems containing name, object_path and package_path. Invalid JSON returns success=false/error."""
+    Returns: The matching systems' names and paths; matched is the total match count and returned is the count after applying the result limit."""
     return await get_connection().send_command("MCP_NiagaraQuery", {"QueryJson": _json_arg(query)})
 
 
 @mcp.tool()
 async def niagara_read_summary(system_path: str, options: Any = None) -> Dict[str, Any]:
-    """Read a Niagara system summary.
-    MCP tool: `niagara_read_summary`. Loads the Niagara system and summarizes emitters, renderers, user parameters and compile/authoring information. include_modules controls whether function-call module summaries are included.
+    """Inspect the system's emitters, renderers and user parameters.
+    Loads the Niagara system and summarizes emitters, renderers, user parameters and compile/authoring information. include_modules controls whether function-call module summaries are included.
     SystemPath: Unreal object path of the NiagaraSystem asset.
     OptionsJson: JSON object; pass {} to use the defaults. include_modules selects function-call module summaries.
-    Returns: The system summary JSON, or success=false/error for an invalid options object or system path."""
+    Returns: An emitter, renderer, user-parameter and compile summary, with module summaries included when include_modules is enabled."""
     return await get_connection().send_command(
         "MCP_NiagaraReadSummary",
         {"SystemPath": system_path, "OptionsJson": _json_arg(options)},
@@ -740,11 +735,11 @@ async def niagara_read_summary(system_path: str, options: Any = None) -> Dict[st
 
 @mcp.tool()
 async def niagara_read_module(system_path: str, selector: Any) -> Dict[str, Any]:
-    """Read a Niagara module and its pins.
-    MCP tool: `niagara_read_module`. Collects the system function-call module nodes and returns the first record matching the provided emitter/module/GUID/index filters. The module record includes its pins for a precise later pin edit.
+    """Identify a module and its pins before editing them.
+    Collects the system function-call module nodes and returns the first record matching the provided emitter/module/GUID/index filters. The module record includes its pins for a precise later pin edit.
     SystemPath: Unreal object path of the NiagaraSystem asset.
     SelectorJson: JSON object with optional emitter, module/function_name, node_guid and module_index/index. Use a GUID or collected module index to identify a specific matching node.
-    Returns: JSON with success and module. Invalid JSON, an unresolved system or no matching module returns success=false/error."""
+    Returns: The selected module and its pins for subsequent inspection or editing; a selector with no matching node produces an error."""
     return await get_connection().send_command(
         "MCP_NiagaraReadModule",
         {"SystemPath": system_path, "SelectorJson": _json_arg(selector)},
@@ -753,10 +748,10 @@ async def niagara_read_module(system_path: str, selector: Any) -> Dict[str, Any]
 
 @mcp.tool()
 async def effect_discard_unsaved_duplicate(asset_path: str) -> Dict[str, Any]:
-    """Discard an unsaved effect duplicate.
-    MCP tool: `effect_discard_unsaved_duplicate`. Discards a duplicate only when this MCP editor session tracked it as unsaved, it is still loaded in a dirty /Game/ package, and it has not crossed the persisted-asset boundary. This supports rolling back a failed conversion before saving.
+    """Roll back effect copies left unsaved in this editor session.
+    Discards a duplicate only when this MCP editor session tracked it as unsaved, it is still loaded in a dirty /Game/ package, and it has not crossed the persisted-asset boundary. This supports rolling back a failed conversion before saving.
     AssetPath: Exact object path returned by the duplicate tool for an unsaved duplicate in this editor session.
-    Returns: JSON with success, discarded, asset_path, package and deleted_count; an untracked, unloaded or non-dirty duplicate returns success=false/error.
+    Returns: The discarded asset and package, with discarded indicating removal and deleted_count reporting the number removed.
     Before calling: Create the unsaved duplicate with UMassBattleEffectAssetMCPApi::MCP_EffectDuplicateAsset using bSaveAssets=false."""
     return await get_connection().send_command(
         "MCP_EffectDiscardUnsavedDuplicate",
@@ -766,11 +761,11 @@ async def effect_discard_unsaved_duplicate(asset_path: str) -> Dict[str, Any]:
 
 @mcp.tool()
 async def niagara_read_graph(system_path: str, selector: Any = None) -> Dict[str, Any]:
-    """Read Niagara script graphs and connections.
-    MCP tool: `niagara_read_graph`. Reads system or standalone NiagaraScript graphs and returns stable node/pin identifiers and explicit links. Optional stack-input topology and compile-state reports provide the identities and diagnostics used by the graph-edit tool.
+    """Obtain node, pin and link IDs for precise graph edits.
+    Reads system or standalone NiagaraScript graphs and returns stable node/pin identifiers and explicit links. Optional stack-input topology and compile-state reports provide the identities and diagnostics used by the graph-edit tool.
     SystemPath: Unreal object path of a NiagaraSystem or supported NiagaraScript asset.
     SelectorJson: JSON object; pass {} to use the defaults. include_nodes, include_pins, include_stack_inputs and include_compile_state select returned detail; max_nodes bounds exported graph nodes. Graph selection fields choose the relevant script/emitter scope.
-    Returns: JSON containing graph_count, graphs and the resolved system/script identity, plus requested compile_state and stack-input availability. Invalid selectors or unresolved assets return success=false/error."""
+    Returns: Script graphs in the selected scope; node, pin, connection, stack-input and compile details are included according to the selectors."""
     return await get_connection().send_command(
         "MCP_NiagaraReadGraph",
         {"SystemPath": system_path, "SelectorJson": _json_arg(selector)},
@@ -783,12 +778,12 @@ async def niagara_compare_systems(
     target_system_path: str,
     options: Any = None,
 ) -> Dict[str, Any]:
-    """Compare two Niagara systems.
-    MCP tool: `niagara_compare_systems`. Loads two different systems and compares source-neutral semantic fingerprints. exact mode checks a duplicate; translation mode applies the configured preservation rules for an intended conversion. Compile readiness/error/warning options control the corresponding result checks.
+    """Check whether a copy or conversion preserves the source system's structure.
+    Loads two different systems and compares source-neutral semantic fingerprints. exact mode checks a duplicate; translation mode applies the configured preservation rules for an intended conversion. Compile readiness/error/warning options control the corresponding result checks.
     SourceSystemPath: Unreal object path of the reference NiagaraSystem.
     TargetSystemPath: Unreal object path of a different NiagaraSystem to compare against the source.
     OptionsJson: JSON object; pass {} to use the defaults. mode must be exact or translation. require_ready_to_run, require_no_compile_errors and require_no_warnings select compile-state requirements.
-    Returns: The comparison JSON with preservation checks, source/target emitter and renderer counts, unexpected_removed_edges and readiness. Invalid input or identical source/target assets return success=false/error."""
+    Returns: Source-preservation findings, source/target emitter and renderer counts, unexpected removed links and compile readiness."""
     return await get_connection().send_command(
         "MCP_NiagaraCompareSystems",
         {
@@ -801,11 +796,11 @@ async def niagara_compare_systems(
 
 @mcp.tool()
 async def niagara_read_all(system_path: str, options: Any = None) -> Dict[str, Any]:
-    """Read Niagara properties, modules, and pins.
-    MCP tool: `niagara_read_all`. Combines the system summary with reflected system/emitter-data properties and every function-call module and pin. This provides the current source-aligned values before forming a property or pin edit.
+    """Inspect system and emitter properties together with module pin values.
+    Combines the system summary with reflected system/emitter-data properties and every function-call module and pin. This provides the current source-aligned values before forming a property or pin edit.
     SystemPath: Unreal object path of the NiagaraSystem asset.
     OptionsJson: JSON object; pass {} to use the defaults. max_properties bounds reflected properties exported for each inspected object.
-    Returns: JSON summary plus system_properties, modules_detailed and emitter_data_properties, or success=false/error for invalid input."""
+    Returns: The system summary, reflected system/emitter properties and detailed function-call modules and pins."""
     return await get_connection().send_command(
         "MCP_NiagaraReadAll",
         {"SystemPath": system_path, "OptionsJson": _json_arg(options)},
@@ -814,11 +809,11 @@ async def niagara_read_all(system_path: str, options: Any = None) -> Dict[str, A
 
 @mcp.tool()
 async def niagara_export_text(system_path: str, options: Any = None) -> Dict[str, Any]:
-    """Export a Niagara system as text.
-    MCP tool: `niagara_export_text`. Builds a deterministic text representation of the system summary and detailed modules for close reading and comparison. write_file selects whether the returned text is also written to disk.
+    """Produce comparable text describing Niagara system structure.
+    Builds a deterministic text representation of the system summary and detailed modules for close reading and comparison. write_file selects whether the returned text is also written to disk.
     SystemPath: Unreal object path of the existing NiagaraSystem.
     OptionsJson: JSON object; pass {} for defaults. write_file selects file output.
-    Returns: JSON with the summary, modules_detailed and text, plus text_path when written. Unresolved systems return success=false/error."""
+    Returns: The system summary, detailed modules and corresponding structure text, with text_path when saved to a file."""
     return await get_connection().send_command(
         "MCP_NiagaraExportText",
         {"SystemPath": system_path, "OptionsJson": _json_arg(options)},
@@ -827,12 +822,12 @@ async def niagara_export_text(system_path: str, options: Any = None) -> Dict[str
 
 @mcp.tool()
 async def niagara_merge_write(system_path: str, patch: Any, save_assets: bool = False) -> Dict[str, Any]:
-    """Update selected Niagara properties.
-    MCP tool: `niagara_merge_write`. Resolves explicit system, emitter-data or renderer targets and union-merges requested reflected property values. Omitted properties are retained. Each result records target resolution and before/after values; saving is optional.
+    """Patch system, emitter or renderer properties while retaining other values.
+    Resolves explicit system, emitter-data or renderer targets and union-merges requested reflected property values. Omitted properties are retained. Each result records target resolution and before/after values; saving is optional.
     SystemPath: Unreal object path of the existing NiagaraSystem.
     PatchJson: JSON containing patches, or one patch object. Each patch selects a target, property/path and value_text or value. Use real reflected property names from read_all.
-    bSaveAssets: Whether to save the modified system. The MCP tool default is save_assets=false.
-    Returns: JSON with success, system, saved and per-patch results including target_resolved, before and after. Invalid targets/properties/values or save failures report actual errors."""
+    bSaveAssets: Whether to save the assets modified or created by this operation to disk.
+    Returns: Per-patch results identifying resolved targets, before/after values and saved state, with errors on failed patches."""
     return await get_connection().send_command(
         "MCP_NiagaraMergeWrite",
         {"SystemPath": system_path, "PatchJson": _json_arg(patch), "bSaveAssets": save_assets},
@@ -847,14 +842,14 @@ async def niagara_set_module_pin(
     value_text: str,
     save_assets: bool = True,
 ) -> Dict[str, Any]:
-    """Set a Niagara module input default.
-    MCP tool: `niagara_set_module_pin`. Resolves one function-call module and named pin, then writes its default value. Linked pins require allow_linked=true because the default may be ignored; non-input pins require allow_output=true. The report identifies the selected node and old/new text.
+    """Use a node or module selector to adjust an input pin's default.
+    Resolves one function-call module and named pin, then writes its default value. Linked pins require allow_linked=true because the default may be ignored; non-input pins require allow_output=true. The report identifies the selected node and old/new text.
     SystemPath: Unreal object path of the existing NiagaraSystem.
     SelectorJson: JSON using emitter, module/function_name, node_guid or module_index; allow_linked and allow_output opt into the corresponding writes.
     PinName: Exact pin name returned by module inspection.
     ValueText: Default value in the selected pin type text/import syntax.
-    bSaveAssets: Whether to save the modified system. The MCP tool default is save_assets=true.
-    Returns: JSON with system, module_index, emitter, module, pin, linked_to_count, before, after and saved. Unresolved or ambiguous targets and refused pins return success=false/error."""
+    bSaveAssets: Whether to save the assets modified or created by this operation to disk.
+    Returns: The selected emitter, module and pin, its before/after defaults, existing connection count and saved state."""
     return await get_connection().send_command(
         "MCP_NiagaraSetModulePin",
         {
@@ -873,12 +868,12 @@ async def niagara_apply_graph_edit(
     edit: Any,
     save_assets: bool = False,
 ) -> Dict[str, Any]:
-    """Edit Niagara graphs.
-    MCP tool: `niagara_apply_graph_edit`. Validates ordered operation records and ids, executes explicit graph/stack edits, compiles once and checks source preservation before saving. Operations include emitter copying, user values/data interfaces, module/assignment insertion, pin connection/disconnection/rewiring and stack-input edits. Empty operations requests compile/validation only.
+    """Batch-edit graph connections and stacks, then check conversion results.
+    Validates ordered operation records and ids, executes explicit graph/stack edits, compiles once and checks source preservation before saving. Operations include emitter copying, user values/data interfaces, module/assignment insertion, pin connection/disconnection/rewiring and stack-input edits. Empty operations requests compile/validation only.
     SystemPath: Unreal object path of the existing NiagaraSystem.
     EditJson: JSON with an operations array (alias edits). Each object supplies op/type, optional unique id and the fields required for its operation and source-preservation policy.
-    bSaveAssets: Whether to save the modified system. The MCP tool default is save_assets=false.
-    Returns: The ordered operation, compile and preservation-validation report with actual edit results and saved state. Malformed operations, failed edits or failed validation report their errors."""
+    bSaveAssets: Whether to save the assets modified or created by this operation to disk.
+    Returns: Ordered edit outcomes, compile diagnostics, source-preservation findings and saved state; failures report the operation or validation error."""
     return await get_connection().send_command(
         "MCP_NiagaraApplyGraphEdit",
         {"SystemPath": system_path, "EditJson": _json_arg(edit), "bSaveAssets": save_assets},
@@ -1135,13 +1130,13 @@ async def niagara_batch_translate(
 
 @mcp.tool()
 async def niagara_set_emitter_enabled(system_path: str, emitter_name: str, enabled: bool, save_assets: bool = True) -> Dict[str, Any]:
-    """Enable or disable a Niagara emitter.
-    MCP tool: `niagara_set_emitter_enabled`. Finds the named emitter handle, sets its enabled state explicitly, records whether it changed and optionally saves the system.
+    """Switch an emitter's participation and report the actual state change.
+    Finds the named emitter handle, sets its enabled state explicitly, records whether it changed and optionally saves the system.
     SystemPath: Unreal object path of the existing NiagaraSystem.
     EmitterName: Name of the existing emitter handle.
     bEnabled: Desired enabled state of the emitter.
-    bSaveAssets: Whether to save the modified system. The MCP tool default is save_assets=true.
-    Returns: JSON with success, system, emitter, before, after, changed and saved. Unresolved emitters or save failures return success=false/error."""
+    bSaveAssets: Whether to save the assets modified or created by this operation to disk.
+    Returns: The emitter's before/after enabled state; changed identifies an actual state change and saved identifies persistence."""
     return await get_connection().send_command(
         "MCP_NiagaraSetEmitterEnabled",
         {
@@ -1155,12 +1150,12 @@ async def niagara_set_emitter_enabled(system_path: str, emitter_name: str, enabl
 
 @mcp.tool()
 async def niagara_delete(system_path: str, delete_spec: Any, save_assets: bool = False) -> Dict[str, Any]:
-    """Remove selected Niagara elements.
-    MCP tool: `niagara_delete`. Executes explicit renderer removal, user-parameter removal or emitter disabling on the selected system. Each action identifies its target and reports the actual removed/changed result.
+    """Remove renderers or user parameters, or disable an emitter.
+    Executes explicit renderer removal, user-parameter removal or emitter disabling on the selected system. Each action identifies its target and reports the actual removed/changed result.
     SystemPath: Unreal object path of the existing NiagaraSystem.
     DeleteJson: JSON selecting type=renderer, user_parameter or disable_emitter. Renderer removal selects emitter and renderer_index/index; user_parameter removal requires name; disabling names an emitter.
-    bSaveAssets: Whether to save the modified system. The MCP tool default is save_assets=false.
-    Returns: JSON with success, system, operation, target identifiers, removed/changed and saved, or success=false/error for invalid operations or targets."""
+    bSaveAssets: Whether to save the assets modified or created by this operation to disk.
+    Returns: The processed target and its removal or disable result, including actual removed/changed state and persistence."""
     return await get_connection().send_command(
         "MCP_NiagaraDelete",
         {"SystemPath": system_path, "DeleteJson": _json_arg(delete_spec), "bSaveAssets": save_assets},
@@ -1174,13 +1169,13 @@ async def niagara_add_sprite_renderer(
     renderer: Any,
     save_assets: bool = False,
 ) -> Dict[str, Any]:
-    """Add a Niagara sprite renderer.
-    MCP tool: `niagara_add_sprite_renderer`. Allocates and configures a sprite renderer on an existing emitter, including its material, user-parameter bindings, sort order and visibility. It adds the renderer without rewriting the emitter graph, then finishes compilation and optional saving.
+    """Add a sprite renderer with material and visibility bindings to an existing emitter.
+    Allocates and configures a sprite renderer on an existing emitter, including its material, user-parameter bindings, sort order and visibility. It adds the renderer without rewriting the emitter graph, then finishes compilation and optional saving.
     SystemPath: Unreal object path of the existing NiagaraSystem.
     EmitterName: Name of the existing emitter receiving the new renderer.
     RendererJson: JSON with material and optional material_user_parameter, enabled_user_parameter, sort_order and renderer_visibility.
-    bSaveAssets: Whether to save the modified system. The MCP tool default is save_assets=false.
-    Returns: The renderer-add/compile report with the created renderer and saved state. Invalid JSON, unresolved emitters/materials or allocation failures return success=false/error."""
+    bSaveAssets: Whether to save the assets modified or created by this operation to disk.
+    Returns: The new renderer's add/compile report and persistence result; failures identify target, material or creation problems."""
     return await get_connection().send_command(
         "MCP_NiagaraAddSpriteRenderer",
         {

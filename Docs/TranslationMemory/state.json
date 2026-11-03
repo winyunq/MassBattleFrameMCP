@@ -16,11 +16,11 @@
     },
     {
       "file": "Source/MassBattleEditorMCP/Public/BatchEffects/MassBattleEffectAssetMCPApi.h",
-      "sha256": "d3b4137f5ae6157d74ff4cb6fe47c7b8dd9458c17f83b67e01005768a171ff7d"
+      "sha256": "4a026fb8d3c2b552d2bb2c41b7a552a41a1e91a727cc3261d1d18c086a78ebf1"
     },
     {
       "file": "Source/MassBattleEditorMCP/Public/BatchEffects/MassBattleNiagaraMCPApi.h",
-      "sha256": "f8950a923da94d46e72f780fe8136bd478848f13e26b3181bd89de15a092bee0"
+      "sha256": "f99de60d480eccfc2eba26d90a210d94466dff018e9dd3a804315a04343a5fd5"
     },
     {
       "file": "Source/MassBattleEditorMCP/Public/MassBattleEditorMCP.h",
@@ -48,15 +48,15 @@
     },
     {
       "file": "Source/MassBattleEditorMCP/Public/MassBattleProjectileMCPApi.h",
-      "sha256": "1f23e3d8b2b8ba25d17b9ac1d703cee0dda579e53e9e6f4102268866e5ca2223"
+      "sha256": "ab61b2ca3af2973726c8a914557caf51d71772e822f5469f31d9b462521467dc"
     },
     {
       "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
-      "sha256": "857af5c326b9cd8dbbc8c84df804321f82a1874c8e9dc40f0b7bb4d7600c24d3"
+      "sha256": "0d9f7a689a19bee968b0120561cceab1feba6f42f61837fcdf1bb87348687d57"
     },
     {
       "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
-      "sha256": "75fb1189bd81d773f268ac029ecdfad5531a8083fb9ba349c9397d4d57ebbe49"
+      "sha256": "7cfb9978a56e3fae52c4bbed10ee975fec933a76f30f5f76d384abab09d36bd8"
     },
     {
       "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitSource.h",

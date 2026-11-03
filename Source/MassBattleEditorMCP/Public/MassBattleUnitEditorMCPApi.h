@@ -11,7 +11,7 @@ DECLARE_LOG_CATEGORY_EXTERN(LogMassBattleUnitEditorMCPApi, Log, All);
 class UMassBattleATTDataAsset;
 
 /**
- * @brief Generate VAT units and organize their assets.
+ * @brief Build VAT units from skeletal meshes or Actors and organize the resulting assets.
  * @details The original MassBattleEditor module exposes Blueprint-callable editor tools
  * for converting purchased assets into MassBattle-ready data. This API composes
  * those tools into reviewable MCP editor operations.
@@ -49,21 +49,21 @@ public:
 
 	/**
 	 * @ProductDocument
-	 * @brief List unit styles and recipes.
-	 * @details MCP tool: `editor_list_profiles`. Reads the installed unit style profiles and authoring recipes so a caller can choose an existing profile id before constructing a VAT or organization spec.
+	 * @brief Choose styles and recipes for VAT unit authoring.
+	 * @details Reads the installed unit style profiles and authoring recipes so a caller can choose an existing profile id before constructing a VAT or organization spec.
 	 * @param[in] OptionsJson JSON object; pass {} to use the defaults. This entry parses the options object before enumerating installed profiles.
-	 * @return JSON with success and profiles. Malformed options returns success=false and error.
+	 * @return Available style and recipe profiles used to select profile IDs for authoring requests.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "MassBattleEditorMCP|UnitEditor")
 	static FString MCP_EditorListProfiles(const FString& OptionsJson);
 
 	/**
 	 * @ProductDocument
-	 * @brief Read a unit style or recipe.
-	 * @details MCP tool: `editor_get_profile`. Resolves a style or recipe profile by its type and id, reads its JSON file and returns both the file identity and complete profile contents.
+	 * @brief Inspect the complete JSON settings of a style or recipe.
+	 * @details Resolves a style or recipe profile by its type and id, reads its JSON file and returns both the file identity and complete profile contents.
 	 * @param[in] ProfileType Profile kind: style or recipe.
 	 * @param[in] ProfileId Existing profile id returned by the profile-list tool.
-	 * @return JSON with success, file and profile. A missing profile or invalid profile JSON returns success=false and error.
+	 * @return The selected profile's complete JSON settings and source file path; an unavailable or malformed profile produces an error.
 	 * @see @ref UMassBattleUnitEditorMCPApi::MCP_EditorListProfiles to discover ids.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "MassBattleEditorMCP|UnitEditor")
@@ -103,10 +103,10 @@ public:
 
 	/**
 	 * @ProductDocument
-	 * @brief Preview VAT unit generation.
-	 * @details MCP tool: `editor_plan_create_vat_unit`. Resolves source mesh, recipe/style settings, animation and texture discovery, and generated-asset layout without writing generated assets. This is a diagnostic preview; its discovery aliases or inferred values do not replace the complete canonical fields required by strict apply.
-	 * @param[in] SpecJson JSON describing the source skeletal_mesh and unit_name, discovery paths, optional recipe_id/style_profile and intended generated asset layout. Use canonical fields skeletal_mesh, unit_name, target_package_path, parent_material, source_renderer_class, niagara_system, vat_sample_rate and a nonempty animations category-to-AnimSequence mapping. Supply target_unit to update a unit, or template_unit, target_unit_package_path and subtype to create one. Strict execution rejects legacy aliases and missing-asset/static fallback switches.
-	 * @return The planning JSON with resolved_layout, discovery, applicability, warnings and proposed steps, or success=false and error for invalid input/profile resolution.
+	 * @brief Inspect source assets and output layout before VAT generation.
+	 * @details Output paths are derived from the source mesh, unit name and target layout. Recipe defaults, generated mesh/animation/LOD references and the explicit unit_patch are merged in that order to form the proposed unit configuration.
+	 * @param[in] SpecJson JSON object describing the source skeletal_mesh and unit_name, target_package_path and optional recipe_id/style_profile, animation discovery paths and unit_patch. target_unit selects an existing unit; template_unit and target_unit_package_path describe a new unit.
+	 * @return The resolved output layout, discovered inputs and proposed generation steps, with applicability and warnings describing unresolved problems.
 	 * @see @ref UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnit for the primary generation entry.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "MassBattleEditorMCP|UnitEditor")
@@ -114,21 +114,21 @@ public:
 
 	/**
 	 * @ProductDocument
-	 * @brief Validate VAT unit generation inputs.
-	 * @details MCP tool: `editor_validate_create_vat_unit`. Checks the strict canonical VAT contract, resolves referenced assets and generates a diagnostic execution preview. It reports field-level issues and does not create, bake or save assets.
-	 * @param[in] SpecJson Complete canonical VAT generation JSON. Use canonical fields skeletal_mesh, unit_name, target_package_path, parent_material, source_renderer_class, niagara_system, vat_sample_rate and a nonempty animations category-to-AnimSequence mapping. Supply target_unit to update a unit, or template_unit, target_unit_package_path and subtype to create one. Strict execution rejects legacy aliases and missing-asset/static fallback switches.
-	 * @return JSON with success, validation_type=create_vat_unit, valid, issues and execution_preview. Check valid before interpreting the workflow as executable.
+	 * @brief Check required VAT fields and referenced assets.
+	 * @details Resolves the skeletal mesh, parent material, renderer and Niagara asset references, checks the animation category mapping and VAT settings, and combines the findings with the planned execution steps.
+	 * @param[in] SpecJson VAT generation specification using the fields documented by @ref UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnit. Mesh, animation, material, renderer, output and subtype settings are checked without generating assets.
+	 * @return The validation conclusion in valid, field problems in issues and proposed workflow in execution_preview.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "MassBattleEditorMCP|UnitEditor")
 	static FString MCP_EditorValidateCreateVatUnit(const FString& SpecJson);
 
 	/**
 	 * @ProductDocument
-	 * @brief Generate a VAT unit from a specification.
-	 * @details MCP tool: `editor_apply_create_vat_unit`. Validates complete canonical inputs before running the MassBattleTools DoAll-equivalent skeletal-mesh VAT workflow. It creates or updates the required VAT data, materials, renderer and unit through MassBattleEditor. dry_run/preview_only requests validation and execution preview instead of asset writes. The MCP tool defaults compact_response to true; an explicit value in spec overrides that default.
-	 * @param[in] SpecJson Complete canonical VAT generation JSON. Use canonical fields skeletal_mesh, unit_name, target_package_path, parent_material, source_renderer_class, niagara_system, vat_sample_rate and a nonempty animations category-to-AnimSequence mapping. Supply target_unit to update a unit, or template_unit, target_unit_package_path and subtype to create one. Strict execution rejects legacy aliases and missing-asset/static fallback switches. Optional dry_run/preview_only controls preview, overwrite_existing controls existing generated outputs, and compact_response selects compact results.
-	 * @param[in] bSaveAssets Whether to save the modified or newly created assets to disk. The MCP tool supplies its documented save_assets default; false leaves changes in editor memory.
-	 * @return JSON with success, dry_run, save_assets and execution_steps or a compact apply summary. Validation failures include valid=false, issues and execution_preview; step failures return their actual result.
+	 * @brief Create a unit that plays baked skeletal animation through a static mesh.
+	 * @details The skeletal mesh is converted into a static mesh with LODs and instances of the parent material. For each LOD, bone or vertex mode samples the animations into VAT textures; these textures, an animation-index texture and decoding parameters are assigned to that LOD's materials so the static mesh can reproduce the animation. The renderer receives the mesh, Niagara system and subtype; the unit receives Visualize.RendererClass, AnimShared.AnimData and the baked animation sample rate. New units are created through @ref UMassBattleUnitMCPApi::MCP_UnitCreate, then configuration is written through @ref UMassBattleUnitMCPApi::MCP_UnitPlanMergeUpdate and @ref UMassBattleUnitMCPApi::MCP_UnitApplyPlan.
+	 * @param[in] SpecJson JSON specification containing skeletal_mesh, unit_name, target_package_path, parent_material, source_renderer_class, niagara_system, vat_sample_rate and a nonempty animations category-to-AnimSequence mapping. target_unit selects an existing unit; otherwise template_unit, target_unit_package_path and subtype describe creation. dry_run/preview_only selects a preview; overwrite_existing controls replacement of generated outputs. compact_response selects result detail: false in this native entry, true by default in the MCP wrapper, with an explicit JSON value taking precedence.
+	 * @param[in] bSaveAssets Whether to save the assets modified or created by this operation to disk.
+	 * @return Generation-step results or a compact summary; previews return the plan and validation. Validation failures are described by validation.valid and validation.issues; execution_steps records completed and failed steps when execution stops.
 	 * @note Validation is performed automatically; diagnostic plan/validate calls are optional before this primary entry.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "MassBattleEditorMCP|UnitEditor")
@@ -136,63 +136,63 @@ public:
 
 	/**
 	 * @ProductDocument
-	 * @brief Preview VAT generation for selected assets.
-	 * @details MCP tool: `editor_plan_create_vat_unit_from_selection`. Resolves current editor-selected assets, or the explicit selected_assets override, into a VAT creation spec and returns the resulting diagnostic plan. It exposes the resolved inputs for review without generating assets.
+	 * @brief Inspect the VAT specification resolved from selected assets.
+	 * @details The editor selection or selected_assets is resolved into a source mesh and animation set, then passed as a specification to @ref UMassBattleUnitEditorMCPApi::MCP_EditorPlanCreateVatUnit.
 	 * @param[in] OptionsJson JSON object; pass {} to use the defaults. selected_assets supplies an explicit selection. Additional generation options feed the selection resolver and returned resolved_spec.
-	 * @return JSON with success, selection, resolved_spec, create_plan and ready_to_apply. Empty/unresolvable selections return error information.
+	 * @return The resolved selection, VAT specification and generation plan; ready_to_apply identifies whether the resolved request is ready for execution.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "MassBattleEditorMCP|UnitEditor")
 	static FString MCP_EditorPlanCreateVatUnitFromSelection(const FString& OptionsJson);
 
 	/**
 	 * @ProductDocument
-	 * @brief Generate a VAT unit from selected assets.
-	 * @details MCP tool: `editor_apply_create_vat_unit_from_selection`. Builds the canonical VAT spec from the current selection or selected_assets and executes the same primary DoAll generation workflow. The MCP tool defaults compact_response to true; explicit options override that value. The selection and resolved inputs remain visible in the response.
-	 * @param[in] OptionsJson JSON object; pass {} to use the defaults. selected_assets overrides editor selection; generation options and compact_response are passed to the resolved VAT workflow.
-	 * @param[in] bSaveAssets Whether to save the modified or newly created assets to disk. The MCP tool supplies its documented save_assets default; false leaves changes in editor memory.
-	 * @return JSON with success, selection, resolved_spec and apply_result or apply_summary; failed selection resolution or generation returns the corresponding error.
+	 * @brief Resolve selected source assets into a specification and generate a VAT unit.
+	 * @details Selection resolution produces the mesh, animation and output settings used by @ref UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnit. The resolved selection and specification are included with the generation result.
+	 * @param[in] OptionsJson JSON options for selection resolution and VAT generation. selected_assets overrides the current selection. compact_response controls response detail; its MCP wrapper default is true and an explicit JSON value takes precedence.
+	 * @param[in] bSaveAssets Whether to save the assets modified or created by this operation to disk.
+	 * @return The resolved selection and specification together with apply_result or apply_summary; failures identify selection resolution or generation problems.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "MassBattleEditorMCP|UnitEditor")
 	static FString MCP_EditorApplyCreateVatUnitFromSelection(const FString& OptionsJson, bool bSaveAssets);
 
 	/**
 	 * @ProductDocument
-	 * @brief Inspect an Actor's meshes and weapon bindings.
-	 * @details MCP tool: `editor_inspect_actor_assembly`. Spawns/resolves the requested Actor for inspection, evaluates included skeletal/static components, effective materials and weapon bind bones, and reports whether the assembly can be produced. Bounds are reported in root-skeleton model space without recentering. No generated assets are written.
+	 * @brief Check component materials and weapon bones before assembling an Actor.
+	 * @details Spawns/resolves the requested Actor for inspection, evaluates included skeletal/static components, effective materials and weapon bind bones, and reports whether the assembly can be produced. Bounds are reported in root-skeleton model space without recentering. No generated assets are written.
 	 * @param[in] ActorPath Actor Blueprint or class object path. When supplied, it becomes actor_class in the inspection spec.
 	 * @param[in] OptionsJson JSON object; pass {} to use the defaults. Optional component_overrides selects assembly participation and component-specific authoring overrides.
-	 * @return JSON with success, inspection_type, actor_class, root_component, component counts, components, body_bounds, can_assemble and issues.
+	 * @return An assembly inspection containing components, materials, weapon binding information, bounds and issues; can_assemble indicates assembly feasibility.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "MassBattleEditorMCP|UnitEditor")
 	static FString MCP_EditorInspectActorAssembly(const FString& ActorPath, const FString& OptionsJson);
 
 	/**
 	 * @ProductDocument
-	 * @brief Inspect VAT animation baking results.
-	 * @details MCP tool: `editor_inspect_vat_animation`. Loads the VAT data and referenced skeletal/static meshes, audits deforming skin weights, position-frame motion and lookup UVs, and compares baked animation paths with the selected soldier animation profile. This entry reports evidence without baking or editing assets.
+	 * @brief Check skin weights, frame motion, lookup UVs and animation settings.
+	 * @details Loads the VAT data and referenced skeletal/static meshes, audits deforming skin weights, position-frame motion and lookup UVs, and compares baked animation paths with the selected soldier animation profile. This entry reports evidence without baking or editing assets.
 	 * @param[in] SpecJson JSON containing vat_data_asset (or anim_to_texture_data_asset); skeletal_mesh and static_mesh select the meshes explicitly. ground_tolerance_uu configures the ground audit tolerance in Unreal units.
-	 * @return The VAT animation audit JSON, including validity, deforming-weight and motion findings, animation evidence and mesh/UV issues. Invalid JSON or unresolved inputs return success=false and error.
+	 * @return The VAT animation audit, including skin-weight, frame-motion, animation-resource and UV evidence together with detected issues.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "MassBattleEditorMCP|UnitEditor")
 	static FString MCP_EditorInspectVatAnimation(const FString& SpecJson);
 
 	/**
 	 * @ProductDocument
-	 * @brief Preview VAT unit generation from an Actor.
-	 * @details MCP tool: `editor_plan_create_vat_unit_from_actor`. Inspects the Actor assembly, resolves animation/sample-rate/LOD defaults, validates the required VAT fields and assembly output, then returns a canonical resolved_vat_spec. It reports collisions and assembly issues without creating generated assets.
-	 * @param[in] SpecJson JSON with actor_class and optional component_overrides, plus the canonical VAT unit fields. assembled_skeletal_mesh_path chooses the assembly asset explicitly; otherwise target_package_path and unit_name produce SKM_<unit_name>_Assembled, overridable by assembled_skeletal_mesh_name. overwrite_existing controls replacing an assembly output. Required VAT settings include unit_name, target_package_path, parent_material, source_renderer_class, niagara_system, positive vat_sample_rate, animations, and either target_unit or template_unit/target_unit_package_path/subtype.
-	 * @return JSON with applicable, assembled_skeletal_mesh, assembly_status, inspection, animation_resolution, vat_sample_rate_resolution, vat_lod_resolution, resolved_vat_spec and issues.
+	 * @brief Inspect an Actor assembly plan and its resolved VAT specification.
+	 * @details Actor inspection supplies component meshes, materials and weapon bindings. Animation, sample-rate and LOD settings are resolved together with the proposed assembled mesh path to produce resolved_vat_spec.
+	 * @param[in] SpecJson JSON object with actor_class, optional component_overrides and the desired output folder/name. VAT settings use the fields documented by @ref UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnit; animation, sample-rate and LOD values are resolved from the Actor and supplied settings.
+	 * @return The resolved_vat_spec, proposed assembled mesh and resolved animation, sample-rate and LOD settings; applicable and issues describe executability.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "MassBattleEditorMCP|UnitEditor")
 	static FString MCP_EditorPlanCreateVatUnitFromActor(const FString& SpecJson);
 
 	/**
 	 * @ProductDocument
-	 * @brief Assemble an Actor into a VAT unit.
-	 * @details MCP tool: `editor_apply_create_vat_unit_from_actor`. Builds and validates the Actor assembly plan, creates the animation-compatible assembled SkeletalMesh, and passes the resolved canonical spec to the primary VAT generation entry. dry_run/preview_only returns the plan without creating outputs. The MCP tool defaults compact_response to true, overridable in spec.
-	 * @param[in] SpecJson JSON with actor_class and optional component_overrides, plus the canonical VAT unit fields. assembled_skeletal_mesh_path chooses the assembly asset explicitly; otherwise target_package_path and unit_name produce SKM_<unit_name>_Assembled, overridable by assembled_skeletal_mesh_name. overwrite_existing controls replacing an assembly output. Includes the canonical VAT inputs documented by the Actor planning entry, plus dry_run/preview_only and compact_response.
-	 * @param[in] bSaveAssets Whether to save the modified or newly created assets to disk. The MCP tool supplies its documented save_assets default; false leaves changes in editor memory.
-	 * @return JSON with the plan or assembly result, skeletal_mesh, resolved_vat_spec and vat_result. Inapplicable plans or failed assembly/VAT steps return their actual errors.
+	 * @brief Combine an Actor's components and weapon into an animated VAT unit.
+	 * @details The resolved Actor components and weapon are assembled into an animation-compatible skeletal mesh. That mesh and the resolved VAT specification are then passed to @ref UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnit to build the unit resources.
+	 * @param[in] SpecJson JSON object with actor_class, optional component_overrides and VAT generation settings. assembled_skeletal_mesh_path selects the assembly output; otherwise target_package_path and unit_name determine it, with assembled_skeletal_mesh_name overriding the name. overwrite_existing selects replacement and dry_run/preview_only selects preview. compact_response controls response detail; its MCP wrapper default is true and an explicit JSON value takes precedence.
+	 * @param[in] bSaveAssets Whether to save the assets modified or created by this operation to disk.
+	 * @return The plan for a preview request, or the assembled skeletal mesh, resolved VAT specification and vat_result after execution; failures report the relevant assembly or VAT step.
 	 * @see @ref UMassBattleUnitEditorMCPApi::MCP_EditorPlanCreateVatUnitFromActor for the resolved inputs and assembly preview.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "MassBattleEditorMCP|UnitEditor")
@@ -200,33 +200,32 @@ public:
 
 	/**
 	 * @ProductDocument
-	 * @brief Preview unit asset folder organization.
-	 * @details MCP tool: `editor_plan_organize_unit_assets`. Resolves the style layout and discovers the unit and linked generated/source assets selected by the organization policy. It calculates source/destination moves and collision status without moving or saving assets.
+	 * @brief Inspect destination folders for a unit and its linked assets.
+	 * @details Resolves the style layout and discovers the unit and linked generated/source assets selected by the organization policy. It calculates source/destination moves and collision status without moving or saving assets.
 	 * @param[in] UnitPath Unreal object path of the existing MassBattle unit config or supported Unit Source Actor Blueprint.
 	 * @param[in] OptionsJson JSON object; pass {} to use the defaults. style_profile chooses defaults; target_root or target_package_path selects the destination. unit_name, use_family_folder, generated_folder_name/target_folder_name and managed_roots customize the existing layout policy.
-	 * @return A reviewable organization plan with moves, source/destination paths, resolved layout and per-move status, or success=false and error.
+	 * @return A move list giving source paths, destination paths and checks for each asset, together with the resolved style layout.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "MassBattleEditorMCP|UnitEditor")
 	static FString MCP_EditorPlanOrganizeUnitAssets(const FString& UnitPath, const FString& OptionsJson);
 
 	/**
 	 * @ProductDocument
-	 * @brief Apply a unit asset organization plan.
-	 * @details MCP tool: `editor_apply_organize_unit_assets`. Rebuilds the same organization plan and returns it by default because dry_run=true. With dry_run=false it executes the eligible AssetTools moves and reports each performed move and actual failure.
+	 * @brief Move a unit and its linked source and generated assets into a style layout.
+	 * @details Rebuilds the same organization plan and returns it by default because dry_run=true. With dry_run=false it executes the eligible AssetTools moves and reports each performed move and actual failure.
 	 * @param[in] UnitPath Unreal object path of the existing MassBattle unit config or supported Unit Source Actor Blueprint.
 	 * @param[in] OptionsJson JSON object; pass {} to use the defaults. Uses the same layout options as the organization planner. dry_run defaults to true; preview_only is also accepted.
-	 * @param[in] bSaveAssets Whether to save the modified or newly created assets to disk. The MCP tool supplies its documented save_assets default; false leaves changes in editor memory.
-	 * @return JSON with dry_run, plan, execution_steps, moved_count and moved; execution failures include success=false/error and the actual move report.
+	 * @param[in] bSaveAssets Whether to save the assets modified or created by this operation to disk.
+	 * @return The move plan for a preview, or per-step results and the actual moved count after execution; failure reports retain the performed move results.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "MassBattleEditorMCP|UnitEditor")
 	static FString MCP_EditorApplyOrganizeUnitAssets(const FString& UnitPath, const FString& OptionsJson, bool bSaveAssets);
 
 	/**
 	 * @ProductDocument
-	 * @brief List available unit editor tools.
-	 * @details MCP tool: `editor_get_status`. Returns categorized capabilities for the non-UI counterpart of the MassBattleTools editor widget. The list describes available profile, VAT, Actor assembly and organization workflows without executing them.
-	 *
-	 * @return JSON with success, api_name, description and categorized tools.
+	 * @brief Discover VAT authoring and asset organization capabilities in the editor.
+	 * @details Returns categorized capabilities for the non-UI counterpart of the MassBattleTools editor widget. The list describes available profile, VAT, Actor assembly and organization workflows without executing them.
+	 * @return The editor API identity, capability description and tools grouped by authoring workflow.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "MassBattleEditorMCP|UnitEditor")
 	static FString MCP_EditorGetStatus();
