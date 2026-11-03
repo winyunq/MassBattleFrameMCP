@@ -1,14 +1,14 @@
 [
   {
     "id": "00888c985e70f798d418dac3:brief",
-    "translation": "从当前编辑器选区或 selected_assets 推导 DoAll 规格，供诊断和审阅。",
-    "translated_source_hash": "87477261f09719442bbe994318e712d9fd93134d8ec61b5d76820b230acccf75",
+    "translation": "预览所选资产的 VAT 单位生成方案。",
+    "translated_source_hash": "549331cc5e7cc24569d0b226bed104f27131c2d54052a454fc4df9fbbe247bf1",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
     "name": "UMassBattleUnitEditorMCPApi::MCP_EditorPlanCreateVatUnitFromSelection",
     "field": "brief",
-    "source_text": "Diagnostic: infer the DoAll spec from current editor selection or selected_assets and return it for review.",
-    "source_hash": "87477261f09719442bbe994318e712d9fd93134d8ec61b5d76820b230acccf75"
+    "source_text": "Preview VAT generation for selected assets.",
+    "source_hash": "549331cc5e7cc24569d0b226bed104f27131c2d54052a454fc4df9fbbe247bf1"
   },
   {
     "id": "00888c985e70f798d418dac3:details",
@@ -67,14 +67,14 @@
   },
   {
     "id": "02c2006ee72102c8ecbb0ccd:brief",
-    "translation": "将 Actor 及配置的武器装配为兼容动画的 SkeletalMesh，再生成严格 VAT 单位。",
-    "translated_source_hash": "c11c6bef589b66e9c5047b23fc2981f2de950fbb1fd894b1b0c73c3a36a9b1f5",
+    "translation": "将 Actor 装配为 VAT 单位。",
+    "translated_source_hash": "40cffbb7ef68d94da46550237d5d3e6b5f2805926f722771af0066999a7cbb66",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
     "name": "UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnitFromActor",
     "field": "brief",
-    "source_text": "Assemble an Actor and configured weapon into an animation-compatible SkeletalMesh, then author its strict VAT unit.",
-    "source_hash": "c11c6bef589b66e9c5047b23fc2981f2de950fbb1fd894b1b0c73c3a36a9b1f5"
+    "source_text": "Assemble an Actor into a VAT unit.",
+    "source_hash": "40cffbb7ef68d94da46550237d5d3e6b5f2805926f722771af0066999a7cbb66"
   },
   {
     "id": "02c2006ee72102c8ecbb0ccd:details",
@@ -166,14 +166,14 @@
   },
   {
     "id": "04bb16bcd1f725dc9055e22e:brief",
-    "translation": "将未被引用的通用资产移入回收目录；dry_run 默认为 true。",
-    "translated_source_hash": "1589543786194ad8f7c3a25a93dffa2151331ca9f60f971fae0e7dcc0c017c82",
+    "translation": "将资产移入回收目录。",
+    "translated_source_hash": "70391132b4e6b307be93752b42ec2347ab79ea178ed8e8b75321e61f991d9b93",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/BatchEffects/MassBattleEffectAssetMCPApi.h",
     "name": "UMassBattleEffectAssetMCPApi::MCP_EffectAssetSoftDelete",
     "field": "brief",
-    "source_text": "Move an unreferenced generic asset to trash; dry_run=true by default.",
-    "source_hash": "1589543786194ad8f7c3a25a93dffa2151331ca9f60f971fae0e7dcc0c017c82"
+    "source_text": "Move an asset to the trash folder.",
+    "source_hash": "70391132b4e6b307be93752b42ec2347ab79ea178ed8e8b75321e61f991d9b93"
   },
   {
     "id": "04bb16bcd1f725dc9055e22e:details",
@@ -254,14 +254,14 @@
   },
   {
     "id": "0af603bc32196202916cce83:brief",
-    "translation": "列出 MassBattle 投射物配置数据资产。",
-    "translated_source_hash": "a4519782de11c08424392e7dc3864e19231f31f8c891fac3554c72f9f45b8524",
+    "translation": "列出投射物配置。",
+    "translated_source_hash": "2461f9f5dcdcdef9d728f32bb2b9471aad955873efeb2e99c48478b667264c61",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleProjectileMCPApi.h",
     "name": "UMassBattleProjectileMCPApi::MCP_ProjectileList",
     "field": "brief",
-    "source_text": "List MassBattle projectile configuration DataAssets.",
-    "source_hash": "a4519782de11c08424392e7dc3864e19231f31f8c891fac3554c72f9f45b8524"
+    "source_text": "List projectile configurations.",
+    "source_hash": "2461f9f5dcdcdef9d728f32bb2b9471aad955873efeb2e99c48478b667264c61"
   },
   {
     "id": "0af603bc32196202916cce83:details",
@@ -320,14 +320,14 @@
   },
   {
     "id": "0b02787ba0883ed920ed1f0a:brief",
-    "translation": "读取 Niagara 反射属性及全部函数调用模块和引脚。",
-    "translated_source_hash": "e5a78f7e95d63cba10085ae9a13b8d4d3772ea75d20b44b90d722d77c81126db",
+    "translation": "读取 Niagara 属性、模块和引脚。",
+    "translated_source_hash": "140d53487ba495d6c7813c36c8fa1b686763923b5d0e05955ed4130ace700475",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/BatchEffects/MassBattleNiagaraMCPApi.h",
     "name": "UMassBattleNiagaraMCPApi::MCP_NiagaraReadAll",
     "field": "brief",
-    "source_text": "Read reflected Niagara properties plus every function-call module and pin.",
-    "source_hash": "e5a78f7e95d63cba10085ae9a13b8d4d3772ea75d20b44b90d722d77c81126db"
+    "source_text": "Read Niagara properties, modules, and pins.",
+    "source_hash": "140d53487ba495d6c7813c36c8fa1b686763923b5d0e05955ed4130ace700475"
   },
   {
     "id": "0b02787ba0883ed920ed1f0a:details",
@@ -408,14 +408,14 @@
   },
   {
     "id": "0d4232cb2cb06db9366d2a7d:brief",
-    "translation": "读取单个 Niagara 模块节点及其引脚。",
-    "translated_source_hash": "a6170f52538287e6e176bc870e4db16d3d3fe05ce794ae58bb7be38803045ce4",
+    "translation": "读取 Niagara 模块及其引脚。",
+    "translated_source_hash": "c9eaebed5470afb76942df6572a863609fe7e11b1f1d236813c121c41f240c16",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/BatchEffects/MassBattleNiagaraMCPApi.h",
     "name": "UMassBattleNiagaraMCPApi::MCP_NiagaraReadModule",
     "field": "brief",
-    "source_text": "Read one Niagara module node and pins.",
-    "source_hash": "a6170f52538287e6e176bc870e4db16d3d3fe05ce794ae58bb7be38803045ce4"
+    "source_text": "Read a Niagara module and its pins.",
+    "source_hash": "c9eaebed5470afb76942df6572a863609fe7e11b1f1d236813c121c41f240c16"
   },
   {
     "id": "0d4232cb2cb06db9366d2a7d:details",
@@ -496,14 +496,14 @@
   },
   {
     "id": "11c57f2939e716287888a46d:brief",
-    "translation": "按路径或名称文本查询 Niagara 系统。",
-    "translated_source_hash": "db17f0d846acfb5650891f19b457223dba4506c7e6962f59c9eb3bd809e9f37a",
+    "translation": "查找 Niagara 系统。",
+    "translated_source_hash": "fda6f2bd10efca4b9e35ea030b7d23be5493810eedc23dfb384ef145259af081",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/BatchEffects/MassBattleNiagaraMCPApi.h",
     "name": "UMassBattleNiagaraMCPApi::MCP_NiagaraQuery",
     "field": "brief",
-    "source_text": "Query Niagara systems by path or name text.",
-    "source_hash": "db17f0d846acfb5650891f19b457223dba4506c7e6962f59c9eb3bd809e9f37a"
+    "source_text": "Find Niagara systems.",
+    "source_hash": "fda6f2bd10efca4b9e35ea030b7d23be5493810eedc23dfb384ef145259af081"
   },
   {
     "id": "11c57f2939e716287888a46d:details",
@@ -562,14 +562,14 @@
   },
   {
     "id": "121c2a7c7767cc304c3db289:brief",
-    "translation": "用于 MassBattle 特效批处理改造的 Niagara MCP 接口（UE 5.8）。",
-    "translated_source_hash": "edd6a99fd70d9532785af1e4f66087a3bcd4087e25fda146d5bf617494e4ced4",
+    "translation": "将 Niagara 特效接入 MassBattle 批处理。",
+    "translated_source_hash": "ac18bbd5b0d5c660578150bb847cdfc3a12082c164f7f624993d98f5c70ea227",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/BatchEffects/MassBattleNiagaraMCPApi.h",
     "name": "MassBattleNiagaraMCPApi.h",
     "field": "brief",
-    "source_text": "用于 MassBattle 特效批处理改造的 Niagara MCP 接口（UE 5.8）。",
-    "source_hash": "edd6a99fd70d9532785af1e4f66087a3bcd4087e25fda146d5bf617494e4ced4"
+    "source_text": "Niagara tools for MassBattle batch effect conversion.",
+    "source_hash": "ac18bbd5b0d5c660578150bb847cdfc3a12082c164f7f624993d98f5c70ea227"
   },
   {
     "id": "121c2a7c7767cc304c3db289:details",
@@ -595,14 +595,14 @@
   },
   {
     "id": "1352dc5db4096033a86c953b:brief",
-    "translation": "规划局部合并写入并返回差异，保留单位资产原状。",
-    "translated_source_hash": "55d55d8679df21fdc20206c44afca143f04f760699f14042bf20a77018171de7",
+    "translation": "预览单位配置变更。",
+    "translated_source_hash": "e6b8a50c39890084358b79cb1205dbec6b62952bf19fabea1c18b8be4d772113",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
     "name": "UMassBattleUnitMCPApi::MCP_UnitPlanMergeUpdate",
     "field": "brief",
-    "source_text": "Plan a union-write and return its diff without mutating the unit.",
-    "source_hash": "55d55d8679df21fdc20206c44afca143f04f760699f14042bf20a77018171de7"
+    "source_text": "Preview unit configuration changes.",
+    "source_hash": "e6b8a50c39890084358b79cb1205dbec6b62952bf19fabea1c18b8be4d772113"
   },
   {
     "id": "1352dc5db4096033a86c953b:details",
@@ -683,14 +683,14 @@
   },
   {
     "id": "141783df34aa4d987d0041c6:brief",
-    "translation": "检查 Actor 的模块化骨骼与静态网格体、有效材质和武器绑定骨骼，保留资产原状。",
-    "translated_source_hash": "41f9b63c5f7f0ee216c3767e12ea8e1d3bd20cb8aaecf42034b39e7b65ffbb1e",
+    "translation": "检查 Actor 网格体和武器绑定。",
+    "translated_source_hash": "9b9a9652518dffabe7cc3d5159bd2cd74ca7e530900ac7e472a325d8d4ede816",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
     "name": "UMassBattleUnitEditorMCPApi::MCP_EditorInspectActorAssembly",
     "field": "brief",
-    "source_text": "Inspect an Actor's modular skeletal/static meshes, effective materials, and resolved weapon bind bones without writing assets.",
-    "source_hash": "41f9b63c5f7f0ee216c3767e12ea8e1d3bd20cb8aaecf42034b39e7b65ffbb1e"
+    "source_text": "Inspect an Actor's meshes and weapon bindings.",
+    "source_hash": "9b9a9652518dffabe7cc3d5159bd2cd74ca7e530900ac7e472a325d8d4ede816"
   },
   {
     "id": "141783df34aa4d987d0041c6:details",
@@ -771,14 +771,14 @@
   },
   {
     "id": "14b6c94d7f6875d65509528f:brief",
-    "translation": "列出 MassBattle 通用特效资产 API 的能力。",
-    "translated_source_hash": "125cf93fe8f7f62e8efab6b0926f283b7a4f8436f04c9baf315e4e546a567cc3",
+    "translation": "列出可用的特效资产工具。",
+    "translated_source_hash": "12154f5ea3a3dec3ec8119fe7056d961ea3b3e884531f7abf8c043d48246572c",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/BatchEffects/MassBattleEffectAssetMCPApi.h",
     "name": "UMassBattleEffectAssetMCPApi::MCP_EffectAssetGetApiStatus",
     "field": "brief",
-    "source_text": "List generic MassBattle effect asset API capabilities.",
-    "source_hash": "125cf93fe8f7f62e8efab6b0926f283b7a4f8436f04c9baf315e4e546a567cc3"
+    "source_text": "List available effect asset tools.",
+    "source_hash": "12154f5ea3a3dec3ec8119fe7056d961ea3b3e884531f7abf8c043d48246572c"
   },
   {
     "id": "14b6c94d7f6875d65509528f:details",
@@ -815,14 +815,14 @@
   },
   {
     "id": "14dfa0115cbc16348e0af60e:brief",
-    "translation": "以有效字段视图或完整源码对应视图读取单个投射物数据资产。",
-    "translated_source_hash": "c5816349cc6592079d989dbcb821da05a227fa359b0175987a6d0f3ce8ca0023",
+    "translation": "读取投射物配置。",
+    "translated_source_hash": "914e7594dc8a6c8c7a0ccb1e7d7b8857ebe232624b972fdb99ff0a6f4cd65701",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleProjectileMCPApi.h",
     "name": "UMassBattleProjectileMCPApi::MCP_ProjectileGet",
     "field": "brief",
-    "source_text": "Read one projectile DataAsset in active-only or full source-aligned form.",
-    "source_hash": "c5816349cc6592079d989dbcb821da05a227fa359b0175987a6d0f3ce8ca0023"
+    "source_text": "Read a projectile configuration.",
+    "source_hash": "914e7594dc8a6c8c7a0ccb1e7d7b8857ebe232624b972fdb99ff0a6f4cd65701"
   },
   {
     "id": "14dfa0115cbc16348e0af60e:details",
@@ -903,14 +903,14 @@
   },
   {
     "id": "1a50dfd7fda4456b3ed0591b:brief",
-    "translation": "按顺序编辑 Niagara 图，统一编译、校验保留结果，并按选项保存。",
-    "translated_source_hash": "d4f1d4463fc7a608acd52db4d264bc41b784546d9625ebcca809a63695bb6182",
+    "translation": "编辑 Niagara 脚本图。",
+    "translated_source_hash": "d70325a8293ffe79baf2bf981e719fb7ed6b3afae0f9350665f7eff645db5fcb",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/BatchEffects/MassBattleNiagaraMCPApi.h",
     "name": "UMassBattleNiagaraMCPApi::MCP_NiagaraApplyGraphEdit",
     "field": "brief",
-    "source_text": "Apply ordered Niagara graph edits, compile once, validate preservation, and optionally save.",
-    "source_hash": "d4f1d4463fc7a608acd52db4d264bc41b784546d9625ebcca809a63695bb6182"
+    "source_text": "Edit Niagara graphs.",
+    "source_hash": "d70325a8293ffe79baf2bf981e719fb7ed6b3afae0f9350665f7eff645db5fcb"
   },
   {
     "id": "1a50dfd7fda4456b3ed0591b:details",
@@ -1013,14 +1013,14 @@
   },
   {
     "id": "1ed5c247f62f7df8066a75b7:brief",
-    "translation": "导出特效资产的确定性文本。",
-    "translated_source_hash": "06f5f21cd4436364a0659ef151100e7f8404c309d6bbe0c9054374ce9169bb62",
+    "translation": "将特效资产导出为文本。",
+    "translated_source_hash": "300b928a4e900ff4446f09063d3281329bc933e28e439b1860f5cedddc143302",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/BatchEffects/MassBattleEffectAssetMCPApi.h",
     "name": "UMassBattleEffectAssetMCPApi::MCP_EffectAssetExportText",
     "field": "brief",
-    "source_text": "Export deterministic text for an effect-related asset.",
-    "source_hash": "06f5f21cd4436364a0659ef151100e7f8404c309d6bbe0c9054374ce9169bb62"
+    "source_text": "Export an effect asset as text.",
+    "source_hash": "300b928a4e900ff4446f09063d3281329bc933e28e439b1860f5cedddc143302"
   },
   {
     "id": "1ed5c247f62f7df8066a75b7:details",
@@ -1101,14 +1101,14 @@
   },
   {
     "id": "1fc6baed18807098dc1585e2:brief",
-    "translation": "按路径或名称查询 MassBattle 投射物配置数据资产。",
-    "translated_source_hash": "a5802e738b323db7f35b98d7c2323661e2ce5b45e9afa04f364eca794b794b46",
+    "translation": "查找投射物配置。",
+    "translated_source_hash": "b9856644aa31e944976185f060ddd5714a0f67aaddeadc0765047fc9b5f12006",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleProjectileMCPApi.h",
     "name": "UMassBattleProjectileMCPApi::MCP_ProjectileQuery",
     "field": "brief",
-    "source_text": "Query MassBattle projectile configuration DataAssets by path or name.",
-    "source_hash": "a5802e738b323db7f35b98d7c2323661e2ce5b45e9afa04f364eca794b794b46"
+    "source_text": "Find projectile configurations.",
+    "source_hash": "b9856644aa31e944976185f060ddd5714a0f67aaddeadc0765047fc9b5f12006"
   },
   {
     "id": "1fc6baed18807098dc1585e2:details",
@@ -1167,14 +1167,14 @@
   },
   {
     "id": "29984bf4b93358d500caf83c:brief",
-    "translation": "读取含稳定节点、引脚标识及显式连线的 Niagara 脚本图。",
-    "translated_source_hash": "506c10b7b95e04c913eeb70ea24f4bad33ba77444b42b961581b403cff7d4245",
+    "translation": "读取 Niagara 脚本图及其连接。",
+    "translated_source_hash": "6fe1e7599541c7d58479a30b3c627ede1008d379d57bb599b554cd940f46476d",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/BatchEffects/MassBattleNiagaraMCPApi.h",
     "name": "UMassBattleNiagaraMCPApi::MCP_NiagaraReadGraph",
     "field": "brief",
-    "source_text": "Read Niagara script graphs with stable node/pin ids and explicit links.",
-    "source_hash": "506c10b7b95e04c913eeb70ea24f4bad33ba77444b42b961581b403cff7d4245"
+    "source_text": "Read Niagara script graphs and connections.",
+    "source_hash": "6fe1e7599541c7d58479a30b3c627ede1008d379d57bb599b554cd940f46476d"
   },
   {
     "id": "29984bf4b93358d500caf83c:details",
@@ -1255,14 +1255,14 @@
   },
   {
     "id": "3467883ba4fc1ad77711d87d:brief",
-    "translation": "显式删除或软删除 MassBattle 单位；dry_run 默认为 true。",
-    "translated_source_hash": "101881792743a0c51c406b045bfa5e1d3b9cb90f1530f91f12f262201a742f6a",
+    "translation": "删除单位配置资产。",
+    "translated_source_hash": "9a4b0a4817c67633525c5cf3b030b6e33a54bd2cead4a1289580ee588072f284",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
     "name": "UMassBattleUnitMCPApi::MCP_UnitDelete",
     "field": "brief",
-    "source_text": "Delete or soft-delete a MassBattle unit; options default to dry_run=true.",
-    "source_hash": "101881792743a0c51c406b045bfa5e1d3b9cb90f1530f91f12f262201a742f6a"
+    "source_text": "Delete a unit configuration asset.",
+    "source_hash": "9a4b0a4817c67633525c5cf3b030b6e33a54bd2cead4a1289580ee588072f284"
   },
   {
     "id": "3467883ba4fc1ad77711d87d:details",
@@ -1343,14 +1343,14 @@
   },
   {
     "id": "35e59a8ac12b695069462e08:brief",
-    "translation": "列出投射物数据资产的增删改查、字段结构和校验能力。",
-    "translated_source_hash": "2f4cd7f9fad0a5e1e6f27be2ea1f5b36b3ed70243a7882195733b4bf8ac81f52",
+    "translation": "列出可用的投射物工具。",
+    "translated_source_hash": "c7894390728a6d94a83f37b44b161996918310073cd18fda2e5cafa8c30a5edd",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleProjectileMCPApi.h",
     "name": "UMassBattleProjectileMCPApi::MCP_ProjectileGetApiStatus",
     "field": "brief",
-    "source_text": "List projectile DataAsset CRUD, schema, and validation capabilities.",
-    "source_hash": "2f4cd7f9fad0a5e1e6f27be2ea1f5b36b3ed70243a7882195733b4bf8ac81f52"
+    "source_text": "List available projectile tools.",
+    "source_hash": "c7894390728a6d94a83f37b44b161996918310073cd18fda2e5cafa8c30a5edd"
   },
   {
     "id": "35e59a8ac12b695069462e08:details",
@@ -1387,14 +1387,14 @@
   },
   {
     "id": "37e8c902ff12be9157fe1434:brief",
-    "translation": "读取新放置 Actor 使用的 AMassBattleFxRenderer 蓝图类默认值。",
-    "translated_source_hash": "e6e5766c4079c301c4f3e48bab2b81a8f55e311b5249d55ff9d5abc096cdd5b3",
+    "translation": "读取批处理特效渲染器默认配置。",
+    "translated_source_hash": "69f6f2b3f44ae92a810f69b096aaf904e215bf31c1f0adb4ae7a07f1af166663",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/BatchEffects/MassBattleEffectAssetMCPApi.h",
     "name": "UMassBattleEffectAssetMCPApi::MCP_BatchFxReadRendererDefaults",
     "field": "brief",
-    "source_text": "Read AMassBattleFxRenderer Blueprint class defaults used by newly placed actors.",
-    "source_hash": "e6e5766c4079c301c4f3e48bab2b81a8f55e311b5249d55ff9d5abc096cdd5b3"
+    "source_text": "Read batch effect renderer defaults.",
+    "source_hash": "69f6f2b3f44ae92a810f69b096aaf904e215bf31c1f0adb4ae7a07f1af166663"
   },
   {
     "id": "37e8c902ff12be9157fe1434:details",
@@ -1453,14 +1453,14 @@
   },
   {
     "id": "39123253c82e7e44c871d41b:brief",
-    "translation": "丢弃当前 MCP 编辑器会话创建且尚未保存的内存副本。",
-    "translated_source_hash": "69681a2c9228d76eafa935c1315f9999a0663681fa4d5e8f8a2d9f92b6fcf421",
+    "translation": "丢弃未保存的特效副本。",
+    "translated_source_hash": "cd837a9dccdbaaa577660c0be9c16760b6ff735081331b979611e132542fb2eb",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/BatchEffects/MassBattleEffectAssetMCPApi.h",
     "name": "UMassBattleEffectAssetMCPApi::MCP_EffectDiscardUnsavedDuplicate",
     "field": "brief",
-    "source_text": "Discard only an unsaved in-memory duplicate created by this MCP editor session.",
-    "source_hash": "69681a2c9228d76eafa935c1315f9999a0663681fa4d5e8f8a2d9f92b6fcf421"
+    "source_text": "Discard an unsaved effect duplicate.",
+    "source_hash": "cd837a9dccdbaaa577660c0be9c16760b6ff735081331b979611e132542fb2eb"
   },
   {
     "id": "39123253c82e7e44c871d41b:details",
@@ -1530,14 +1530,14 @@
   },
   {
     "id": "3ba0d564f389daa7675f5454:brief",
-    "translation": "规划将单位及关联的生成资产、源资产移入选定风格布局。",
-    "translated_source_hash": "e0dc26fd10d5880da394a24a378046991b6b4dd04f8b500c9020cb3a4a1f0ae2",
+    "translation": "预览单位资产的目录整理方案。",
+    "translated_source_hash": "bdd778e6ccae4e9b774394833e4129b77d981683bb9b80256cee7d4c7a0448b0",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
     "name": "UMassBattleUnitEditorMCPApi::MCP_EditorPlanOrganizeUnitAssets",
     "field": "brief",
-    "source_text": "Plan moving a MassBattle unit and linked generated/source assets into the selected style layout.",
-    "source_hash": "e0dc26fd10d5880da394a24a378046991b6b4dd04f8b500c9020cb3a4a1f0ae2"
+    "source_text": "Preview unit asset folder organization.",
+    "source_hash": "bdd778e6ccae4e9b774394833e4129b77d981683bb9b80256cee7d4c7a0448b0"
   },
   {
     "id": "3ba0d564f389daa7675f5454:details",
@@ -1618,14 +1618,14 @@
   },
   {
     "id": "3d755114d18d68aa76bcae42:brief",
-    "translation": "从当前选区一键执行与 MassBattleTools DoAll 等价的生成流程。",
-    "translated_source_hash": "803e886d239bbe32ba6f2d96ffa8fb0ce47216db0e8dd8490116b27e8fb9f154",
+    "translation": "从所选资产生成 VAT 单位。",
+    "translated_source_hash": "b470620483004786cc0c0bdd1b601971f85ef00000f9ea45d8ac67cd1e3646e1",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
     "name": "UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnitFromSelection",
     "field": "brief",
-    "source_text": "Primary one-click current selection -> generate entry matching the MassBattleTools DoAll workflow.",
-    "source_hash": "803e886d239bbe32ba6f2d96ffa8fb0ce47216db0e8dd8490116b27e8fb9f154"
+    "source_text": "Generate a VAT unit from selected assets.",
+    "source_hash": "b470620483004786cc0c0bdd1b601971f85ef00000f9ea45d8ac67cd1e3646e1"
   },
   {
     "id": "3d755114d18d68aa76bcae42:details",
@@ -1706,14 +1706,14 @@
   },
   {
     "id": "42563a962229e9245764506d:brief",
-    "translation": "按风格组织单位并生成移动规划的独立 MCP 辅助接口。",
-    "translated_source_hash": "d8e2b3ba05c0c8be7accc48828a5a49b2d7656531b704bc21f4e6082adcd4e83",
+    "translation": "按风格规划单位目录。",
+    "translated_source_hash": "4c5697fcfee734e24d82e790058a574e280fabe69c067acf068f4b7056fba746",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
     "name": "UMassBattleStyleMCPApi",
     "field": "brief",
-    "source_text": "Independent MCP helpers for organizing units by style and producing move plans.",
-    "source_hash": "d8e2b3ba05c0c8be7accc48828a5a49b2d7656531b704bc21f4e6082adcd4e83"
+    "source_text": "Plan unit organization by style.",
+    "source_hash": "4c5697fcfee734e24d82e790058a574e280fabe69c067acf068f4b7056fba746"
   },
   {
     "id": "42563a962229e9245764506d:title/user",
@@ -1728,14 +1728,14 @@
   },
   {
     "id": "44d8610c3495cb324c333576:brief",
-    "translation": "将局部 MassBattle 单位数据合并写入现有单位。",
-    "translated_source_hash": "d4fbbdb5d28c0b7bf59df4a1ce6cab70a1722d629219181ead19169500e4692f",
+    "translation": "更新指定的单位字段。",
+    "translated_source_hash": "ae299515a1ecf497e801784b61cfe0665849938d0b2140f3b659b46bc5e6179a",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
     "name": "UMassBattleUnitMCPApi::MCP_UnitMergeUpdate",
     "field": "brief",
-    "source_text": "Union-write partial MassBattle unit data to an existing unit.",
-    "source_hash": "d4fbbdb5d28c0b7bf59df4a1ce6cab70a1722d629219181ead19169500e4692f"
+    "source_text": "Update selected unit fields.",
+    "source_hash": "ae299515a1ecf497e801784b61cfe0665849938d0b2140f3b659b46bc5e6179a"
   },
   {
     "id": "44d8610c3495cb324c333576:details",
@@ -1849,14 +1849,14 @@
   },
   {
     "id": "4828e74da48c7b37e13d5234:brief",
-    "translation": "应用已审阅的单位资产整理规划；dry_run 默认为 true。",
-    "translated_source_hash": "64aa24c0106f69de17a4c807020b2967cd846bc17877f54cc255d8da04e8dd3b",
+    "translation": "执行单位资产整理方案。",
+    "translated_source_hash": "8ca713c1afc61b2a1d3dcf002e371559f60f0e795ba7d8f8e0a106f501d27e01",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
     "name": "UMassBattleUnitEditorMCPApi::MCP_EditorApplyOrganizeUnitAssets",
     "field": "brief",
-    "source_text": "Apply a reviewed MassBattle unit organization plan; options default to dry_run=true.",
-    "source_hash": "64aa24c0106f69de17a4c807020b2967cd846bc17877f54cc255d8da04e8dd3b"
+    "source_text": "Apply a unit asset organization plan.",
+    "source_hash": "8ca713c1afc61b2a1d3dcf002e371559f60f0e795ba7d8f8e0a106f501d27e01"
   },
   {
     "id": "4828e74da48c7b37e13d5234:details",
@@ -1959,14 +1959,14 @@
   },
   {
     "id": "521d945451f14f9c470f799f:brief",
-    "translation": "特效资产 MCP 基础操作。",
-    "translated_source_hash": "90765220e3a1189dbfa59f4a9e526bd74a86e1643e94aa9cca61670892fecb8a",
+    "translation": "检查和管理特效资产。",
+    "translated_source_hash": "c951e6b8b4079673f8c27bd963af353eac578c0a4f64e8289ca9873cdc1fc88c",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/BatchEffects/MassBattleEffectAssetMCPApi.h",
     "name": "UMassBattleEffectAssetMCPApi",
     "field": "brief",
-    "source_text": "Low-level effect asset MCP primitives.",
-    "source_hash": "90765220e3a1189dbfa59f4a9e526bd74a86e1643e94aa9cca61670892fecb8a"
+    "source_text": "Inspect and manage effect assets.",
+    "source_hash": "c951e6b8b4079673f8c27bd963af353eac578c0a4f64e8289ca9873cdc1fc88c"
   },
   {
     "id": "521d945451f14f9c470f799f:details",
@@ -1992,14 +1992,14 @@
   },
   {
     "id": "53ccd540ea4489640651bcb1:brief",
-    "translation": "检查装配蒙皮权重、VAT 位置帧运动、查找 UV 和已烘焙士兵动画配置。",
-    "translated_source_hash": "04b67d57156f0ba8f2d42831012dab3b373adca3daea5f151cd52be69cf25d83",
+    "translation": "检查 VAT 动画烘焙结果。",
+    "translated_source_hash": "e75fda0b15b6787c7d54a6a7926ae5c2193b4effd213f418459c0686117c9c63",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
     "name": "UMassBattleUnitEditorMCPApi::MCP_EditorInspectVatAnimation",
     "field": "brief",
-    "source_text": "Audit assembled skin weights, VAT position-frame motion, lookup UVs, and the baked soldier animation profile.",
-    "source_hash": "04b67d57156f0ba8f2d42831012dab3b373adca3daea5f151cd52be69cf25d83"
+    "source_text": "Inspect VAT animation baking results.",
+    "source_hash": "e75fda0b15b6787c7d54a6a7926ae5c2193b4effd213f418459c0686117c9c63"
   },
   {
     "id": "53ccd540ea4489640651bcb1:details",
@@ -2058,14 +2058,14 @@
   },
   {
     "id": "5676b7dc1918c255cf560e80:brief",
-    "translation": "为现有 Niagara 发射器添加一个已配置的精灵渲染器。",
-    "translated_source_hash": "25d91f3b3c2106557569f40a79a882771cff81a2589906ee65567555bfedefee",
+    "translation": "添加 Niagara 精灵渲染器。",
+    "translated_source_hash": "ec96913a2ae2900105c15e7e72487961db3b935159cde1c396bf21f932c79e8f",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/BatchEffects/MassBattleNiagaraMCPApi.h",
     "name": "UMassBattleNiagaraMCPApi::MCP_NiagaraAddSpriteRenderer",
     "field": "brief",
-    "source_text": "Add one configured sprite renderer to an existing Niagara emitter.",
-    "source_hash": "25d91f3b3c2106557569f40a79a882771cff81a2589906ee65567555bfedefee"
+    "source_text": "Add a Niagara sprite renderer.",
+    "source_hash": "ec96913a2ae2900105c15e7e72487961db3b935159cde1c396bf21f932c79e8f"
   },
   {
     "id": "5676b7dc1918c255cf560e80:details",
@@ -2190,14 +2190,14 @@
   },
   {
     "id": "5bdd0b128069500ca1fa5eeb:brief",
-    "translation": "以增量方式复制特效资产。",
-    "translated_source_hash": "f5eef5e6a5930c045f55f3fafb70cca80136ee1e928178ee61740a9d74d3316a",
+    "translation": "复制特效资产。",
+    "translated_source_hash": "cb06fdf526cc172048ab5d51de6b4883dba7aa2934004bdf842dd1762352151d",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/BatchEffects/MassBattleEffectAssetMCPApi.h",
     "name": "UMassBattleEffectAssetMCPApi::MCP_EffectDuplicateAsset",
     "field": "brief",
-    "source_text": "Duplicate an effect-related asset additively.",
-    "source_hash": "f5eef5e6a5930c045f55f3fafb70cca80136ee1e928178ee61740a9d74d3316a"
+    "source_text": "Duplicate an effect asset.",
+    "source_hash": "cb06fdf526cc172048ab5d51de6b4883dba7aa2934004bdf842dd1762352151d"
   },
   {
     "id": "5bdd0b128069500ca1fa5eeb:details",
@@ -2322,14 +2322,14 @@
   },
   {
     "id": "62c8bda9a7948307559a8474:brief",
-    "translation": "规划 Actor 组件装配及后续严格 VAT 单位生成，保留资产原状。",
-    "translated_source_hash": "3ff0cb4d2453803f25f8740b58d1605fca294af82099f802f50e802a2a81e306",
+    "translation": "预览 Actor 的 VAT 单位生成方案。",
+    "translated_source_hash": "955120f8890c469d5553496a0960d570f90a0958ac3020fa4421012cec686403",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
     "name": "UMassBattleUnitEditorMCPApi::MCP_EditorPlanCreateVatUnitFromActor",
     "field": "brief",
-    "source_text": "Plan Actor component assembly followed by strict VAT unit authoring without writing assets.",
-    "source_hash": "3ff0cb4d2453803f25f8740b58d1605fca294af82099f802f50e802a2a81e306"
+    "source_text": "Preview VAT unit generation from an Actor.",
+    "source_hash": "955120f8890c469d5553496a0960d570f90a0958ac3020fa4421012cec686403"
   },
   {
     "id": "62c8bda9a7948307559a8474:details",
@@ -2388,14 +2388,14 @@
   },
   {
     "id": "6520fcd2dafd24ca7beaf44c:brief",
-    "translation": "将精简单位平衡表导出为 JSON 或 CSV。",
-    "translated_source_hash": "3c1f78cc7742204897c39b030f9b3410249a496ab5a3e97891993755eb92c0e5",
+    "translation": "导出单位平衡表。",
+    "translated_source_hash": "bba49d10c767bdc11cf099bfd7d9eb145aabb351e16c2a18dcc36c70809dee28",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
     "name": "UMassBattleUnitMCPApi::MCP_UnitExport",
     "field": "brief",
-    "source_text": "Export a compact MassBattle unit balance table to JSON or CSV.",
-    "source_hash": "3c1f78cc7742204897c39b030f9b3410249a496ab5a3e97891993755eb92c0e5"
+    "source_text": "Export a unit balance table.",
+    "source_hash": "bba49d10c767bdc11cf099bfd7d9eb145aabb351e16c2a18dcc36c70809dee28"
   },
   {
     "id": "6520fcd2dafd24ca7beaf44c:details",
@@ -2454,14 +2454,14 @@
   },
   {
     "id": "66c977bd2407339cd1c67281:brief",
-    "translation": "为 UMassBattleProjectileConfigDataAsset 提供与源码字段对应的增删改查、字段结构和校验。",
-    "translated_source_hash": "1fdcf443477aa3217fff969141436f7ea2f2c3160771b97b6b3b34af1690ee60",
+    "translation": "读写投射物配置。",
+    "translated_source_hash": "0b0623fa0978e3744955868254ca7264a19fccb6ad13c53ed5d96345f804d0b1",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleProjectileMCPApi.h",
     "name": "UMassBattleProjectileMCPApi",
     "field": "brief",
-    "source_text": "Source-aligned CRUD, schema, and validation primitives for UMassBattleProjectileConfigDataAsset.",
-    "source_hash": "1fdcf443477aa3217fff969141436f7ea2f2c3160771b97b6b3b34af1690ee60"
+    "source_text": "Read and edit projectile configurations.",
+    "source_hash": "0b0623fa0978e3744955868254ca7264a19fccb6ad13c53ed5d96345f804d0b1"
   },
   {
     "id": "66c977bd2407339cd1c67281:details",
@@ -2487,14 +2487,14 @@
   },
   {
     "id": "69002c5785e40ac7fb85d8ff:brief",
-    "translation": "列出 Niagara MCP API 的能力。",
-    "translated_source_hash": "7acc72cd5302cdcf729123730439ef0132d1e272e72403ca3855410f0a48f351",
+    "translation": "列出可用的 Niagara 工具。",
+    "translated_source_hash": "bf0cf78ffa6c61849ba043d27cfa7494c02a22973394baf3377ff26fa773288e",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/BatchEffects/MassBattleNiagaraMCPApi.h",
     "name": "UMassBattleNiagaraMCPApi::MCP_NiagaraGetApiStatus",
     "field": "brief",
-    "source_text": "List Niagara MCP API capabilities.",
-    "source_hash": "7acc72cd5302cdcf729123730439ef0132d1e272e72403ca3855410f0a48f351"
+    "source_text": "List available Niagara tools.",
+    "source_hash": "bf0cf78ffa6c61849ba043d27cfa7494c02a22973394baf3377ff26fa773288e"
   },
   {
     "id": "69002c5785e40ac7fb85d8ff:details",
@@ -2531,14 +2531,14 @@
   },
   {
     "id": "6e532f452a683bce1d9d0456:brief",
-    "translation": "按风格、系列和路径类别汇总 MassBattle 单位。",
-    "translated_source_hash": "0778d4f0f742c67d5713f08fb1b3de4b0bfce619656e25fba88bab7e81820c3c",
+    "translation": "按风格汇总单位。",
+    "translated_source_hash": "e69b0284d552f7936d89ca11492194c355a0c4a92cd67fdac4edc637398f1d61",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
     "name": "UMassBattleStyleMCPApi::MCP_StyleSummarizeUnits",
     "field": "brief",
-    "source_text": "Summarize MassBattle unit organization by style, family, and path category.",
-    "source_hash": "0778d4f0f742c67d5713f08fb1b3de4b0bfce619656e25fba88bab7e81820c3c"
+    "source_text": "Summarize units by style.",
+    "source_hash": "e69b0284d552f7936d89ca11492194c355a0c4a92cd67fdac4edc637398f1d61"
   },
   {
     "id": "6e532f452a683bce1d9d0456:details",
@@ -2597,14 +2597,14 @@
   },
   {
     "id": "70cb383a77dbbd99fc641365:brief",
-    "translation": "读取 MassBattle 单位配置资产。",
-    "translated_source_hash": "b296518d5b3c89a8ace871c19aea9a3c9c4537c581f2f5772f1a181c84237430",
+    "translation": "读取单位配置。",
+    "translated_source_hash": "275122073527a564997142c57c094a62509c0d8e9da4c21b3fbc4e4193ed4522",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
     "name": "UMassBattleUnitMCPApi::MCP_UnitGet",
     "field": "brief",
-    "source_text": "Read a MassBattle unit config asset.",
-    "source_hash": "b296518d5b3c89a8ace871c19aea9a3c9c4537c581f2f5772f1a181c84237430"
+    "source_text": "Read a unit configuration.",
+    "source_hash": "275122073527a564997142c57c094a62509c0d8e9da4c21b3fbc4e4193ed4522"
   },
   {
     "id": "70cb383a77dbbd99fc641365:details",
@@ -2685,14 +2685,14 @@
   },
   {
     "id": "713e7cc2433a3e9e5d433076:brief",
-    "translation": "诊断性预览与 MassBattleTools DoAll 等价的 VAT 单位生成规划；严格执行仍需完整规范输入。",
-    "translated_source_hash": "6c9ce43f48ab3c91affa0dc2d309f51097a3c300c5a42d5bd04faaf991684ecb",
+    "translation": "预览 VAT 单位生成方案。",
+    "translated_source_hash": "7970b171d156614ffbf206d241e208ec3ca1c8222a9be2e388be41d5f21545bf",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
     "name": "UMassBattleUnitEditorMCPApi::MCP_EditorPlanCreateVatUnit",
     "field": "brief",
-    "source_text": "Diagnostic: preview the MassBattleTools DoAll-equivalent VAT unit plan; strict apply still requires complete canonical inputs.",
-    "source_hash": "6c9ce43f48ab3c91affa0dc2d309f51097a3c300c5a42d5bd04faaf991684ecb"
+    "source_text": "Preview VAT unit generation.",
+    "source_hash": "7970b171d156614ffbf206d241e208ec3ca1c8222a9be2e388be41d5f21545bf"
   },
   {
     "id": "713e7cc2433a3e9e5d433076:details",
@@ -2762,14 +2762,14 @@
   },
   {
     "id": "75df77daf143abcbe739d1ac:brief",
-    "translation": "读取可编辑的 MassBattle 单位字段结构。",
-    "translated_source_hash": "171b88b9718c499311ad1cbe3802e4027629bb573c0719e095f8dd69faf83162",
+    "translation": "读取单位的可编辑字段。",
+    "translated_source_hash": "7ee6b85e90ed9d5a523c09c06eb54a2957e75920e2a7e50da66ce5f3186098a7",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
     "name": "UMassBattleUnitMCPApi::MCP_UnitGetSchema",
     "field": "brief",
-    "source_text": "Read editable MassBattle unit schema information.",
-    "source_hash": "171b88b9718c499311ad1cbe3802e4027629bb573c0719e095f8dd69faf83162"
+    "source_text": "Read editable unit fields.",
+    "source_hash": "7ee6b85e90ed9d5a523c09c06eb54a2957e75920e2a7e50da66ce5f3186098a7"
   },
   {
     "id": "75df77daf143abcbe739d1ac:details",
@@ -2828,14 +2828,14 @@
   },
   {
     "id": "7a05a9ee35a81326094b0c55:brief",
-    "translation": "读取已有单位变更规划及其完整差异。",
-    "translated_source_hash": "54b8cce1d2690ecef80d07005d10ea8e93363ec4eb184cf33deccb94d300ffac",
+    "translation": "读取单位变更方案及其差异。",
+    "translated_source_hash": "e6df786a676ae3e7ac2386ef01bf17495a2e51b6382dfd65f6f97322f1d95ba5",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
     "name": "UMassBattleUnitMCPApi::MCP_UnitPreviewDiff",
     "field": "brief",
-    "source_text": "Read a previously created unit mutation plan and its complete diff.",
-    "source_hash": "54b8cce1d2690ecef80d07005d10ea8e93363ec4eb184cf33deccb94d300ffac"
+    "source_text": "Read a unit plan and its changes.",
+    "source_hash": "e6df786a676ae3e7ac2386ef01bf17495a2e51b6382dfd65f6f97322f1d95ba5"
   },
   {
     "id": "7a05a9ee35a81326094b0c55:details",
@@ -2905,14 +2905,14 @@
   },
   {
     "id": "7b779567d9d6cabf5c6056f9:brief",
-    "translation": "应用已审阅的单位变更规划，并按选项保存资产。",
-    "translated_source_hash": "0d29db2a67add34eee776eb12792ccc96b7689b4d4b2b53b3be06328d4b52f78",
+    "translation": "执行单位变更方案。",
+    "translated_source_hash": "8d118c261262107d49bbb08c44996409bca43763d4040fd61ced8bb1677e2eef",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
     "name": "UMassBattleUnitMCPApi::MCP_UnitApplyPlan",
     "field": "brief",
-    "source_text": "Apply a reviewed unit mutation plan and optionally save the asset.",
-    "source_hash": "0d29db2a67add34eee776eb12792ccc96b7689b4d4b2b53b3be06328d4b52f78"
+    "source_text": "Apply a unit modification plan.",
+    "source_hash": "8d118c261262107d49bbb08c44996409bca43763d4040fd61ced8bb1677e2eef"
   },
   {
     "id": "7b779567d9d6cabf5c6056f9:details",
@@ -3004,14 +3004,14 @@
   },
   {
     "id": "8304f02e918c6dd9d6fb1580:brief",
-    "translation": "设置批处理特效子类型对应的 AMassBattleFxRenderer 蓝图类默认值。",
-    "translated_source_hash": "8c618a743949e7bbaf847380ec78d836e9ffaa3b8bc4c3b5ec0baa877185093f",
+    "translation": "设置批处理特效渲染器默认配置。",
+    "translated_source_hash": "3c92f94049e85fb54a8296a44e4912aba0ea42bf80048be6b82230d7d35f7a08",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/BatchEffects/MassBattleEffectAssetMCPApi.h",
     "name": "UMassBattleEffectAssetMCPApi::MCP_BatchFxSetRendererDefaults",
     "field": "brief",
-    "source_text": "Set AMassBattleFxRenderer Blueprint CDO defaults for a batched FX subtype.",
-    "source_hash": "8c618a743949e7bbaf847380ec78d836e9ffaa3b8bc4c3b5ec0baa877185093f"
+    "source_text": "Configure batch effect renderer defaults.",
+    "source_hash": "3c92f94049e85fb54a8296a44e4912aba0ea42bf80048be6b82230d7d35f7a08"
   },
   {
     "id": "8304f02e918c6dd9d6fb1580:details",
@@ -3202,14 +3202,14 @@
   },
   {
     "id": "887e7cad8d6339fae2c28595:brief",
-    "translation": "合并写入 Niagara 属性，保留未指定内容且不执行删除。",
-    "translated_source_hash": "d542f4fd5f935f22d6e88c7315db9d354b0f20e2b4f1484d17c4388c0208fddc",
+    "translation": "更新指定的 Niagara 属性。",
+    "translated_source_hash": "a2c49241698a7e29c8a9b3e2579c5671f3d96a537a749320bf43be3898d3bc4e",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/BatchEffects/MassBattleNiagaraMCPApi.h",
     "name": "UMassBattleNiagaraMCPApi::MCP_NiagaraMergeWrite",
     "field": "brief",
-    "source_text": "Union-merge Niagara property writes. This does not delete.",
-    "source_hash": "d542f4fd5f935f22d6e88c7315db9d354b0f20e2b4f1484d17c4388c0208fddc"
+    "source_text": "Update selected Niagara properties.",
+    "source_hash": "a2c49241698a7e29c8a9b3e2579c5671f3d96a537a749320bf43be3898d3bc4e"
   },
   {
     "id": "887e7cad8d6339fae2c28595:details",
@@ -3312,14 +3312,14 @@
   },
   {
     "id": "8edb1e011964b43f299942c1:brief",
-    "translation": "列出 MassBattle 单位编辑流程的能力。",
-    "translated_source_hash": "deb7e91094d11553ba9bb23f0621feb371d2402818cd12685f67f6ff0f046530",
+    "translation": "列出可用的单位编辑工具。",
+    "translated_source_hash": "125db842d67ccb5d8ef8a64d5de15b7e604925c737403ea502424aed50be9b8e",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
     "name": "UMassBattleUnitEditorMCPApi::MCP_EditorGetStatus",
     "field": "brief",
-    "source_text": "List MassBattle unit editor workflow capabilities.",
-    "source_hash": "deb7e91094d11553ba9bb23f0621feb371d2402818cd12685f67f6ff0f046530"
+    "source_text": "List available unit editor tools.",
+    "source_hash": "125db842d67ccb5d8ef8a64d5de15b7e604925c737403ea502424aed50be9b8e"
   },
   {
     "id": "8edb1e011964b43f299942c1:details",
@@ -3356,14 +3356,14 @@
   },
   {
     "id": "92db2801752bdb4e295d2cfc:brief",
-    "translation": "Niagara MCP 基础工具。",
-    "translated_source_hash": "8d4d4a9197099eb32acb53be84e94c499b9ed4cc64ff33ac88d087392ffb1bc3",
+    "translation": "检查和编辑 Niagara 系统。",
+    "translated_source_hash": "74771503bcbed27472c7f9093883a09b7979352659118cec4f88a9445732e896",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/BatchEffects/MassBattleNiagaraMCPApi.h",
     "name": "UMassBattleNiagaraMCPApi",
     "field": "brief",
-    "source_text": "Low-level Niagara MCP tools.",
-    "source_hash": "8d4d4a9197099eb32acb53be84e94c499b9ed4cc64ff33ac88d087392ffb1bc3"
+    "source_text": "Inspect and edit Niagara systems.",
+    "source_hash": "74771503bcbed27472c7f9093883a09b7979352659118cec4f88a9445732e896"
   },
   {
     "id": "92db2801752bdb4e295d2cfc:details",
@@ -3389,14 +3389,14 @@
   },
   {
     "id": "995da1fa0d6cc1a116568209:brief",
-    "translation": "执行明确的 Niagara 删除操作，例如移除渲染器或用户参数。",
-    "translated_source_hash": "7b8d331064e5bf1a8403282e15fdaf0fc6263da3a71aa0d5485d0b92c6880db5",
+    "translation": "移除指定的 Niagara 元素。",
+    "translated_source_hash": "18d4d92fd8a2106476b7280619f897591aef01a55a5a3b7616a0df4ff0396dc0",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/BatchEffects/MassBattleNiagaraMCPApi.h",
     "name": "UMassBattleNiagaraMCPApi::MCP_NiagaraDelete",
     "field": "brief",
-    "source_text": "Run explicit Niagara delete operations such as renderer or user-parameter removal.",
-    "source_hash": "7b8d331064e5bf1a8403282e15fdaf0fc6263da3a71aa0d5485d0b92c6880db5"
+    "source_text": "Remove selected Niagara elements.",
+    "source_hash": "18d4d92fd8a2106476b7280619f897591aef01a55a5a3b7616a0df4ff0396dc0"
   },
   {
     "id": "995da1fa0d6cc1a116568209:details",
@@ -3499,14 +3499,14 @@
   },
   {
     "id": "9fbe36f339d1c9b8106b5e52:brief",
-    "translation": "读取投射物字段类型、枚举、编辑条件、提示和写入规则。",
-    "translated_source_hash": "3f687d81e9d25e45e6991744d2e369080749bdb837de89e50317a90edcbcba5b",
+    "translation": "读取投射物的可编辑字段。",
+    "translated_source_hash": "05c6bb80dc5c30547534c46ccc0d6d6a9f4d01ddcc2db958361bc13ea627e787",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleProjectileMCPApi.h",
     "name": "UMassBattleProjectileMCPApi::MCP_ProjectileGetSchema",
     "field": "brief",
-    "source_text": "Read projectile field types, enums, conditions, tooltips, and write rules.",
-    "source_hash": "3f687d81e9d25e45e6991744d2e369080749bdb837de89e50317a90edcbcba5b"
+    "source_text": "Read editable projectile fields.",
+    "source_hash": "05c6bb80dc5c30547534c46ccc0d6d6a9f4d01ddcc2db958361bc13ea627e787"
   },
   {
     "id": "9fbe36f339d1c9b8106b5e52:details",
@@ -3565,14 +3565,14 @@
   },
   {
     "id": "a216bb0bb8f23afffbd96e5a:brief",
-    "translation": "用于特效资产检查、管理和批处理渲染配置的 MCP 接口。",
-    "translated_source_hash": "efb5d67bfcacae5d33f2953ea6f5ec4da6e87e38e790a50617905062c09dac46",
+    "translation": "管理特效资产并配置批处理渲染器。",
+    "translated_source_hash": "e0a0924a03caa201a5fa52d1bb4f51b843fb1dcf1e9cb367eb8301db86a3f7e7",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/BatchEffects/MassBattleEffectAssetMCPApi.h",
     "name": "MassBattleEffectAssetMCPApi.h",
     "field": "brief",
-    "source_text": "用于特效资产检查、管理和批处理渲染配置的 MCP 接口。",
-    "source_hash": "efb5d67bfcacae5d33f2953ea6f5ec4da6e87e38e790a50617905062c09dac46"
+    "source_text": "Effect asset management and batch renderer configuration.",
+    "source_hash": "e0a0924a03caa201a5fa52d1bb4f51b843fb1dcf1e9cb367eb8301db86a3f7e7"
   },
   {
     "id": "a216bb0bb8f23afffbd96e5a:details",
@@ -3598,14 +3598,14 @@
   },
   {
     "id": "a6b89cde4343d33b2ff63bb0:brief",
-    "translation": "设置单个 Niagara 函数调用模块输入引脚的默认值。",
-    "translated_source_hash": "f71083730df7feb9bdaa2fee41b9121db8469115698ca45688c96a8122941dd4",
+    "translation": "设置 Niagara 模块输入默认值。",
+    "translated_source_hash": "69ee886aeaa308ad3ac102117b6e7f9140d10482c156ad2091a474915868289c",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/BatchEffects/MassBattleNiagaraMCPApi.h",
     "name": "UMassBattleNiagaraMCPApi::MCP_NiagaraSetModulePin",
     "field": "brief",
-    "source_text": "Set one Niagara function-call module input pin default value.",
-    "source_hash": "f71083730df7feb9bdaa2fee41b9121db8469115698ca45688c96a8122941dd4"
+    "source_text": "Set a Niagara module input default.",
+    "source_hash": "69ee886aeaa308ad3ac102117b6e7f9140d10482c156ad2091a474915868289c"
   },
   {
     "id": "a6b89cde4343d33b2ff63bb0:details",
@@ -3752,14 +3752,14 @@
   },
   {
     "id": "a759b4f8cd64fc9054a1d43e:brief",
-    "translation": "导出用于详细阅读的 Niagara 确定性文本。",
-    "translated_source_hash": "259e89d25f579e2b6b4c7982772a6bc3b37ecae601f7f023f73d4713507809b6",
+    "translation": "将 Niagara 系统导出为文本。",
+    "translated_source_hash": "3d843f5fa130f4d753b08c659f3eca8f0ea9f9a4663534ab0245ab5e20830aa6",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/BatchEffects/MassBattleNiagaraMCPApi.h",
     "name": "UMassBattleNiagaraMCPApi::MCP_NiagaraExportText",
     "field": "brief",
-    "source_text": "Export deterministic Niagara text for close reading.",
-    "source_hash": "259e89d25f579e2b6b4c7982772a6bc3b37ecae601f7f023f73d4713507809b6"
+    "source_text": "Export a Niagara system as text.",
+    "source_hash": "3d843f5fa130f4d753b08c659f3eca8f0ea9f9a4663534ab0245ab5e20830aa6"
   },
   {
     "id": "a759b4f8cd64fc9054a1d43e:details",
@@ -3840,14 +3840,14 @@
   },
   {
     "id": "ace0ea6f2364692aea1b491f:brief",
-    "translation": "显式启用或禁用单个 Niagara 发射器句柄。",
-    "translated_source_hash": "7980a3afabc3607acb775f0ea09e126147a78c5b1678bf2eac53d6cc9a3dea5b",
+    "translation": "启用或禁用 Niagara 发射器。",
+    "translated_source_hash": "c9e55c34fb97922f800742bc748d8b57e6b0f48e91ebef428172df8e7bab6af7",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/BatchEffects/MassBattleNiagaraMCPApi.h",
     "name": "UMassBattleNiagaraMCPApi::MCP_NiagaraSetEmitterEnabled",
     "field": "brief",
-    "source_text": "Explicitly enable or disable one Niagara emitter handle.",
-    "source_hash": "7980a3afabc3607acb775f0ea09e126147a78c5b1678bf2eac53d6cc9a3dea5b"
+    "source_text": "Enable or disable a Niagara emitter.",
+    "source_hash": "c9e55c34fb97922f800742bc748d8b57e6b0f48e91ebef428172df8e7bab6af7"
   },
   {
     "id": "ace0ea6f2364692aea1b491f:details",
@@ -3972,14 +3972,14 @@
   },
   {
     "id": "b804e2a2a4a024f0d72829eb:brief",
-    "translation": "经临时预检查和校验后，合并写入与源码字段对应的投射物数据。",
-    "translated_source_hash": "cb2fbb9f88ee9baad7affe9544b4800599b592974a156c2d4f379c2d64b64614",
+    "translation": "更新指定的投射物字段。",
+    "translated_source_hash": "9a7c7eef3904391fde4119d80f74e80692c3c53d63743058591d86e49cf9c3e2",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleProjectileMCPApi.h",
     "name": "UMassBattleProjectileMCPApi::MCP_ProjectileWrite",
     "field": "brief",
-    "source_text": "Union-write source-aligned projectile data after transient preflight and validation.",
-    "source_hash": "cb2fbb9f88ee9baad7affe9544b4800599b592974a156c2d4f379c2d64b64614"
+    "source_text": "Update selected projectile fields.",
+    "source_hash": "9a7c7eef3904391fde4119d80f74e80692c3c53d63743058591d86e49cf9c3e2"
   },
   {
     "id": "b804e2a2a4a024f0d72829eb:details",
@@ -4093,14 +4093,14 @@
   },
   {
     "id": "b9c8ea24e9f1bb329f8ea4af:brief",
-    "translation": "规划或删除投射物数据资产；dry_run 默认为 true。",
-    "translated_source_hash": "333472fc906d0ff78041c5b202c2a28105ae7c544a65a4c4210841ab042aaece",
+    "translation": "删除投射物配置。",
+    "translated_source_hash": "57cb8d4fb6cd3a02e604c30bd61e9371bbce45be3f124361c6a85be4ba9fc624",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleProjectileMCPApi.h",
     "name": "UMassBattleProjectileMCPApi::MCP_ProjectileDelete",
     "field": "brief",
-    "source_text": "Plan or delete a projectile DataAsset; dry_run=true by default.",
-    "source_hash": "333472fc906d0ff78041c5b202c2a28105ae7c544a65a4c4210841ab042aaece"
+    "source_text": "Delete a projectile configuration.",
+    "source_hash": "57cb8d4fb6cd3a02e604c30bd61e9371bbce45be3f124361c6a85be4ba9fc624"
   },
   {
     "id": "b9c8ea24e9f1bb329f8ea4af:details",
@@ -4181,14 +4181,14 @@
   },
   {
     "id": "bcb1c45cee3e0fa375ae54f0:brief",
-    "translation": "从 Unreal 编辑器读取单位 MCP API 的能力列表。",
-    "translated_source_hash": "ad31e11bcd98b0cb413c7070063f3dc77aed7eaedd003205bfbed1b6d901149a",
+    "translation": "列出可用的单位工具。",
+    "translated_source_hash": "afdcdee975d02cdefd56e3730ce59b9ba18b1d394183f282b85cf923087d9638",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
     "name": "UMassBattleUnitMCPApi::MCP_UnitGetApiStatus",
     "field": "brief",
-    "source_text": "List Unit MCP API capabilities from Unreal.",
-    "source_hash": "ad31e11bcd98b0cb413c7070063f3dc77aed7eaedd003205bfbed1b6d901149a"
+    "source_text": "List available unit tools.",
+    "source_hash": "afdcdee975d02cdefd56e3730ce59b9ba18b1d394183f282b85cf923087d9638"
   },
   {
     "id": "bcb1c45cee3e0fa375ae54f0:details",
@@ -4225,14 +4225,14 @@
   },
   {
     "id": "bcebab4067df23167e6b26d5:brief",
-    "translation": "读取单个 MassBattle 单位风格配置或配方。",
-    "translated_source_hash": "11d05f3f6ac13c2458e72e44d328fe04f1a5cd5ada7f79291cc2fa1733b7e579",
+    "translation": "读取单位风格或制作配方。",
+    "translated_source_hash": "93e2e5b2edaa86005108740d81f04609206325c1e2d4d58e384d77f98b915d93",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
     "name": "UMassBattleUnitEditorMCPApi::MCP_EditorGetProfile",
     "field": "brief",
-    "source_text": "Read one MassBattle unit style profile or recipe.",
-    "source_hash": "11d05f3f6ac13c2458e72e44d328fe04f1a5cd5ada7f79291cc2fa1733b7e579"
+    "source_text": "Read a unit style or recipe.",
+    "source_hash": "93e2e5b2edaa86005108740d81f04609206325c1e2d4d58e384d77f98b915d93"
   },
   {
     "id": "bcebab4067df23167e6b26d5:details",
@@ -4324,14 +4324,14 @@
   },
   {
     "id": "c0e0517912a3f45b7ec2d79e:brief",
-    "translation": "MassBattle 编辑器流程的 MCP 接口。",
-    "translated_source_hash": "c70c939dd848dfb0b514517cd85bea5046e5c60b9e980456aae7b69e2844492d",
+    "translation": "生成 VAT 单位并整理关联资产。",
+    "translated_source_hash": "6630f40fafb20f01e844c73f65249b724005fd716bc326ad6c769243697b6d26",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
     "name": "UMassBattleUnitEditorMCPApi",
     "field": "brief",
-    "source_text": "MCP version of the MassBattle editor workflow.",
-    "source_hash": "c70c939dd848dfb0b514517cd85bea5046e5c60b9e980456aae7b69e2844492d"
+    "source_text": "Generate VAT units and organize their assets.",
+    "source_hash": "6630f40fafb20f01e844c73f65249b724005fd716bc326ad6c769243697b6d26"
   },
   {
     "id": "c0e0517912a3f45b7ec2d79e:details",
@@ -4357,14 +4357,14 @@
   },
   {
     "id": "c9038103dd9cd30c636091f3:brief",
-    "translation": "查找可用于 MassBattle 单位创作的项目资产。",
-    "translated_source_hash": "e91140218a8cf61952d236ac8ae1b4a6ade0ff2f01524d8ceeb4ee4a58e2f67e",
+    "translation": "查找单位制作所需的资产。",
+    "translated_source_hash": "bbe2d2d8542e31deaf1317b3654840118ba88c2d5cf683be49975a650cfdf1f1",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
     "name": "UMassBattleUnitMCPApi::MCP_UnitFindAssets",
     "field": "brief",
-    "source_text": "Find project assets useful for MassBattle unit authoring.",
-    "source_hash": "e91140218a8cf61952d236ac8ae1b4a6ade0ff2f01524d8ceeb4ee4a58e2f67e"
+    "source_text": "Find assets for unit authoring.",
+    "source_hash": "bbe2d2d8542e31deaf1317b3654840118ba88c2d5cf683be49975a650cfdf1f1"
   },
   {
     "id": "c9038103dd9cd30c636091f3:details",
@@ -4423,14 +4423,14 @@
   },
   {
     "id": "c984d38817739fb8647bc21b:brief",
-    "translation": "从默认模板或指定模板创建 MassBattle 单位。",
-    "translated_source_hash": "408ee76227dab302d082cbd652aa3f53afd274b236d1ba85a03cd8cb91987bdd",
+    "translation": "从模板创建单位。",
+    "translated_source_hash": "5487c067fefc8d4c2cdaaacf484f6b33addf0cbdc9acd89d2d81a16f83205963",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
     "name": "UMassBattleUnitMCPApi::MCP_UnitCreate",
     "field": "brief",
-    "source_text": "Create a MassBattle unit from the default or specified template.",
-    "source_hash": "408ee76227dab302d082cbd652aa3f53afd274b236d1ba85a03cd8cb91987bdd"
+    "source_text": "Create a unit from a template.",
+    "source_hash": "5487c067fefc8d4c2cdaaacf484f6b33addf0cbdc9acd89d2d81a16f83205963"
   },
   {
     "id": "c984d38817739fb8647bc21b:details",
@@ -4511,14 +4511,14 @@
   },
   {
     "id": "cd233af70f1d8c2728f692b2:brief",
-    "translation": "按完整规范输入执行与 DoAll 等价的 VAT 单位生成，并在写入资产前校验。",
-    "translated_source_hash": "37ea3fbb5d4158a32eb4eb1cfeefeb91f8c28a469649ec4afadb15724324fcb1",
+    "translation": "按指定参数生成 VAT 单位。",
+    "translated_source_hash": "46ef920b5073c1992ba276dc4c1942648ce255e59602c082438551b03f986dd2",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
     "name": "UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnit",
     "field": "brief",
-    "source_text": "Primary non-selection DoAll-equivalent VAT unit authoring entry; requires canonical complete inputs and validates before writing assets.",
-    "source_hash": "37ea3fbb5d4158a32eb4eb1cfeefeb91f8c28a469649ec4afadb15724324fcb1"
+    "source_text": "Generate a VAT unit from a specification.",
+    "source_hash": "46ef920b5073c1992ba276dc4c1942648ce255e59602c082438551b03f986dd2"
   },
   {
     "id": "cd233af70f1d8c2728f692b2:details",
@@ -4610,14 +4610,14 @@
   },
   {
     "id": "d4646de84643b992c382d68b:brief",
-    "translation": "规划按风格整理 MassBattle 单位目录，保留资产原位置。",
-    "translated_source_hash": "6a0b663aeee3465098a1820d479c846a6bf2e1471421d2f2c5638dc7c18def3f",
+    "translation": "按风格规划单位目录。",
+    "translated_source_hash": "3bd511bc800280da44e8ded1118418e4e0921e217eee02176c7ea4c34509bd55",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
     "name": "UMassBattleStyleMCPApi::MCP_StylePlanOrganizeUnits",
     "field": "brief",
-    "source_text": "Plan style-based MassBattle unit folder organization without moving assets.",
-    "source_hash": "6a0b663aeee3465098a1820d479c846a6bf2e1471421d2f2c5638dc7c18def3f"
+    "source_text": "Plan unit folders by style.",
+    "source_hash": "3bd511bc800280da44e8ded1118418e4e0921e217eee02176c7ea4c34509bd55"
   },
   {
     "id": "d4646de84643b992c382d68b:details",
@@ -4676,14 +4676,14 @@
   },
   {
     "id": "d4ef2affa58f66bfde166f8e:brief",
-    "translation": "读取特效资产对应类型的摘要。",
-    "translated_source_hash": "d73887429d512b1a931d7a0428b9fa55d5d88df79f7919fee44f5568918ee780",
+    "translation": "读取特效资产摘要。",
+    "translated_source_hash": "be9d1202b7ba956dfe61d61e3cde133f4f34005e3ff1e718f3787fde905f1cde",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/BatchEffects/MassBattleEffectAssetMCPApi.h",
     "name": "UMassBattleEffectAssetMCPApi::MCP_EffectAssetReadSummary",
     "field": "brief",
-    "source_text": "Read a typed summary for an effect-related asset.",
-    "source_hash": "d73887429d512b1a931d7a0428b9fa55d5d88df79f7919fee44f5568918ee780"
+    "source_text": "Read an effect asset summary.",
+    "source_hash": "be9d1202b7ba956dfe61d61e3cde133f4f34005e3ff1e718f3787fde905f1cde"
   },
   {
     "id": "d4ef2affa58f66bfde166f8e:details",
@@ -4764,14 +4764,14 @@
   },
   {
     "id": "d6ce6c7a919747b536e02a1f:brief",
-    "translation": "从模板或类默认值创建投射物数据资产。",
-    "translated_source_hash": "a171c176874e2ed80779377d9e9849bbab3bf69505d6ca5ddbc91d0bb24f9a27",
+    "translation": "创建投射物配置。",
+    "translated_source_hash": "68c67b6481207445f762f31c188a7fa59e78daa127163126466da23b219a631a",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleProjectileMCPApi.h",
     "name": "UMassBattleProjectileMCPApi::MCP_ProjectileCreate",
     "field": "brief",
-    "source_text": "Create a projectile DataAsset from a template or class defaults.",
-    "source_hash": "a171c176874e2ed80779377d9e9849bbab3bf69505d6ca5ddbc91d0bb24f9a27"
+    "source_text": "Create a projectile configuration.",
+    "source_hash": "68c67b6481207445f762f31c188a7fa59e78daa127163126466da23b219a631a"
   },
   {
     "id": "d6ce6c7a919747b536e02a1f:details",
@@ -4940,14 +4940,14 @@
   },
   {
     "id": "da2c4941d49ab17eec32a854:brief",
-    "translation": "诊断性校验与 DoAll 等价的 VAT 单位输入，不写入资产。",
-    "translated_source_hash": "d4e8d5789802def30e74e50eace27d25ef5eac2279820a060be0ac71b9fd36b5",
+    "translation": "校验 VAT 单位生成参数。",
+    "translated_source_hash": "af8159872fc2f167cb56a3a7b0f114fab875f70b1d78df71b9f82ce2db00f9f9",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
     "name": "UMassBattleUnitEditorMCPApi::MCP_EditorValidateCreateVatUnit",
     "field": "brief",
-    "source_text": "Diagnostic: validate DoAll-equivalent VAT unit inputs without writing assets.",
-    "source_hash": "d4e8d5789802def30e74e50eace27d25ef5eac2279820a060be0ac71b9fd36b5"
+    "source_text": "Validate VAT unit generation inputs.",
+    "source_hash": "af8159872fc2f167cb56a3a7b0f114fab875f70b1d78df71b9f82ce2db00f9f9"
   },
   {
     "id": "da2c4941d49ab17eec32a854:details",
@@ -5006,14 +5006,14 @@
   },
   {
     "id": "e447a21781410439a3eb4807:brief",
-    "translation": "面向 MassBattle 单位配置资产的 MCP API。",
-    "translated_source_hash": "1443c4d224b6c59eedd665838846c52cc42c986b5f73f3658b9257d927fa6a19",
+    "translation": "读写 MassBattle 单位配置。",
+    "translated_source_hash": "43cacf7122ea8eb8212e8386f4741f94bed841270be14ad43dd785d6bdfad62f",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
     "name": "UMassBattleUnitMCPApi",
     "field": "brief",
-    "source_text": "Unit-focused MCP API for MassBattle agent config assets.",
-    "source_hash": "1443c4d224b6c59eedd665838846c52cc42c986b5f73f3658b9257d927fa6a19"
+    "source_text": "Read and edit MassBattle unit configurations.",
+    "source_hash": "43cacf7122ea8eb8212e8386f4741f94bed841270be14ad43dd785d6bdfad62f"
   },
   {
     "id": "e447a21781410439a3eb4807:details",
@@ -5039,14 +5039,14 @@
   },
   {
     "id": "e4d95ad1ba5fad1316a37332:brief",
-    "translation": "查询 Niagara、Cascade、材质、蓝图及相关视觉特效资产。",
-    "translated_source_hash": "5da1ceef94d4db8e87a8099a56514898265cf7592dc0ba89fe67975a5268aaa4",
+    "translation": "查找特效资产。",
+    "translated_source_hash": "958422272e4a954dd84ab5340be589dd6260dfad23698b884df638346ce80d63",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/BatchEffects/MassBattleEffectAssetMCPApi.h",
     "name": "UMassBattleEffectAssetMCPApi::MCP_EffectAssetQuery",
     "field": "brief",
-    "source_text": "Query Niagara, Cascade, material, Blueprint, and related visual effect assets.",
-    "source_hash": "5da1ceef94d4db8e87a8099a56514898265cf7592dc0ba89fe67975a5268aaa4"
+    "source_text": "Find effect assets.",
+    "source_hash": "958422272e4a954dd84ab5340be589dd6260dfad23698b884df638346ce80d63"
   },
   {
     "id": "e4d95ad1ba5fad1316a37332:details",
@@ -5105,14 +5105,14 @@
   },
   {
     "id": "e4ecdc9e9ad4af21cb7a0133:brief",
-    "translation": "列出 MassBattle 单位配置资产。",
-    "translated_source_hash": "028969382e0e86241d6e593a83a2d7ec4db7150aed2a6f126eb28026297b962a",
+    "translation": "列出单位配置资产。",
+    "translated_source_hash": "7f162c09f47bc9cb5897b7f24b0942a48630c6dec82d7a92ba1de2541c23a3a2",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
     "name": "UMassBattleUnitMCPApi::MCP_UnitList",
     "field": "brief",
-    "source_text": "List MassBattle unit config assets.",
-    "source_hash": "028969382e0e86241d6e593a83a2d7ec4db7150aed2a6f126eb28026297b962a"
+    "source_text": "List unit configuration assets.",
+    "source_hash": "7f162c09f47bc9cb5897b7f24b0942a48630c6dec82d7a92ba1de2541c23a3a2"
   },
   {
     "id": "e4ecdc9e9ad4af21cb7a0133:details",
@@ -5171,14 +5171,14 @@
   },
   {
     "id": "ed6542a04ab8e639b6eb2caf:brief",
-    "translation": "校验移动、伤害归属、触发器、生命周期特效和重复爆炸。",
-    "translated_source_hash": "117de97e130e3e81d2345f6ff7ba5b0e4c94a0c04c39aca2eb1cba69037a7a07",
+    "translation": "校验投射物配置。",
+    "translated_source_hash": "b0bf556ff18e3b6173607326c149dde5baf26642510a8d0c0c9f4da3abd04349",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleProjectileMCPApi.h",
     "name": "UMassBattleProjectileMCPApi::MCP_ProjectileValidate",
     "field": "brief",
-    "source_text": "Validate movement, damage ownership, triggers, lifecycle FX, and duplicate explosions.",
-    "source_hash": "117de97e130e3e81d2345f6ff7ba5b0e4c94a0c04c39aca2eb1cba69037a7a07"
+    "source_text": "Validate a projectile configuration.",
+    "source_hash": "b0bf556ff18e3b6173607326c149dde5baf26642510a8d0c0c9f4da3abd04349"
   },
   {
     "id": "ed6542a04ab8e639b6eb2caf:details",
@@ -5259,14 +5259,14 @@
   },
   {
     "id": "ed8062a5e38633ab1ae47e8f:brief",
-    "translation": "列出 MassBattle 单位风格配置和创作配方。",
-    "translated_source_hash": "4b0d5f3109fcf1e1a049132e4af3f8ee0eef0d629e4620aea9b43e1ea03f0245",
+    "translation": "列出单位风格和制作配方。",
+    "translated_source_hash": "f7efbfaa6eaa323733c5f569e922f0bfce6d245fe852722fa65c088fa6d97253",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
     "name": "UMassBattleUnitEditorMCPApi::MCP_EditorListProfiles",
     "field": "brief",
-    "source_text": "List MassBattle unit style profiles and authoring recipes.",
-    "source_hash": "4b0d5f3109fcf1e1a049132e4af3f8ee0eef0d629e4620aea9b43e1ea03f0245"
+    "source_text": "List unit styles and recipes.",
+    "source_hash": "f7efbfaa6eaa323733c5f569e922f0bfce6d245fe852722fa65c088fa6d97253"
   },
   {
     "id": "ed8062a5e38633ab1ae47e8f:details",
@@ -5325,14 +5325,14 @@
   },
   {
     "id": "f3c18ab9e985aeaec7aad50f:brief",
-    "translation": "使用与来源无关的指纹，比较源 Niagara 系统及其副本或改造结果。",
-    "translated_source_hash": "a28986204217c0501e6395babf90df31abaa57e4d12f3ef8b362a9ed9378e9ba",
+    "translation": "比较两个 Niagara 系统。",
+    "translated_source_hash": "ff171f46904c68eb6bfa961336325ab7fcf6eff5789dfd5dfbe4e30d1129964a",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/BatchEffects/MassBattleNiagaraMCPApi.h",
     "name": "UMassBattleNiagaraMCPApi::MCP_NiagaraCompareSystems",
     "field": "brief",
-    "source_text": "Compare a source Niagara system with a duplicate/translation using source-neutral fingerprints.",
-    "source_hash": "a28986204217c0501e6395babf90df31abaa57e4d12f3ef8b362a9ed9378e9ba"
+    "source_text": "Compare two Niagara systems.",
+    "source_hash": "ff171f46904c68eb6bfa961336325ab7fcf6eff5789dfd5dfbe4e30d1129964a"
   },
   {
     "id": "f3c18ab9e985aeaec7aad50f:details",

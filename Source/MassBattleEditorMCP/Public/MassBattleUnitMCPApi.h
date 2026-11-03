@@ -8,9 +8,8 @@
 DECLARE_LOG_CATEGORY_EXTERN(LogMassBattleUnitMCPApi, Log, All);
 
 /**
- * Unit-focused MCP API for MassBattle agent config assets.
- *
- * This API is intentionally independent from UMGMCP. It exposes stable JSON
+ * @brief Read and edit MassBattle unit configurations.
+ * @details This API is intentionally independent from UMGMCP. It exposes stable JSON
  * entry points that any MCP transport layer can route to.
  */
 UCLASS()
@@ -25,7 +24,7 @@ public:
 
 	/**
 	 * @ProductDocument
-	 * @brief List MassBattle unit config assets.
+	 * @brief List unit configuration assets.
 	 * @details MCP tool: `unit_list`. Scans unit config assets, filters their object paths by query, and returns compact balance summaries. load_fields controls whether assets are loaded for authored values. The returned total_scanned counts candidates before the query and result limit.
 	 * @param[in] OptionsJson JSON object; pass {} to use the defaults. query is case-insensitive path text; limit is clamped to 1..2000; load_fields defaults to true.
 	 * @return JSON with success, count, total_scanned, units, roots and default_ignore_policy. Invalid JSON returns success=false with error.
@@ -35,7 +34,7 @@ public:
 
 	/**
 	 * @ProductDocument
-	 * @brief Read a MassBattle unit config asset.
+	 * @brief Read a unit configuration.
 	 * @details MCP tool: `unit_get`. Loads the requested unit or Unit Source Actor and returns source-aligned authored Data. The default simple view omits runtime, system and deprecated fields; a source Actor response also identifies export_path, exported_unit and last_report.
 	 * @param[in] UnitPath Unreal object path of the existing MassBattle unit config or supported Unit Source Actor Blueprint.
 	 * @param[in] OptionsJson JSON object; pass {} to use the defaults. Select the requested detail/object view and field inclusion policy; the response reports detail and default_ignore_policy.
@@ -46,7 +45,7 @@ public:
 
 	/**
 	 * @ProductDocument
-	 * @brief Read editable MassBattle unit schema information.
+	 * @brief Read editable unit fields.
 	 * @details MCP tool: `unit_get_schema`. Builds the editable property schema of UMassBattleAgentConfigDataAsset and applies the same default field-ignore policy as unit reads. Recursive mode expands nested struct fields so a caller can build a patch from real property names.
 	 * @param[in] OptionsJson JSON object; pass {} to use the defaults. recursive defaults to true; depth defaults to 3 in recursive mode and 0 otherwise, and is clamped to 0..8.
 	 * @return JSON with success, asset_class, fields and default_ignore_policy. Invalid JSON returns success=false and error.
@@ -56,7 +55,7 @@ public:
 
 	/**
 	 * @ProductDocument
-	 * @brief Export a compact MassBattle unit balance table to JSON or CSV.
+	 * @brief Export a unit balance table.
 	 * @details MCP tool: `unit_export`. Reads the selected unit balance fields and writes a JSON or CSV table. With no output_path, files are placed under the project Saved/MassBattleEditorMCP/Exports directory. The response identifies the created file and exported unit count.
 	 * @param[in] OptionsJson JSON object; pass {} to use the defaults. format chooses JSON or CSV; output_path selects the destination file. Unit scan and field options choose table contents.
 	 * @return JSON with success, format, output_path and unit_count. Invalid options or a file-save failure returns success=false and error.
@@ -69,7 +68,7 @@ public:
 
 	/**
 	 * @ProductDocument
-	 * @brief Plan a union-write and return its diff without mutating the unit.
+	 * @brief Preview unit configuration changes.
 	 * @details MCP tool: `unit_plan_write`. Builds and stores a union-merge plan from a partial source-aligned unit object. Omitted unit fields are retained. The asset is not modified; applicable and merge_errors describe whether the planned field changes can be applied.
 	 * @param[in] UnitPath Unreal object path of the existing MassBattle unit config or supported Unit Source Actor Blueprint.
 	 * @param[in] UnitDataJson Partial unit JSON using source property names. Include the fields to change; a Unit Source Actor patch may also contain export_path.
@@ -80,7 +79,7 @@ public:
 
 	/**
 	 * @ProductDocument
-	 * @brief Union-write partial MassBattle unit data to an existing unit.
+	 * @brief Update selected unit fields.
 	 * @details MCP tool: `unit_write`. Plans a union-merge, checks success and applicable, then applies the returned plan automatically. It retains omitted fields and returns the planning result when validation blocks application.
 	 * @param[in] UnitPath Unreal object path of the existing MassBattle unit config or supported Unit Source Actor Blueprint.
 	 * @param[in] UnitDataJson Partial source-aligned authored unit data. Obtain exact editable field names from the unit schema.
@@ -93,7 +92,7 @@ public:
 
 	/**
 	 * @ProductDocument
-	 * @brief Create a MassBattle unit from the default or specified template.
+	 * @brief Create a unit from a template.
 	 * @details MCP tool: `unit_create`. Creates a unit from the default or explicit template and optionally merges initial authored data. asset_type=source_actor creates a Unit Source Actor Blueprint; the ordinary branch creates the unit config. Target names must resolve to an unoccupied Unreal asset path.
 	 * @param[in] CreateSpecJson JSON with either unit_path/new_unit_path or both asset_name and package_path. template_unit selects a template; unit_data supplies initial authored values. asset_type=source_actor enables the source Blueprint branch and export_path configures its output.
 	 * @param[in] bSaveAssets Whether to save the modified or newly created assets to disk. The MCP tool supplies its documented save_assets default; false leaves changes in editor memory.
@@ -104,7 +103,7 @@ public:
 
 	/**
 	 * @ProductDocument
-	 * @brief Read a previously created unit mutation plan and its complete diff.
+	 * @brief Read a unit plan and its changes.
 	 * @details MCP tool: `unit_preview_plan`. Loads a previously stored mutation plan and returns its complete diff and applicability without applying it. This is the review step between planning and an explicit apply.
 	 * @param[in] PlanId plan_id returned by a unit planning operation.
 	 * @return JSON with success, plan_id, type, applicable, diff/diff_from_template and the complete plan. A missing or unreadable plan returns success=false and error.
@@ -115,7 +114,7 @@ public:
 
 	/**
 	 * @ProductDocument
-	 * @brief Apply a reviewed unit mutation plan and optionally save the asset.
+	 * @brief Apply a unit modification plan.
 	 * @details MCP tool: `unit_apply_plan`. Loads the stored plan, rejects a plan marked inapplicable, and executes its supported mutation type. The result records applied changes and the requested persistence behavior.
 	 * @param[in] PlanId Identifier of the reviewed stored unit mutation plan.
 	 * @param[in] bSaveAssets Whether to save the modified or newly created assets to disk. The MCP tool supplies its documented save_assets default; false leaves changes in editor memory.
@@ -134,7 +133,7 @@ public:
 
 	/**
 	 * @ProductDocument
-	 * @brief Delete or soft-delete a MassBattle unit; options default to dry_run=true.
+	 * @brief Delete a unit configuration asset.
 	 * @details MCP tool: `unit_delete`. Builds the explicit unit deletion plan. dry_run=true returns would_delete and the plan without changing the asset; dry_run=false applies an applicable plan through the same mutation API.
 	 * @param[in] UnitPath Unreal object path of the existing MassBattle unit config or supported Unit Source Actor Blueprint.
 	 * @param[in] OptionsJson JSON object; pass {} to use the defaults. dry_run defaults to true. Deletion mode and plan validation are handled by the explicit unit deletion plan.
@@ -145,7 +144,7 @@ public:
 
 	/**
 	 * @ProductDocument
-	 * @brief Find project assets useful for MassBattle unit authoring.
+	 * @brief Find assets for unit authoring.
 	 * @details MCP tool: `unit_find_assets`. Searches meshes, renderers, Niagara systems, AnimToTexture assets and existing unit configs, then sorts matches by object path for stable authoring discovery.
 	 * @param[in] QueryJson JSON query object containing query text and limit. Results identify asset name, path, class, package_path and inferred style_family.
 	 * @return JSON with success, count and assets. Invalid query JSON returns success=false and error.
@@ -155,7 +154,7 @@ public:
 
 	/**
 	 * @ProductDocument
-	 * @brief List Unit MCP API capabilities from Unreal.
+	 * @brief List available unit tools.
 	 * @details MCP tool: `unit_get_api_status`. Returns the native unit API identity and categorized tools with their descriptions. This is capability discovery and does not load or modify a unit asset.
 	 *
 	 * @return JSON with success, api_name, module, dependency_note and categorized tool metadata.
@@ -164,7 +163,9 @@ public:
 	static FString MCP_UnitGetApiStatus();
 };
 
-/** Independent MCP helpers for organizing units by style and producing move plans. */
+/**
+ * @brief Plan unit organization by style.
+ */
 UCLASS()
 class MASSBATTLEEDITORMCP_API UMassBattleStyleMCPApi : public UBlueprintFunctionLibrary
 {
@@ -173,7 +174,7 @@ class MASSBATTLEEDITORMCP_API UMassBattleStyleMCPApi : public UBlueprintFunction
 public:
 	/**
 	 * @ProductDocument
-	 * @brief Summarize MassBattle unit organization by style, family, and path category.
+	 * @brief Summarize units by style.
 	 * @details MCP tool: `style_summarize_units`. Scans the selected unit assets and aggregates their authored style indices, inferred style families and path categories. It reports organization counts without moving assets.
 	 * @param[in] OptionsJson JSON object; pass {} to use the defaults. Use the unit scan options to choose the assets included in the summary.
 	 * @return JSON with success, unit_count, style_families, path_categories and style_indices.
@@ -183,7 +184,7 @@ public:
 
 	/**
 	 * @ProductDocument
-	 * @brief Plan style-based MassBattle unit folder organization without moving assets.
+	 * @brief Plan unit folders by style.
 	 * @details MCP tool: `style_plan_organize_units`. Calculates destination folders from each unit style family and style index. It produces a reviewable move list only; this entry does not execute AssetTools moves.
 	 * @param[in] OptionsJson JSON object; pass {} to use the defaults. target_root selects the organization root; unit scan options select the source assets.
 	 * @return JSON with success, plan_type, target_root, dry_run_only=true and moves containing source and destination paths.
