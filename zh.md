@@ -1,5 +1,10 @@
 # MassBattleEditorMCP
 
+文档试站：[MassBattleFrame MCP](https://winyunq.github.io/MassBattleFrameMCP/)。
+
+本副本通过 `Docs/McpDocumentation.json` 配置文档维护 MCP，使用 `Configure(action="generate_website", audience="user")` 导出；选定的 MCP 接口以 `@ProductDocument` 标记公开。
+
+
 [English](README.md)
 
 ## 兼容版本、依赖与许可证

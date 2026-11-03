@@ -48,11 +48,19 @@ public:
 		FString& OutSearchPath,
 		FString& OutErrorMessage);
 
-	/** List MCP editor profiles and authoring recipes. */
+	/**
+	 * List MCP editor profiles and authoring recipes.
+	 *
+	 * @ProductDocument
+	 */
 	UFUNCTION(BlueprintCallable, Category = "MassBattleEditorMCP|UnitEditor")
 	static FString MCP_EditorListProfiles(const FString& OptionsJson);
 
-	/** Read one MCP editor profile or recipe JSON file. ProfileType: style or recipe. */
+	/**
+	 * Read one MCP editor profile or recipe JSON file. ProfileType: style or recipe.
+	 *
+	 * @ProductDocument
+	 */
 	UFUNCTION(BlueprintCallable, Category = "MassBattleEditorMCP|UnitEditor")
 	static FString MCP_EditorGetProfile(const FString& ProfileType, const FString& ProfileId);
 
@@ -88,51 +96,99 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "MassBattleEditorMCP|UnitEditor")
 	static FString MCP_EditorApplyAddAnimationsToUnit(const FString& UnitPath, const FString& SpecJson, bool bSaveAssets);
 
-	/** Plan the MassBattleEditor VAT skeletal-mesh unit authoring workflow without writing generated assets. */
+	/**
+	 * Plan the MassBattleEditor VAT skeletal-mesh unit authoring workflow without writing generated assets.
+	 *
+	 * @ProductDocument
+	 */
 	UFUNCTION(BlueprintCallable, Category = "MassBattleEditorMCP|UnitEditor")
 	static FString MCP_EditorPlanCreateVatUnit(const FString& SpecJson);
 
-	/** Validate the VAT skeletal-mesh unit authoring workflow before executing it. */
+	/**
+	 * Validate the VAT skeletal-mesh unit authoring workflow before executing it.
+	 *
+	 * @ProductDocument
+	 */
 	UFUNCTION(BlueprintCallable, Category = "MassBattleEditorMCP|UnitEditor")
 	static FString MCP_EditorValidateCreateVatUnit(const FString& SpecJson);
 
-	/** Execute the VAT skeletal-mesh unit authoring workflow. SpecJson supports dry_run and overwrite_existing safety options. */
+	/**
+	 * Execute the VAT skeletal-mesh unit authoring workflow. SpecJson supports dry_run and overwrite_existing safety options.
+	 *
+	 * @ProductDocument
+	 */
 	UFUNCTION(BlueprintCallable, Category = "MassBattleEditorMCP|UnitEditor")
 	static FString MCP_EditorApplyCreateVatUnit(const FString& SpecJson, bool bSaveAssets);
 
-	/** Build a VAT unit create spec from current editor selection or selected_assets, then plan the create workflow. */
+	/**
+	 * Build a VAT unit create spec from current editor selection or selected_assets, then plan the create workflow.
+	 *
+	 * @ProductDocument
+	 */
 	UFUNCTION(BlueprintCallable, Category = "MassBattleEditorMCP|UnitEditor")
 	static FString MCP_EditorPlanCreateVatUnitFromSelection(const FString& OptionsJson);
 
-	/** Build a VAT unit create spec from current editor selection or selected_assets, then apply the create workflow. */
+	/**
+	 * Build a VAT unit create spec from current editor selection or selected_assets, then apply the create workflow.
+	 *
+	 * @ProductDocument
+	 */
 	UFUNCTION(BlueprintCallable, Category = "MassBattleEditorMCP|UnitEditor")
 	static FString MCP_EditorApplyCreateVatUnitFromSelection(const FString& OptionsJson, bool bSaveAssets);
 
-	/** Inspect the renderable skeletal/static component assembly produced by an Actor class and optional component overrides. */
+	/**
+	 * Inspect the renderable skeletal/static component assembly produced by an Actor class and optional component overrides.
+	 *
+	 * @ProductDocument
+	 */
 	UFUNCTION(BlueprintCallable, Category = "MassBattleEditorMCP|UnitEditor")
 	static FString MCP_EditorInspectActorAssembly(const FString& ActorPath, const FString& OptionsJson);
 
-	/** Audit assembled skin weights, baked VAT position-frame motion, lookup UVs, and the selected animation profile. */
+	/**
+	 * Audit assembled skin weights, baked VAT position-frame motion, lookup UVs, and the selected animation profile.
+	 *
+	 * @ProductDocument
+	 */
 	UFUNCTION(BlueprintCallable, Category = "MassBattleEditorMCP|UnitEditor")
 	static FString MCP_EditorInspectVatAnimation(const FString& SpecJson);
 
-	/** Plan Actor component assembly followed by the strict VAT unit authoring workflow without writing assets. */
+	/**
+	 * Plan Actor component assembly followed by the strict VAT unit authoring workflow without writing assets.
+	 *
+	 * @ProductDocument
+	 */
 	UFUNCTION(BlueprintCallable, Category = "MassBattleEditorMCP|UnitEditor")
 	static FString MCP_EditorPlanCreateVatUnitFromActor(const FString& SpecJson);
 
-	/** Assemble an Actor into an animation-compatible SkeletalMesh, then execute the strict VAT unit authoring workflow. */
+	/**
+	 * Assemble an Actor into an animation-compatible SkeletalMesh, then execute the strict VAT unit authoring workflow.
+	 *
+	 * @ProductDocument
+	 */
 	UFUNCTION(BlueprintCallable, Category = "MassBattleEditorMCP|UnitEditor")
 	static FString MCP_EditorApplyCreateVatUnitFromActor(const FString& SpecJson, bool bSaveAssets);
 
-	/** Plan moving a unit and its MassBattle editor-generated linked assets into the selected style layout. */
+	/**
+	 * Plan moving a unit and its MassBattle editor-generated linked assets into the selected style layout.
+	 *
+	 * @ProductDocument
+	 */
 	UFUNCTION(BlueprintCallable, Category = "MassBattleEditorMCP|UnitEditor")
 	static FString MCP_EditorPlanOrganizeUnitAssets(const FString& UnitPath, const FString& OptionsJson);
 
-	/** Apply a reviewed unit asset organization plan. OptionsJson defaults to dry_run=true. */
+	/**
+	 * Apply a reviewed unit asset organization plan. OptionsJson defaults to dry_run=true.
+	 *
+	 * @ProductDocument
+	 */
 	UFUNCTION(BlueprintCallable, Category = "MassBattleEditorMCP|UnitEditor")
 	static FString MCP_EditorApplyOrganizeUnitAssets(const FString& UnitPath, const FString& OptionsJson, bool bSaveAssets);
 
-	/** Return categorized metadata for this MCP editor layer. */
+	/**
+	 * Return categorized metadata for this MCP editor layer.
+	 *
+	 * @ProductDocument
+	 */
 	UFUNCTION(BlueprintCallable, Category = "MassBattleEditorMCP|UnitEditor")
 	static FString MCP_EditorGetStatus();
 };

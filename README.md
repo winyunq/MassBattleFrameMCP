@@ -1,5 +1,10 @@
 # MassBattleEditorMCP
 
+Documentation preview: [MassBattleFrame MCP](https://winyunq.github.io/MassBattleFrameMCP/).
+
+This fork uses `Docs/McpDocumentation.json` with `UnrealEngineCPPCodingMCP` and `Configure(action="generate_website", audience="user")`. Selected MCP APIs are published with `@ProductDocument`.
+
+
 [中文文档](zh.md)
 
 ## Compatibility, Dependencies, and License

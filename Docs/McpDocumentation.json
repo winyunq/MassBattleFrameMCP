@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "label": "MassBattleFrame MCP 用户文档",
+  "mode": "maintain",
+  "code_paths": [
+    "Source/MassBattleEditorMCP/**/*.h",
+    "Source/MassBattleEditorMCP/**/*.cpp"
+  ],
+  "documentation": {
+    "title": "MassBattleFrame MCP",
+    "version_file": "MassBattleEditorMCP.uplugin",
+    "source_language": "en",
+    "languages": [
+      "zh-CN",
+      "en"
+    ],
+    "user_inputs": [
+      "Source/MassBattleEditorMCP/Public/**/*.h"
+    ],
+    "output": "Saved/Documentation/Website",
+    "translation_directory": "Docs/TranslationMemory"
+  }
+}
