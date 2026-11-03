@@ -40,7 +40,7 @@ code,pre{font:12px/1.8 ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",mo
 
 /* API reference layout follows the Unreal Engine documentation. */
 .file-overview{margin-bottom:52px}.file-overview>.page-heading,.class-heading{display:flex;align-items:center;flex-wrap:wrap;gap:12px}.api-declaration{margin:22px 0 26px}.file-overview>.page-heading{margin-bottom:20px}.file-overview .page-heading h1{overflow-wrap:anywhere}
-.file-overview .type-summary{margin:0}.file-overview .brief{margin:0 0 24px;font-size:inherit;color:#b7b7c1}.file-overview p:last-child{margin-bottom:0}
+.file-overview .type-summary{margin:0}.file-overview .brief{margin:0 0 24px;font-size:18px;color:#b7b7c1}.file-overview p:last-child{margin-bottom:0}
 .class-section{margin:52px 0 0;scroll-margin-top:0}.class-heading{border-top:1px solid var(--line);padding-top:32px;margin-bottom:20px}
 .class-heading h2{margin:0;font-size:34px;line-height:1.35;letter-spacing:-.02em;color:#fff;overflow-wrap:anywhere}.class-members>.type-summary{margin:0 0 34px}
 .member-index{margin:32px 0 46px}.member-index caption{text-align:left;font-size:28px;font-weight:700;color:#fff;margin-bottom:18px}
