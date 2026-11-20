@@ -4,15 +4,9 @@
 
 ## 兼容版本、依赖与许可证
 
-发布版 `v1.20` 对应 **MassBattleFrame 1.20 + Unreal Engine 5.8**。VAT 制作使用 MassBattleFrame 1.20 内置的 `MassBattleATT` 和 `MassBattleATTEditor` 模块。
+发布版 `v1.20` 依赖 **MassBattleFrame 1.20**，支持 **Unreal Engine 5.6、5.7 和 5.8**。Niagara MCP 工具（`niagara_*`）要求使用 UE 5.8 或更高版本。VAT 制作使用框架内置的 `MassBattleATT` 和 `MassBattleATTEditor` 模块。
 
-请使用与 Unreal Engine 版本对应的分支：
-
-| 分支 | Unreal Engine | 范围 |
-| --- | --- | --- |
-| `main` | 5.8 | 完整 MCP，包括 UE 5.8 的 Niagara Graph 与 Batch FX 制作能力 |
-| `5.7` | 5.7 | 兼容 UE 5.7 的 MassBattle 核心编辑器 MCP |
-| `5.6` | 5.6 | 兼容 UE 5.6 的 MassBattle 核心编辑器 MCP |
+运行 `Scripts/Build-CompatibilityPackages.ps1`，从 `main` 生成三个版本的源码包，再安装与引擎版本对应的包。
 
 在项目插件层面，MassBattleEditorMCP 只依赖 [Mass Battle Frame](https://github.com/MassBattle/MassBattleFrame)。其余原生依赖均为 Unreal Engine 自带模块或插件，包括 Niagara；它不依赖 Winyunq 或其他项目插件。可选的 Python bridge 需要 Python 3.10 或更高版本，以及 Python `mcp` 包。
 
@@ -210,3 +204,5 @@ apply 调用会先执行 validate，失败时不写资产。plan/validate 调用
 8. 用 `unit_write` 把单位 `FFxConfig` 指向对应 `SubType`。
 
 这个模式的产物应明确标记为“优化复刻/近似版本”，不能在保真转译验收数量中计数。
+
+MCP `v1.20` 必须配套 **MassBattleFrame 1.20**。`MassBattleATT` 与 `MassBattleATTEditor` 是框架 1.20 自带模块；旧框架出现缺模块报错时，应安装 MassBattleFrame 1.20。

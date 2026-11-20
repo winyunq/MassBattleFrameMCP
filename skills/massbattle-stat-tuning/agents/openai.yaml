@@ -1,0 +1,13 @@
+interface:
+  display_name: "数值调整"
+  short_description: "通过 Mass MCP 读取、修改和维护单位属性"
+  default_prompt: "使用 $massbattle-stat-tuning，通过 Mass MCP 查找并修改单位属性；需要持久维护时通过 Source Actor 保存并同步。"
+
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "massbattle-editor-mcp"
+      description: "MassBattleFrame 编辑器 MCP 工具"
+
+policy:
+  allow_implicit_invocation: true

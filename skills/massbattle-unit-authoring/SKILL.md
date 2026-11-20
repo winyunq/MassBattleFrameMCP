@@ -1,127 +1,37 @@
 ---
 name: massbattle-unit-authoring
-description: Create, inspect, edit, delete, and validate MassBattle unit assets through the MassBattleEditorMCP/Unit MCP workflow in UE5. Use when Codex needs to manage MassBattle AgentConfig units, generate VAT/static-mesh units from SkeletalMesh assets or Actor Blueprint assemblies with modular parts and socket-bound weapons, apply style defaults, bind renderer/Niagara/projectile/sound attack data, or batch-edit unit JSON without direct .uasset mutation.
+description: 用户进行 UE5 MassBattleFrame 资产转换与适配时使用。本 skill 介绍本插件的其他 skill。
 ---
 
-# MassBattle Unit Authoring
+# Mass 资产操作
 
-Use UE editor APIs, commandlets, or the MassBattleEditorMCP tools. Do not edit `.uasset` files directly. Keep names and paths aligned with existing MassBattle source conventions; prefer cloning a nearby official/demo unit template and applying a small union patch.
+MassBattleFrame 简称 Mass；本插件中的 Mass 特指 MassBattleFrame。
 
-## Project Contract Discovery
+Unit 指游戏中的单位；Source Actor 是单位的源蓝图，单位配置 DataAsset 是供游戏使用的配置资产。
 
-Before choosing a unit name, package path, scale, balance value, damage, defence, or historical input, search the current project for an explicit unit-design contract and read it completely. In the Winyunq project, `Docs/MassBattle/Winyunq_MassBattleFrame_Unit_Design.md` is the mandatory source of truth and has higher priority than this generic skill, style defaults, template values, generated manifests, and existing legacy assets.
+## 工具介绍
 
-Use this authority order for project decisions:
+Mass MCP 聚焦资产操作。基础操作调用单条命令，复合操作组合已有命令完成。
 
-1. the user's current explicit instruction;
-2. the project's canonical unit-design contract and its machine-readable manifests;
-3. unit-family supplement documents;
-4. this generic workflow skill;
-5. style defaults, demo templates, and legacy asset examples.
+| 资产类型 | 功能介绍 | 支持操作 |
+|---|---|---|
+| 单位源蓝图（Source Actor） | 我们定义的单位“源码”和编辑入口。保存维护结果，新增动画等修改可复用已有配置，也支持用户直接编辑。 | 创建、读写、保存、更新导出 |
+| 单位配置 DataAsset | Mass 单位的核心配置资产，保存游戏最终使用的数据。 | 创建、读写、导出、删除 |
+| 投射物配置 DataAsset | 非瞬发伤害（弹道武器）使用；基于投射物配置制作攻击特效。 | 创建、读写、校验、删除 |
+| 网格资产 | 单位的几何模型，转换后供 Mass 渲染使用。 | 读取、转换、生成静态网格与 LOD |
+| 动画序列 | 单位动作素材，用于动作映射和 VAT 烘焙。 | 查找、兼容性检查、配置动画映射 |
+| VAT 数据资产 | Mass 单位的核心配置资产，保存游戏最终动画的数据。 | 创建、烘焙、更新 |
+| 材质实例 | 模型的外观配置，用于绑定贴图和 VAT 动画数据。 | 创建、贴图绑定与更新 |
+| Niagara 系统 | 特效表现资产，适配后供 Mass 批量调用。 | 读写属性、模块和图，转换批量特效 |
+| 渲染器蓝图 | 绑定模型或特效及其默认参数，供 Mass 渲染使用。 | 读取、修改默认配置与资产绑定 
 
-Templates may supply UObject class/layout and required structural fields only. Do not inherit their unit name, directory, scale, movement, range, attack cadence, damage, defence, or presentation naming. A source-model ID is not a formal `unit_name`. Existing paths containing implementation terms such as `MCPGenerated`, `MCP`, or `AgentConfig` are migration inputs, not naming precedents, unless the project contract explicitly says otherwise.
+MCP 的读写、修改等操作均针对 Target。指定一次操作对象后，可连续执行多次操作。先理清任务流程，再组合调用 MCP 工具完成需求。
 
-## Combat Authoring Routing
+以下业务流程展示了如何通过MCP组合实现业务流程；你也可以通过自行编写脚本实现批量处理
 
-Choose gameplay authority before editing any visual array:
+按任务读取对应 skill：
 
-```text
-Direct/melee/hitscan/instant area damage
-    -> $massbattle-instant-damage-fx
-    -> Agent TimeOfHitAction applies damage
-    -> one-shot launch/impact visuals use MassBattle Burst Batch FX
-
-Bullet/shell/grenade/missile/arrow/homing or interceptable shot
-    -> $massbattle-projectile-authoring
-    -> projectile DataAsset applies damage
-    -> Agent TimeOfHitAction is normally None
-    -> flight uses Attached Batch FX; launch/hit/removal use Burst Batch FX
-```
-
-Use `$massbattle-effect-mcp` only for the source-faithful Niagara/Batch-FX asset conversion after the combat path is chosen. Do not treat `Attack.SpawnFx` and `Attack.SpawnProjectile` as interchangeable presentation choices.
-
-Before writing `Attack.SpawnProjectile`, read and validate the referenced `UMassBattleProjectileConfigDataAsset` with Projectile MCP. Wiring a reference through Unit MCP does not prove that movement, collision, damage, or lifecycle fields are correct.
-
-## Inspect Or Edit
-
-1. List or locate units with the Unit MCP discovery tools, scoped to style roots such as `/Game/Unit`, `/Game/Toon_Soldiers_WW2`, `/Game/StylizedArmyPackA`, and `/Game/World_Flags`.
-2. Read normal unit data with simple JSON first. Request detailed mode or a specific object only for complex fields such as `Attack`, `Visualize`, `LODShared`, or `AnimShared`.
-3. Apply edits through `MCP_UnitPlanMergeUpdate` then `MCP_UnitApplyPlan`; omitted fields must remain unchanged. Use `MCP_UnitDelete` for planned deletes.
-4. For array fields such as `Attack.SpawnProjectile`, `Attack.SpawnFx`, and `Attack.PlaySound`, union merge can append missing elements by default. Pass `append_arrays=false` only when append should be rejected.
-
-## Organize Or Clean Up Assets
-
-Treat MCP as the asset-registry hand, not as judgement. Build the relationship graph before deleting or moving anything.
-
-1. Start from the unit with `MCP_UnitGet`, then inspect its linked renderer and generated assets with `MCP_EffectAssetReadSummary(include_dependencies=true, include_referencers=true)`.
-2. Treat `missing_hard_dependencies` and `missing_soft_dependencies` as blockers. Repair or replace references before cleanup.
-3. Use `MCP_EditorPlanOrganizeUnitAssets` for linked generated/source assets because it follows the Asset Registry from the unit. Review `moves`, `blocked_count`, and referencers before any apply.
-4. `MCP_EffectAssetSoftDelete` is a review tool by default. It blocks live asset moves unless `allow_unsafe_asset_move=true` is explicitly supplied after referencers and editor state are reviewed.
-5. Keep one canonical generated asset set per playable unit. Old generated folders, tests, and marketplace source folders are duplicates until their referencers prove otherwise.
-
-## Create Unit
-
-Mirror the official `/MassBattle/Core/MassBattleTools` editor widget. Normal AI authoring should use one DoAll-equivalent apply call, not manually sequence internal stages.
-
-### Create From An Actor Blueprint
-
-Use `editor_apply_create_vat_unit_from_actor` when an Actor Blueprint defines the final appearance through modular SkeletalMesh components, StaticMesh weapons, or component-specific material and mesh choices. This wrapper assembles one persistent SkeletalMesh, then delegates to the strict unit workflow.
-
-1. When component names or weapon bindings are unknown, call `editor_inspect_actor_assembly` first. Treat `can_assemble=false` or any error in `issues` as a blocker.
-2. Supply a complete unit spec with `actor_class`, `unit_name`, `target_package_path`, `parent_material`, `source_renderer_class`, and `niagara_system`. Supply `target_unit` when refreshing an existing unit; otherwise also supply `template_unit`, `target_unit_package_path`, and `subtype`.
-3. Use `component_overrides` entries keyed by canonical `component`. A SkeletalMesh component can receive `skeletal_mesh`; a StaticMesh component can receive `static_mesh`; mesh components can receive `materials`. Use `visible`, `clear_mesh`, and `bind_bone` only when the Actor defaults are not the intended output.
-4. Set `root_component` only when automatic root selection is ambiguous. All included modular skeletal parts must use compatible skeletons and share the root's model space.
-5. Keep attached StaticMesh vertices in the root skeleton's reference-pose model space. The converter composes `ComponentRelative * SocketLocal * ReferenceBoneToRoot` and rigidly weights the attachment to the resolved bone. Do not add a manual left/right-hand, axis, or evaluated-pose correction unless the source Actor itself is authored incorrectly.
-6. Omit `animations`, `vat_sample_rate`, and `lod_settings` to use the Actor wrapper defaults: the 10 canonical `/Game/Unit/Action/Solider` sequences, 30 Hz resampling, and LOD0 BoneMode with animation blend level 2. Projects can explicitly select another positive rate such as 24 Hz. Pass explicit compatible animations when the Actor uses another skeleton or animation set.
-7. Call `editor_apply_create_vat_unit_from_actor` directly. Use `editor_plan_create_vat_unit_from_actor` only for an explicit dry run or after an apply reports a planning error. Pass `overwrite_existing=true` when replacing an existing assembled mesh or generated output.
-8. Require top-level `success=true`, then inspect `assembly`, `resolved_vat_spec`, and `vat_result`. Read the generated AgentConfig with `unit_get`; use `editor_inspect_vat_animation` when animation, skin-weight, lookup-UV, or VAT-material correctness is in question.
-
-### Create From Selection Or A Skeletal Mesh
-
-1. If the user selected assets in the editor, or asks for "current/selected -> generate", call `MCP_EditorApplyCreateVatUnitFromSelection` directly. It infers `skeletal_mesh`, target/template unit, selected animations, materials, VAT data asset, Niagara, and renderer template from current selection or explicit `selected_assets`; if anything required cannot be inferred, validation blocks the write.
-2. Otherwise call `MCP_EditorApplyCreateVatUnit` directly with a complete canonical spec. Do not rely on defaults, aliases, automatic animation fallback, or static fallback.
-3. Use `MCP_EditorPlanCreateVatUnit`, `MCP_EditorValidateCreateVatUnit`, or `MCP_EditorPlanCreateVatUnitFromSelection` only as diagnostics after an apply warning/failure, or when the user explicitly asks for a dry-run plan.
-4. Inspect `validation.issues` and `execution_steps` from the apply result. Any `error` means no assets were modified.
-5. Always pass an explicit `animations` category map when using the non-selection entry. Nonstandard names are not guessed in strict create.
-6. Read back the generated unit with `MCP_UnitGet` and verify asset existence, renderer class, material slot, attack enabled state, projectile/effect arrays, range, damage, and subtype.
-7. For VAT materials, expect filename discovery first and source-material texture inheritance as a fallback. Treat `defaulted_original_textures_from_source_material` warnings as review items: verify the resulting material depends on the intended BaseColor/Normal/ARM textures with `MCP_EffectAssetReadSummary`.
-8. VAT create specs use `unit_name`, `target_package_path`, and `target_unit_package_path` as the canonical output naming fields. Do not use older field names for these concepts.
-
-Official DoAll correspondence:
-
-- `FillTex` -> `FindAndFillOriginalTextures`, with source-material inheritance when filename discovery is incomplete.
-- `FillLod` -> `FindAndFillLODSettings`.
-- `FillAnim` -> `FindAndFillAnimSequences`, explicit `animations`, or compatible-animation fallback with warnings.
-- `CreateStaticMeshAndMat` -> `ConvertSkeletalMeshToStaticMeshWithLODs` then `CreateMaterialInstanceForStaticMeshWithLODs`.
-- `CreateVATTextures` -> create/update `UAnimToTextureDataAsset`, create VAT textures, run `AnimationToTexture`, update material instances.
-- `CreateDataAsset` -> merge `Visualize`, `LODShared`, `AnimShared`, and runtime animation sample-rate defaults into the target unit.
-- `CreateRenderer` -> duplicate/update the renderer Blueprint defaults for mesh, Niagara system, and subtype.
-
-## Strict Create
-
-The editor MCP must reject incomplete VAT unit creation instead of generating partial assets.
-
-- Required canonical fields for non-selection create: `skeletal_mesh`, `unit_name`, `target_package_path`, `parent_material`, `source_renderer_class`, `niagara_system`, `vat_sample_rate`, and `animations`.
-- To patch an existing unit, pass `target_unit`; the tool reads `target_unit.SubType.Index` unless an explicit `subtype` is supplied.
-- To create a new unit, pass `template_unit`, `target_unit_package_path`, and `subtype`.
-- Use `overwrite_existing=true` and `refresh_materials=true` when refreshing generated assets. Existing generated StaticMeshes block strict create when overwrite is false.
-- Do not pass old aliases such as `unit_path`, `existing_unit`, `mesh`, `source_mesh`, `sub_type`, `renderer_template_class`, `template_renderer_class`, `niagara`, `sample_rate`, or `VATSampleRate`.
-- Do not pass fallback switches such as `allow_static_fallback`, `allow_missing_anims`, `allow_no_vat`, or `allow_missing_renderer`.
-- `MCP_EditorApplyCreateVatUnit` runs `MCP_EditorValidateCreateVatUnit` before any asset write. Validation failure means no mesh, material, VAT texture, renderer, or unit data is modified.
-- Selection-based tools accept `selected_assets` to simulate current editor selection in scripted runs. Select a unit plus a mesh to patch that unit; pass `selected_unit_role="template"` when the selected unit should be cloned instead.
-
-## Defaults
-
-After resolving the project contract, use style defaults only for boilerplate that the project leaves unspecified, such as renderer/LOD defaults and common projectile/effect/sound bindings. Never let a style profile override project package roots, semantic naming, scale, or balance. Keep per-unit specs small:
-
-- `material_overrides` for skins or flag/country variants.
-- `source_renderer_class` and `niagara_system` for renderer binding.
-- `unit_patch` for gameplay changes such as `SubType`, `Trace`, `Attack`, `Damage`, and `Visualize`.
-
-## Project-Specific Naming And Balance
-
-Do not duplicate a project's conversion formulas, naming examples, or current values in this skill. Read them from the canonical project contract and its machine-readable inputs on every task. This prevents a cached skill example from silently overriding a newer project rule.
-
-## Verification
-
-Run the UE editor commandlet for deterministic validation when possible. A successful create pass should show `plan_success`, `validate_valid`, `apply_success`, `read_after_success`, and asset existence as true. Also inspect `warnings` and `execution_steps`; do not claim exact animation/state correctness if the result used fallback animation mapping. Infantry/officer attack validation should confirm at least one projectile and one attack FX entry.
+- 单位与建筑的数值调整：[数值调整](../massbattle-stat-tuning/SKILL.md)。
+- Niagara 特效转换与适配：[massbattle-effect-mcp](../massbattle-effect-mcp/SKILL.md)。
+- 瞬发伤害及一次性攻击特效：[massbattle-instant-damage-fx](../massbattle-instant-damage-fx/SKILL.md)。
+- 非瞬发伤害、弹道武器及投射物配置：[massbattle-projectile-authoring](../massbattle-projectile-authoring/SKILL.md)。

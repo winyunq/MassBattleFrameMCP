@@ -4,15 +4,9 @@
 
 ## Compatibility, Dependencies, and License
 
-Release `v1.20` targets **MassBattleFrame 1.20** on **Unreal Engine 5.8**. VAT authoring uses the `MassBattleATT` and `MassBattleATTEditor` modules included with MassBattleFrame 1.20.
+Release `v1.20` requires **MassBattleFrame 1.20** and supports **Unreal Engine 5.6, 5.7 and 5.8**. Niagara MCP tools (`niagara_*`) require UE 5.8 or later. VAT authoring uses `MassBattleATT` and `MassBattleATTEditor` from the framework.
 
-Use the branch that matches your Unreal Engine version:
-
-| Branch | Unreal Engine | Scope |
-| --- | --- | --- |
-| `main` | 5.8 | Full MCP, including UE 5.8 Niagara graph and Batch FX authoring |
-| `5.7` | 5.7 | Core MassBattle editor MCP compatible with UE 5.7 |
-| `5.6` | 5.6 | Core MassBattle editor MCP compatible with UE 5.6 |
+Run `Scripts/Build-CompatibilityPackages.ps1` to generate all three source packages from `main`, then install the package for your engine version.
 
 At the project-plugin level, MassBattleEditorMCP depends only on [Mass Battle Frame](https://github.com/MassBattle/MassBattleFrame). Its remaining native dependencies are modules and plugins shipped with Unreal Engine, including Niagara; it does not depend on Winyunq or another project plugin. The optional Python bridge requires Python 3.10 or newer and the `mcp` Python package.
 
@@ -297,3 +291,5 @@ Recommended template flow:
 8. Use `unit_write` to point unit `FFxConfig` entries to the corresponding `SubType`.
 
 This pattern is similar to a code diff: templates carry most of the structure, and MCP performs small reviewable edits.
+
+MCP `v1.20` requires **MassBattleFrame 1.20**. `MassBattleATT` and `MassBattleATTEditor` are framework modules included with 1.20; a missing-module error with an older framework requires installing MassBattleFrame 1.20.

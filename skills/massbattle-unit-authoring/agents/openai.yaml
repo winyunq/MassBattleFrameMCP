@@ -1,4 +1,13 @@
 interface:
-  display_name: "MassBattle Unit Authoring"
-  short_description: "Create VAT units from meshes or Actor Blueprints"
-  default_prompt: "Use $massbattle-unit-authoring to create or update a complete MassBattle VAT unit from selected assets, a SkeletalMesh, or an Actor Blueprint assembly."
+  display_name: "Mass 资产操作"
+  short_description: "通过单个或组合 MCP 工具完成 Mass 资产转换与适配"
+  default_prompt: "使用 $massbattle-unit-authoring，按任务选择专项 skill，并通过单个或组合 MassBattleEditorMCP 工具完成资产操作。"
+
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "massbattle-editor-mcp"
+      description: "MassBattleFrame 编辑器 MCP 工具"
+
+policy:
+  allow_implicit_invocation: true

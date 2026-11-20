@@ -1,0 +1,20 @@
+name: UE compatibility packages
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  package:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate UE 5.6, 5.7 and 5.8 source packages
+        shell: pwsh
+        run: ./Scripts/Build-CompatibilityPackages.ps1 -OutputDirectory ./dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MassBattleEditorMCP-UE5.6-5.7-5.8
+          path: dist/*.zip

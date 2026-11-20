@@ -4,7 +4,7 @@
 	"VersionName": "1.20",
 	"EngineVersion": "5.8.0",
 	"FriendlyName": "MassBattleEditorMCP",
-	"Description": "MCP editor support for MassBattleFrame 1.20 on Unreal Engine 5.8",
+	"Description": "MCP editor support for MassBattleFrame 1.20 on Unreal Engine 5.6, 5.7 and 5.8. Niagara MCP requires Unreal Engine 5.8 or later.",
 	"Category": "Editor",
 	"CreatedBy": "Winyunq",
 	"CreatedByURL": "https://github.com/MassBattle",

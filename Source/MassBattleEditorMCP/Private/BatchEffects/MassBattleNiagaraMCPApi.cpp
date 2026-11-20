@@ -1,5 +1,8 @@
 // Copyright (c) 2025-2026 Winyunq. All rights reserved.
 #include "BatchEffects/MassBattleNiagaraMCPApi.h"
+#include "Runtime/Launch/Resources/Version.h"
+
+#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 8
 
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "Dom/JsonObject.h"
@@ -2771,7 +2774,6 @@ static TSharedPtr<FJsonObject> CompileStateToJson(UNiagaraSystem* System, bool& 
 		Root->SetStringField(TEXT("error"), TEXT("Invalid Niagara system"));
 		return Root;
 	}
-
 	FNiagaraExternalEditContext Context(System);
 	FNiagaraExt_SystemCompileState State;
 	UNiagaraExternalEditUtilities::GetSystemCompileState(System, State, Context);
@@ -2782,7 +2784,6 @@ static TSharedPtr<FJsonObject> CompileStateToJson(UNiagaraSystem* System, bool& 
 	Root->SetBoolField(TEXT("has_warnings"), State.bHasWarnings);
 	Root->SetBoolField(TEXT("ready_to_run"), System->IsReadyToRun());
 	bOutHasErrors = State.bHasErrors || Context.HasErrors();
-
 	TArray<TSharedPtr<FJsonValue>> Scripts;
 	for (const FNiagaraExt_ScriptCompileInfo& ScriptInfo : State.Scripts)
 	{
@@ -3333,14 +3334,12 @@ static bool RestoreInsertedModuleDataInterfaceDefaults(
 			return false;
 		}
 
-		bool bCallbackInvoked = false;
 		bool bCopied = false;
 		TargetInput->SetDataInterfaceValueExternal(SourceDataInterface->GetClass(), [&](UNiagaraDataInterface* DestinationDataInterface)
 		{
-			bCallbackInvoked = true;
 			bCopied = DestinationDataInterface && SourceDataInterface->CopyTo(DestinationDataInterface);
 		});
-		if (!bCallbackInvoked || !bCopied)
+		if (!bCopied)
 		{
 			OutError = FString::Printf(
 				TEXT("Failed to restore data-interface default '%s' on inserted module '%s'"),
@@ -4153,21 +4152,19 @@ static bool ApplyUsageAwareStackInputValue(
 			}
 		}
 
-		bool bCallbackInvoked = false;
-		bool bPropertiesApplied = true;
+		bool bPropertiesApplied = false;
 		FString PropertyError;
-		Input->SetDataInterfaceValueExternal(DataInterfaceClass, [&](UNiagaraDataInterface* DataInterface)
+		auto ApplyDataInterfaceProperties = [&](UNiagaraDataInterface* DataInterface)
 		{
-			bCallbackInvoked = true;
 			if (!DataInterface)
 			{
-				bPropertiesApplied = false;
 				PropertyError = TEXT("Niagara failed to create the stack-input data interface");
 				return;
 			}
 			bPropertiesApplied = ApplyJsonProperties(DataInterface, Properties, PropertyError);
-		});
-		if (!bCallbackInvoked || !bPropertiesApplied)
+		};
+		Input->SetDataInterfaceValueExternal(DataInterfaceClass, ApplyDataInterfaceProperties);
+		if (!bPropertiesApplied)
 		{
 			OutError = PropertyError.IsEmpty()
 				? TEXT("Niagara failed to set the stack-input data interface")
@@ -5773,3 +5770,31 @@ FString UMassBattleNiagaraMCPApi::MCP_NiagaraAddSpriteRenderer(
 	Root->SetBoolField(TEXT("saved"), bSaved);
 	return ToJsonString(Root);
 }
+
+#else
+
+// UHT generates these entry points for every supported engine version.
+#define MASSBATTLE_NIAGARA_UNSUPPORTED(Name, Parameters) \
+	FString UMassBattleNiagaraMCPApi::Name Parameters \
+	{ \
+		return TEXT("{\"success\":false,\"error\":\"Niagara MCP requires Unreal Engine 5.8 or later.\"}"); \
+	}
+
+MASSBATTLE_NIAGARA_UNSUPPORTED(MCP_NiagaraGetApiStatus, ())
+MASSBATTLE_NIAGARA_UNSUPPORTED(MCP_NiagaraQuery, (const FString&))
+MASSBATTLE_NIAGARA_UNSUPPORTED(MCP_NiagaraReadSummary, (const FString&, const FString&))
+MASSBATTLE_NIAGARA_UNSUPPORTED(MCP_NiagaraReadModule, (const FString&, const FString&))
+MASSBATTLE_NIAGARA_UNSUPPORTED(MCP_NiagaraReadGraph, (const FString&, const FString&))
+MASSBATTLE_NIAGARA_UNSUPPORTED(MCP_NiagaraCompareSystems, (const FString&, const FString&, const FString&))
+MASSBATTLE_NIAGARA_UNSUPPORTED(MCP_NiagaraReadAll, (const FString&, const FString&))
+MASSBATTLE_NIAGARA_UNSUPPORTED(MCP_NiagaraExportText, (const FString&, const FString&))
+MASSBATTLE_NIAGARA_UNSUPPORTED(MCP_NiagaraMergeWrite, (const FString&, const FString&, bool))
+MASSBATTLE_NIAGARA_UNSUPPORTED(MCP_NiagaraSetModulePin, (const FString&, const FString&, const FString&, const FString&, bool))
+MASSBATTLE_NIAGARA_UNSUPPORTED(MCP_NiagaraApplyGraphEdit, (const FString&, const FString&, bool))
+MASSBATTLE_NIAGARA_UNSUPPORTED(MCP_NiagaraSetEmitterEnabled, (const FString&, const FString&, bool, bool))
+MASSBATTLE_NIAGARA_UNSUPPORTED(MCP_NiagaraDelete, (const FString&, const FString&, bool))
+MASSBATTLE_NIAGARA_UNSUPPORTED(MCP_NiagaraAddSpriteRenderer, (const FString&, const FString&, const FString&, bool))
+
+#undef MASSBATTLE_NIAGARA_UNSUPPORTED
+
+#endif

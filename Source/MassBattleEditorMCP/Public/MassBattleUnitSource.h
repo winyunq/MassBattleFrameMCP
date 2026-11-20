@@ -4,9 +4,11 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Engine/DeveloperSettings.h"
+#include "Engine/EngineTypes.h"
 #include "MassBattleUnitSource.generated.h"
 
 class UMassBattleAgentConfigDataAsset;
+class UMassBattleATTDataAsset;
 class UStaticMeshComponent;
 class UArrowComponent;
 class UMaterialInterface;
@@ -47,6 +49,11 @@ public:
 	TObjectPtr<UArrowComponent> BarrelPivot;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Source Markers")
 	TObjectPtr<UArrowComponent> Muzzle;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Source Animation")
+	TObjectPtr<UMassBattleATTDataAsset> VATData;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Source Animation", meta=(UseComponentPicker, AllowAnyActor))
+	FComponentReference VATDriver;
 
 	/** Material reads the shared minimap team buffer; PreviewTeamIndex selects the preview team. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Team Color")

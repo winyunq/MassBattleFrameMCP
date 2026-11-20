@@ -237,12 +237,14 @@ FString UMassBattleMCPBridge::ExecuteCommand(const FString& CommandType, const T
 		return InternalExecuteCommand(CommandType, Params);
 	}
 
-	TPromise<FString> Promise;
-	TFuture<FString> Future = Promise.GetFuture();
-	AsyncTask(ENamedThreads::GameThread, [this, CommandType, Params, Promise = MoveTemp(Promise)]() mutable
+	TSharedRef<TPromise<FString>, ESPMode::ThreadSafe> Promise = MakeShared<TPromise<FString>, ESPMode::ThreadSafe>();
+	TFuture<FString> Future = Promise->GetFuture();
+	// Task-graph work can run inside GC/render flushes; editor asset commands need the normal frame tick.
+	FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateWeakLambda(this, [this, CommandType, Params, Promise](float)
 	{
-		Promise.SetValue(InternalExecuteCommand(CommandType, Params));
-	});
+		Promise->SetValue(InternalExecuteCommand(CommandType, Params));
+		return false;
+	}));
 
 	const double TimeoutSeconds = GameThreadCommandTimeoutSeconds(Params);
 	if (Future.WaitFor(FTimespan::FromSeconds(TimeoutSeconds)))

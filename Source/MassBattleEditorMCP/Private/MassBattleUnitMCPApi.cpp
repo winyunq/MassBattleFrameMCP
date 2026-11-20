@@ -1,11 +1,17 @@
 // Copyright (c) 2025-2026 Winyunq. All rights reserved.
 #include "MassBattleUnitMCPApi.h"
+#include "MaterialEditingLibrary.h"
 #include "MassBattleUnitSource.h"
 #include "AssetRegistry/AssetRegistryHelpers.h"
 #include "Kismet2/KismetEditorUtilities.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 
 #include "MassBattleATTDataAsset.h"
+#include "MassBattleATTBakeLibrary.h"
+#include "MassBattleFuncLibEd.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "Engine/SCS_Node.h"
+#include "Engine/SimpleConstructionScript.h"
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "AssetToolsModule.h"
 #include "DataAssets/MassBattleAgentConfigDataAsset.h"
@@ -23,6 +29,12 @@
 #include "Misc/PackageName.h"
 #include "Misc/Paths.h"
 #include "NiagaraSystem.h"
+#include "NiagaraEmitter.h"
+#include "NiagaraMeshRendererProperties.h"
+#include "Materials/MaterialInstanceConstant.h"
+#include "PreviewScene.h"
+#include "MassBattleMCPBridge.h"
+#include "Editor.h"
 #include "ObjectTools.h"
 #include "Rendering/MassBattleAgentRenderer.h"
 #include "Serialization/JsonReader.h"
@@ -2241,7 +2253,7 @@ FString UMassBattleUnitMCPApi::DestroySourceUnit(AMassBattleUnitSource* Source)
 	return Result;
 }
 
-FString UMassBattleUnitMCPApi::UpdateSource(AMassBattleUnitSource* Source, bool bSaveAssets)
+FString UMassBattleUnitMCPApi::UpdateSource(AMassBattleUnitSource* Source, bool bSaveAssets, bool bRebakeVAT)
 {
 	if (!Source || !Source->UnitData || !Source->GetSourceAsset())
 		return MakeErrorJson(TEXT("Update requires a saved source Actor Blueprint with UnitData."));
@@ -2252,7 +2264,9 @@ FString UMassBattleUnitMCPApi::UpdateSource(AMassBattleUnitSource* Source, bool 
 		CopyOptions.bDoDelta = false;
 		UEngine::CopyPropertiesForUnrelatedObjects(Source->UnitData, Defaults->UnitData, CopyOptions);
 		Defaults->ExportPath = Source->ExportPath;
-		const FString Result = UpdateSource(Defaults, bSaveAssets);
+		Defaults->VATData = Source->VATData;
+		Defaults->VATDriver = Source->VATDriver;
+		const FString Result = UpdateSource(Defaults, bSaveAssets, bRebakeVAT);
 		Source->ExportedUnit = Defaults->ExportedUnit;
 		return Result;
 	}
@@ -2265,22 +2279,127 @@ FString UMassBattleUnitMCPApi::UpdateSource(AMassBattleUnitSource* Source, bool 
 	const FString Name = FPackageName::GetLongPackageAssetName(Destination);
 	const FString ObjectPath = Destination + TEXT(".") + Name;
 	UObject* Occupant = LoadObject<UObject>(nullptr, *ObjectPath);
-	if (Occupant && Occupant != Source->ExportedUnit)
-		return MakeErrorJson(TEXT("Export destination is occupied; no asset was overwritten."));
+	UMassBattleAgentConfigDataAsset* DestinationUnit = Cast<UMassBattleAgentConfigDataAsset>(Occupant);
+	if (Occupant && !DestinationUnit)
+		return MakeErrorJson(TEXT("Export destination contains an asset of a different type."));
+	UMassBattleAgentConfigDataAsset* TargetUnit = DestinationUnit ? DestinationUnit : Source->ExportedUnit.Get();
 
+	TArray<UObject*> VatAssetsToSave;
+	if (Source->VATData)
+	{
+		FPreviewScene PreviewScene{FPreviewScene::ConstructionValues()};
+		FActorSpawnParameters SpawnParameters;
+		SpawnParameters.ObjectFlags = RF_Transient;
+		SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		AActor* Preview = bRebakeVAT ? PreviewScene.GetWorld()->SpawnActor<AActor>(Source->GetClass(), FTransform::Identity, SpawnParameters) : nullptr;
+		USkeletalMeshComponent* Driver = Preview ? Cast<USkeletalMeshComponent>(Source->VATDriver.GetComponent(Preview)) : nullptr;
+		if (bRebakeVAT && (!Driver || !Driver->GetSkeletalMeshAsset()))
+			return MakeErrorJson(TEXT("VAT driver must resolve to a source SkeletalMeshComponent."));
+		UClass* RendererClass = Source->UnitData->Visualize.RendererClass.LoadSynchronous();
+		AMassBattleAgentRenderer* Renderer = RendererClass ? RendererClass->GetDefaultObject<AMassBattleAgentRenderer>() : nullptr;
+		UStaticMesh* Mesh = Renderer ? Renderer->AgentMesh.Get() : nullptr;
+		if (!Mesh) return MakeErrorJson(TEXT("Source renderer has no StaticMesh for VAT export."));
+		UMassBattleATTDataAsset* VatData = Source->VATData;
+		TArray<TObjectPtr<UAnimSequence>> EnabledSequences;
+		for (const FMassBattleATTAnimSequenceInfo& Sequence : VatData->AnimSequences)
+			if (Sequence.bEnabled) EnabledSequences.Add(Sequence.AnimSequence);
+		auto ResolveBucket = [&](const FAnimData& Bucket)
+		{
+			TArray<TObjectPtr<UAnimSequence>> Sequences;
+			for (int32 Slot = 0; Slot < AnimationHelpers::SlotsPerBucket; ++Slot)
+			{
+				const int32 Index = static_cast<int32>(AnimationHelpers::GetDataFromIndex(Bucket, Slot).X);
+				if (EnabledSequences.IsValidIndex(Index)) Sequences.Add(EnabledSequences[Index]);
+			}
+			return Sequences;
+		};
+		const FAnimsData& OldAnims = Source->UnitData->AnimShared.AnimData;
+		FFoundAnimSequences FoundAnims;
+		FoundAnims.Idle = ResolveBucket(OldAnims.IdleAnimData);
+		FoundAnims.Move = ResolveBucket(OldAnims.MoveAnimData);
+		FoundAnims.Fall = ResolveBucket(OldAnims.FallAnimData);
+		FoundAnims.Appear = ResolveBucket(OldAnims.AppearAnimData);
+		FoundAnims.Attack = ResolveBucket(OldAnims.AttackAnimData);
+		FoundAnims.Hit = ResolveBucket(OldAnims.HitAnimData);
+		FoundAnims.Death = ResolveBucket(OldAnims.DeathAnimData);
+		FoundAnims.Other = ResolveBucket(OldAnims.OtherAnimData);
+		if (bRebakeVAT)
+		{
+			VatData->Modify();
+			VatData->SkeletalMesh = Driver->GetSkeletalMeshAsset();
+			// Bake the renderer mesh itself so its lookup UVs match the generated textures.
+			VatData->StaticMesh = Mesh;
+		}
+		if (bRebakeVAT && !UMassBattleATTBakeLibrary::AnimationToTexture(VatData))
+			return MakeErrorJson(TEXT("Source VAT bake failed."));
+		if (bRebakeVAT)
+		{
+			Source->UnitData->Modify();
+			Source->UnitData->AnimShared.AnimData = UMassBattleFuncLibEd::CreateAnimsDataFromSequences(VatData, FoundAnims);
+		}
+		FString AnimTextureFolder = FPackageName::GetLongPackagePath(Destination);
+		FString AnimTextureName = TEXT("AnimDataTex_") + Name;
+		if (!Mesh->GetStaticMaterials().IsEmpty() && Mesh->GetStaticMaterials()[0].MaterialInterface)
+		{
+			UTexture* ExistingTexture = nullptr;
+			Mesh->GetStaticMaterials()[0].MaterialInterface->GetTextureParameterValue(FMaterialParameterInfo(TEXT("AnimDataTex")), ExistingTexture);
+			if (!ExistingTexture)
+				Mesh->GetStaticMaterials()[0].MaterialInterface->GetTextureParameterValue(FMaterialParameterInfo(TEXT("AnimDataTex"), EMaterialParameterAssociation::LayerParameter, 0), ExistingTexture);
+			if (ExistingTexture && FPackageName::GetLongPackagePath(ExistingTexture->GetOutermost()->GetName()) == FPackageName::GetLongPackagePath(VatData->GetOutermost()->GetName()))
+			{
+				AnimTextureFolder = FPackageName::GetLongPackagePath(ExistingTexture->GetOutermost()->GetName());
+				AnimTextureName = ExistingTexture->GetName();
+			}
+		}
+		UTexture2D* AnimDataTexture = UMassBattleFuncLibEd::CreateAnimDataTexture(VatData->Animations, AnimTextureFolder, AnimTextureName);
+		if (!AnimDataTexture) return MakeErrorJson(TEXT("Source animation frame texture could not be updated."));
+		if (bRebakeVAT)
+			VatAssetsToSave = { VatData, Mesh, VatData->GetVertexPositionTexture(), VatData->GetVertexNormalTexture(),
+				VatData->GetBonePositionTexture(), VatData->GetBoneRotationTexture(), VatData->GetBoneWeightTexture() };
+		VatAssetsToSave.Add(AnimDataTexture);
+		for (const FStaticMaterial& Slot : Mesh->GetStaticMaterials())
+		{
+			if (UMaterialInstanceConstant* Material = Cast<UMaterialInstanceConstant>(Slot.MaterialInterface))
+			{
+				UMassBattleATTBakeLibrary::UpdateMaterialInstanceFromDataAsset(VatData, Material, EMaterialParameterAssociation::GlobalParameter);
+				UMassBattleATTBakeLibrary::UpdateMaterialInstanceFromDataAsset(VatData, Material, EMaterialParameterAssociation::LayerParameter);
+				UMaterialEditingLibrary::SetMaterialInstanceStaticSwitchParameterValue(Material, TEXT("LegacyAnimData"), false, EMaterialParameterAssociation::GlobalParameter);
+				UMaterialEditingLibrary::SetMaterialInstanceStaticSwitchParameterValue(Material, TEXT("LegacyAnimData"), false, EMaterialParameterAssociation::LayerParameter);
+				UTexture* BaseColorTexture = nullptr;
+				Material->GetTextureParameterValue(FMaterialParameterInfo(TEXT("BaseColorTex"), EMaterialParameterAssociation::LayerParameter, 0), BaseColorTexture);
+				if (BaseColorTexture && BaseColorTexture->GetPathName() != TEXT("/Engine/EngineResources/DefaultTexture.DefaultTexture")
+					&& !BaseColorTexture->GetPathName().StartsWith(TEXT("/MassBattle/Core/AgentRenderer/VAT/Tex/Tex_PlaceHolder")))
+				{
+					Material->SetStaticSwitchParameterValueEditorOnly(FMaterialParameterInfo(TEXT("UseColorTex")), true);
+					Material->SetStaticSwitchParameterValueEditorOnly(FMaterialParameterInfo(TEXT("UseColorTex"), EMaterialParameterAssociation::LayerParameter, 0), true);
+					Material->UpdateStaticPermutation();
+				}
+				Material->SetTextureParameterValueEditorOnly(FMaterialParameterInfo(TEXT("AnimDataTex"), EMaterialParameterAssociation::GlobalParameter), AnimDataTexture);
+				Material->SetTextureParameterValueEditorOnly(FMaterialParameterInfo(TEXT("AnimDataTex"), EMaterialParameterAssociation::LayerParameter, 0), AnimDataTexture);
+				Material->SetScalarParameterValueEditorOnly(FMaterialParameterInfo(TEXT("NumFrames"), EMaterialParameterAssociation::GlobalParameter), VatData->NumFrames);
+				Material->SetScalarParameterValueEditorOnly(FMaterialParameterInfo(TEXT("NumFrames"), EMaterialParameterAssociation::LayerParameter, 0), VatData->NumFrames);
+				VatAssetsToSave.AddUnique(Material);
+			}
+		}
+	}
 	TArray<TSharedPtr<FJsonObject>> Patches;
 	TArray<TSharedPtr<FJsonValue>> Errors;
 	TSharedPtr<FJsonObject> ReadOptions = ParseObject(TEXT("{\"detail\":\"full\",\"include_defaults\":true}"));
-	if (Source->bHasUpdated && Source->ExportedUnit)
+	if (TargetUnit)
 	{
 		TSharedPtr<FJsonObject> Options = ParseObject(TEXT("{\"replace_arrays\":true,\"expected_before\":false}"));
-		Patches = BuildUnionMergePatches(Source->LastUpdatedSource,
+		Patches = BuildUnionMergePatches(Source->bHasUpdated ? Source->LastUpdatedSource.Get() : TargetUnit,
 			BuildSourceAlignedUnitJson(Source->UnitData, ReadOptions), Options, Errors, Source->UnitData);
 	}
 	if (!Errors.IsEmpty()) return MakeErrorJson(TEXT("Source fields could not be converted to update patches."));
 	bool bInvalid = false;
-	TArray<TSharedPtr<FJsonValue>> Diff = BuildPatchDiffArray(Source->ExportedUnit, Patches, bInvalid);
+	TArray<TSharedPtr<FJsonValue>> Diff = BuildPatchDiffArray(TargetUnit, Patches, bInvalid);
 	if (bInvalid) return MakeErrorJson(TEXT("Source diff validation failed; export was not changed."));
+	if (DestinationUnit)
+	{
+		Source->Modify();
+		Source->ExportedUnit = DestinationUnit;
+	}
 
 	FString Error;
 	bool bCreated = false;
@@ -2301,6 +2420,7 @@ FString UMassBattleUnitMCPApi::UpdateSource(AMassBattleUnitSource* Source, bool 
 			return MakeErrorJson(TEXT("Export move failed; source baseline was not advanced."));
 		bMoved = true;
 	}
+	if (Source->VATData) Source->ExportedUnit->Animating.SampleRate = FMath::RoundToInt(Source->VATData->SampleRate);
 	if (!Patches.IsEmpty())
 	{
 		TSharedPtr<FJsonObject> PatchRoot = MakeShared<FJsonObject>();
@@ -2309,6 +2429,12 @@ FString UMassBattleUnitMCPApi::UpdateSource(AMassBattleUnitSource* Source, bool 
 		if (!Plan.IsValid() || !Plan->GetBoolField(TEXT("success"))) return ToJsonString(Plan);
 		const FString Result = MCP_UnitApplyPlan(Plan->GetStringField(TEXT("plan_id")), bSaveAssets);
 		if (!ParseObject(Result)->GetBoolField(TEXT("success"))) return Result;
+	}
+	if (Patches.IsEmpty() && !ApplyHealthBarDefaults(Source->ExportedUnit, bSaveAssets, Error)) return MakeErrorJson(Error);
+	if (bSaveAssets)
+	{
+		for (UObject* Asset : VatAssetsToSave)
+			if (Asset && !SaveAsset(Asset, Error)) return MakeErrorJson(Error);
 	}
 	if (bSaveAssets && !SaveAsset(Source->ExportedUnit, Error)) return MakeErrorJson(Error);
 	Source->Modify();
@@ -2320,6 +2446,7 @@ FString UMassBattleUnitMCPApi::UpdateSource(AMassBattleUnitSource* Source, bool 
 	Result->SetStringField(TEXT("asset_path"), Source->ExportedUnit->GetPathName());
 	Result->SetBoolField(TEXT("created"), bCreated);
 	Result->SetBoolField(TEXT("moved"), bMoved);
+	Result->SetBoolField(TEXT("vat_rebaked"), Source->VATData && bRebakeVAT);
 	Result->SetArrayField(TEXT("applied_diff"), Diff);
 	Source->LastReport = ToJsonString(Result);
 	FBlueprintEditorUtils::MarkBlueprintAsModified(CastChecked<UBlueprint>(Source->GetSourceAsset()));
@@ -2647,7 +2774,22 @@ FString UMassBattleUnitMCPApi::MCP_UnitPlanMergeUpdate(const FString& UnitPath, 
 
 FString UMassBattleUnitMCPApi::MCP_UnitMergeUpdate(const FString& UnitPath, const FString& UnitDataJson, bool bSaveAssets)
 {
-	const FString PlanResult = MCP_UnitPlanMergeUpdate(UnitPath, UnitDataJson);
+	TSharedPtr<FJsonObject> Request = ParseObject(UnitDataJson);
+	bool bUpdateExport = false;
+	bool bRebakeVAT = true;
+	AMassBattleUnitSource* Source = nullptr;
+	FString DataJson = UnitDataJson;
+	if (Request.IsValid() && Request->TryGetBoolField(TEXT("update_export"), bUpdateExport) && bUpdateExport)
+	{
+		Source = AMassBattleUnitSource::Resolve(FSoftObjectPath(NormalizeObjectPath(UnitPath)).TryLoad());
+		if (!Source) return MakeErrorJson(TEXT("update_export requires a Unit Source asset."));
+		Request->RemoveField(TEXT("update_export"));
+		Request->TryGetBoolField(TEXT("rebake_vat"), bRebakeVAT);
+		Request->RemoveField(TEXT("rebake_vat"));
+		if (Request->Values.IsEmpty()) return UpdateSource(Source, bSaveAssets, bRebakeVAT);
+		DataJson = ToJsonString(Request);
+	}
+	const FString PlanResult = MCP_UnitPlanMergeUpdate(UnitPath, DataJson);
 	TSharedPtr<FJsonObject> PlanResultJson = ParseObject(PlanResult);
 	if (!PlanResultJson.IsValid() || !PlanResultJson->GetBoolField(TEXT("success")))
 	{
@@ -2662,7 +2804,11 @@ FString UMassBattleUnitMCPApi::MCP_UnitMergeUpdate(const FString& UnitPath, cons
 	}
 
 	const FString PlanId = PlanResultJson->GetStringField(TEXT("plan_id"));
-	return MCP_UnitApplyPlan(PlanId, bSaveAssets);
+	const bool bDeferredExport = Source && !bRebakeVAT;
+	const FString Applied = MCP_UnitApplyPlan(PlanId, bDeferredExport ? false : bSaveAssets);
+	const TSharedPtr<FJsonObject> AppliedJson = ParseObject(Applied);
+	return Source && (!bSaveAssets || bDeferredExport) && AppliedJson.IsValid() && AppliedJson->GetBoolField(TEXT("success"))
+		? UpdateSource(Source, bSaveAssets, bRebakeVAT) : Applied;
 }
 
 FString UMassBattleUnitMCPApi::MCP_UnitCreate(const FString& CreateSpecJson, bool bSaveAssets)
@@ -2686,11 +2832,30 @@ FString UMassBattleUnitMCPApi::MCP_UnitCreate(const FString& CreateSpecJson, boo
 			Template = LoadUnit(TemplatePath, Error);
 			if (!Template) return MakeErrorJson(Error);
 		}
+		FString VatPath;
+		UMassBattleATTDataAsset* VatData = nullptr;
+		if (Spec->TryGetStringField(TEXT("vat_data_asset"), VatPath))
+		{
+			VatData = LoadObject<UMassBattleATTDataAsset>(nullptr, *NormalizeObjectPath(VatPath));
+			if (!VatData) return MakeErrorJson(TEXT("vat_data_asset must resolve to a VAT data asset."));
+		}
 		UBlueprint* Blueprint = FKismetEditorUtilities::CreateBlueprint(AMassBattleUnitSource::StaticClass(),
 			CreatePackage(*(Path / Name)), *Name, BPTYPE_Normal, UBlueprint::StaticClass(), UBlueprintGeneratedClass::StaticClass());
 		if (!Blueprint) return MakeErrorJson(TEXT("Could not create source Actor Blueprint."));
+		if (VatData)
+		{
+			USCS_Node* DriverNode = Blueprint->SimpleConstructionScript->CreateNode(USkeletalMeshComponent::StaticClass(), TEXT("SourceModel"));
+			CastChecked<USkeletalMeshComponent>(DriverNode->ComponentTemplate)->SetSkeletalMesh(VatData->GetSkeletalMesh());
+			Blueprint->SimpleConstructionScript->AddNode(DriverNode);
+			FKismetEditorUtilities::CompileBlueprint(Blueprint);
+		}
 		FAssetRegistryModule::AssetCreated(Blueprint);
 		AMassBattleUnitSource* Source = AMassBattleUnitSource::Resolve(Blueprint);
+		if (VatData)
+		{
+			Source->VATData = VatData;
+			Source->VATDriver.ComponentProperty = TEXT("SourceModel");
+		}
 		if (Template)
 		{
 			UEngine::FCopyPropertiesForUnrelatedObjectsParams CopyOptions;
@@ -3097,6 +3262,7 @@ FString UMassBattleUnitMCPApi::MCP_UnitCreate(const FString& CreateSpecJson, boo
 		FxDefaultReport->SetBoolField(TEXT("explicit_hit_fx_preserved"), ContextHit->HasField(TEXT("SpawnFx")));
 	}
 
+	if (!ApplyHealthBarDefaults(Unit, bSaveAssets, Error)) return MakeErrorJson(Error);
 	if (bSaveAssets && !SaveAsset(NewUnit, Error))
 	{
 		return MakeErrorJson(Error);
@@ -3231,6 +3397,10 @@ FString UMassBattleUnitMCPApi::MCP_UnitApplyPlan(const FString& PlanId, bool bSa
 			Source->LastReport = Result;
 			if (!ParseObject(Result)->GetBoolField(TEXT("success"))) return Result;
 		}
+	}
+	if (UMassBattleAgentConfigDataAsset* Unit = Cast<UMassBattleAgentConfigDataAsset>(Target); Unit && !Unit->GetTypedOuter<AMassBattleUnitSource>())
+	{
+		if (!ApplyHealthBarDefaults(Unit, bSaveAssets, Error)) return MakeErrorJson(Error);
 	}
 	if (bSaveAssets && !SaveAsset(Target, Error))
 	{
@@ -3470,6 +3640,7 @@ FString UMassBattleUnitMCPApi::MCP_UnitFindAssets(const FString& QueryJson)
 	AddObjectClassFilter(Filter, USkeletalMesh::StaticClass());
 	AddObjectClassFilter(Filter, UNiagaraSystem::StaticClass());
 	AddObjectClassFilter(Filter, UMassBattleATTDataAsset::StaticClass());
+	Filter.ClassPaths.Add(FTopLevelAssetPath(TEXT("/Script/AnimToTexture"), TEXT("AnimToTextureDataAsset")));
 	AddObjectClassFilter(Filter, UBlueprint::StaticClass());
 	Filter.bRecursiveClasses = true;
 
@@ -3653,4 +3824,207 @@ FString UMassBattleStyleMCPApi::MCP_StylePlanOrganizeUnits(const FString& Option
 	Root->SetStringField(TEXT("note"), TEXT("This style MCP currently produces a reviewable move plan only; use AssetTools-based move support after confirming folder conventions."));
 	Root->SetArrayField(TEXT("moves"), Moves);
 	return ToJsonString(Root);
+}
+
+bool UMassBattleUnitMCPApi::ApplyHealthBarDefaults(UMassBattleAgentConfigDataAsset* Unit, bool bSaveAssets, FString& Error)
+{
+#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 8
+    const FString PolicyPath = FPaths::ProjectDir() / TEXT("MassBattleDataEditor/health_bar_policy.json");
+    if (!FPaths::FileExists(PolicyPath)) return true;
+    UClass* RendererClass = Unit ? Unit->Visualize.RendererClass.LoadSynchronous() : nullptr;
+    if (!RendererClass) return true;
+    AMassBattleAgentRenderer* Renderer = RendererClass->GetDefaultObject<AMassBattleAgentRenderer>();
+    UMassBattleMCPBridge* Bridge = GEditor->GetEditorSubsystem<UMassBattleMCPBridge>();
+    FString PolicyText;
+    if (!FFileHelper::LoadFileToString(PolicyText, *PolicyPath))
+    {
+        Error = TEXT("The shared health bar policy could not be read.");
+        return false;
+    }
+    const TSharedPtr<FJsonObject> Policy = ParseObject(PolicyText);
+    const double CellSize = Policy->GetObjectField(TEXT("bar"))->GetNumberField(TEXT("thickness_uu"));
+    const int32 Cells = FMath::CeilToInt(FMath::Loge(static_cast<double>(Unit->Health.Maximum) + 1.0));
+    const FVector2D Size(Cells * CellSize, 3.0 * CellSize);
+    auto Command = [&](const FString& Name, const TSharedPtr<FJsonObject>& Params)
+    {
+        TSharedPtr<FJsonObject> Result = ParseObject(Bridge->ExecuteCommand(Name, Params));
+        if (!Result.IsValid() || !Result->GetBoolField(TEXT("success")))
+        {
+            Error = Result.IsValid() ? ToJsonString(Result) : TEXT("The shared health bar operation returned no result.");
+            return TSharedPtr<FJsonObject>();
+        }
+        return Result;
+    };
+    UNiagaraSystem* Source = Renderer->NiagaraSystemAsset;
+    const bool bGeneric = !Source || Source->GetPathName().StartsWith(TEXT("/MassBattle/Core/AgentRenderer/NS_AgentRenderer_Template."))
+        || Source->GetName().StartsWith(TEXT("NS_RTS_AgentTemplate"));
+    if (bGeneric)
+        Source = LoadObject<UNiagaraSystem>(nullptr, TEXT("/Game/Unit/Shared/Renderer/HealthBars/NS_RTS_AgentTemplate.NS_RTS_AgentTemplate"));
+    if (!Source)
+    {
+        Error = TEXT("The shared agent renderer health template is missing.");
+        return false;
+    }
+    FString BaseName = bGeneric ? TEXT("NS_RTS_AgentTemplate_") + RendererClass->GetName() : Source->GetName();
+    double OffsetZ = 300.0;
+    double ModelHalfHeight = 18.0;
+    if (bGeneric && Renderer->AgentMesh)
+    {
+        const FBoxSphereBounds Bounds = Renderer->AgentMesh->GetBounds().TransformBy(Renderer->Offset);
+        OffsetZ = (Bounds.Origin.Z + Bounds.BoxExtent.Z - Unit->Collider.Height * 0.5 - Unit->Collider.Radius) * Unit->Scaling.Scale;
+        ModelHalfHeight = Bounds.BoxExtent.Z * Unit->Scaling.Scale;
+    }
+    const int32 ExistingSuffix = BaseName.Find(TEXT("_RTSHP"), ESearchCase::CaseSensitive, ESearchDir::FromEnd);
+    if (ExistingSuffix != INDEX_NONE) BaseName.LeftInline(ExistingSuffix);
+    const FString Folder = TEXT("/Game/Unit/Shared/Renderer/HealthBars");
+    const FString AssetName = BaseName + FString::Printf(TEXT("_RTSHP%d"), Cells);
+    const FString Target = Folder / AssetName;
+    UNiagaraSystem* System = LoadObject<UNiagaraSystem>(nullptr, *(Target + TEXT(".") + AssetName));
+    if (!System)
+    {
+        TSharedPtr<FJsonObject> Params = MakeShared<FJsonObject>();
+        Params->SetStringField(TEXT("SourceAssetPath"), Source->GetPathName());
+        Params->SetStringField(TEXT("PackagePath"), Folder);
+        Params->SetStringField(TEXT("NewAssetName"), AssetName);
+        Params->SetBoolField(TEXT("bSaveAssets"), bSaveAssets);
+        if (!Command(TEXT("MCP_EffectDuplicateAsset"), Params)) return false;
+        System = LoadObject<UNiagaraSystem>(nullptr, *(Target + TEXT(".") + AssetName));
+    }
+    // Bind the single agent mesh to its renderer owner so replacing a baked mesh cannot orphan the health-bar variant.
+    for (const FNiagaraEmitterHandle& Handle : System->GetEmitterHandles())
+    {
+        if (Handle.GetName() != TEXT("AgentRenderer_VAT")) continue;
+        FVersionedNiagaraEmitterData* EmitterData = Handle.GetEmitterData();
+        if (!EmitterData) continue;
+        for (UNiagaraRendererProperties* Properties : EmitterData->GetRenderers())
+        {
+            UNiagaraMeshRendererProperties* MeshRenderer = Cast<UNiagaraMeshRendererProperties>(Properties);
+            if (!MeshRenderer || MeshRenderer->Meshes.Num() != 1
+                || !MeshRenderer->MeshesBinding.ResolvedParameter.GetName().IsNone()) continue;
+            FNiagaraParameterBinding& Binding = MeshRenderer->Meshes[0].MeshParameterBinding;
+            if (!Binding.ResolvedParameter.GetName().IsNone()) continue;
+            System->Modify();
+            MeshRenderer->Modify();
+            Binding.ResolvedParameter = FNiagaraVariableBase(FNiagaraTypeDefinition(UStaticMesh::StaticClass()), TEXT("User.AgentMesh"));
+            Binding.AliasedParameter = Binding.ResolvedParameter;
+            MeshRenderer->PostEditChange();
+        }
+    }
+    TSharedPtr<FJsonObject> RendererPatch = MakeShared<FJsonObject>();
+    RendererPatch->SetStringField(TEXT("target"), TEXT("renderer"));
+    RendererPatch->SetStringField(TEXT("emitter"), TEXT("HealthBarRenderer_RTS"));
+    RendererPatch->SetNumberField(TEXT("renderer_index"), 0);
+    RendererPatch->SetStringField(TEXT("property"), TEXT("bCastShadows"));
+    RendererPatch->SetStringField(TEXT("value_text"), TEXT("False"));
+    TSharedPtr<FJsonObject> RendererWrite = MakeShared<FJsonObject>();
+    TArray<TSharedPtr<FJsonValue>> RendererPatches = {MakeShared<FJsonValueObject>(RendererPatch)};
+    if (bGeneric)
+    {
+        TSharedPtr<FJsonObject> MaterialPatch = MakeShared<FJsonObject>(*RendererPatch);
+        MaterialPatch->SetStringField(TEXT("property"), TEXT("Material"));
+        MaterialPatch->SetStringField(TEXT("value_text"), TEXT("Material'/Game/Unit/Shared/Materials/RTS/M_HealthBar_RTS.M_HealthBar_RTS'"));
+        RendererPatches.Add(MakeShared<FJsonValueObject>(MaterialPatch));
+        TSharedPtr<FJsonObject> BoundsPatch = MakeShared<FJsonObject>(*RendererPatch);
+        BoundsPatch->SetStringField(TEXT("property"), TEXT("MaterialParameters"));
+        BoundsPatch->SetStringField(TEXT("value_text"), FString::Printf(TEXT("(ScalarParameters=((MaterialParameterName=\"ModelHalfHeightUU\",Value=%.6f)))"), ModelHalfHeight));
+        RendererPatches.Add(MakeShared<FJsonValueObject>(BoundsPatch));
+    }
+    RendererWrite->SetArrayField(TEXT("patches"), RendererPatches);
+    TSharedPtr<FJsonObject> RendererParams = MakeShared<FJsonObject>();
+    RendererParams->SetStringField(TEXT("SystemPath"), Target);
+    RendererParams->SetStringField(TEXT("PatchJson"), ToJsonString(RendererWrite));
+    RendererParams->SetBoolField(TEXT("bSaveAssets"), false);
+    if (!Command(TEXT("MCP_NiagaraMergeWrite"), RendererParams)) return false;
+    TArray<TSharedPtr<FJsonValue>> Operations;
+    TArray<TSharedPtr<FJsonValue>> RemovedEdges;
+    TSharedPtr<FJsonObject> ProgressArray = MakeShared<FJsonObject>();
+    ProgressArray->SetStringField(TEXT("op"), TEXT("add_user_data_interface"));
+    ProgressArray->SetStringField(TEXT("name"), TEXT("User.CommandProgressArray"));
+    ProgressArray->SetStringField(TEXT("data_interface_class"), TEXT("/Script/Niagara.NiagaraDataInterfaceArrayFloat4"));
+    Operations.Add(MakeShared<FJsonValueObject>(ProgressArray));
+    for (const FString& Usage : {FString(TEXT("ParticleSpawnScript")), FString(TEXT("ParticleUpdateScript"))})
+    {
+        TSharedPtr<FJsonObject> Graph = MakeShared<FJsonObject>();
+        Graph->SetStringField(TEXT("scope"), TEXT("emitter"));
+        Graph->SetStringField(TEXT("emitter"), TEXT("HealthBarRenderer_RTS"));
+        Graph->SetStringField(TEXT("script_usage"), Usage);
+        Graph->SetBoolField(TEXT("include_nodes"), true);
+        Graph->SetBoolField(TEXT("include_pins"), false);
+        Graph->SetBoolField(TEXT("include_stack_inputs"), true);
+        TSharedPtr<FJsonObject> Params = MakeShared<FJsonObject>();
+        Params->SetStringField(TEXT("SystemPath"), Target);
+        Params->SetStringField(TEXT("SelectorJson"), ToJsonString(Graph));
+        TSharedPtr<FJsonObject> Read = Command(TEXT("MCP_NiagaraReadGraph"), Params);
+        if (!Read) return false;
+        const TArray<TSharedPtr<FJsonValue>>& Nodes = Read->GetArrayField(TEXT("graphs"))[0]->AsObject()->GetArrayField(TEXT("nodes"));
+        const TSharedPtr<FJsonValue>* Module = Nodes.FindByPredicate([](const TSharedPtr<FJsonValue>& Value)
+        {
+            FString Function;
+            return Value->AsObject()->TryGetStringField(TEXT("function_name"), Function)
+                && Function.StartsWith(TEXT("NM_UpdateAgentHealthBarFromArray_GPU"));
+        });
+        if (!Module)
+        {
+            Error = TEXT("The renderer must use the shared RTS health emitter.");
+            return false;
+        }
+        TSharedPtr<FJsonObject> Node = MakeShared<FJsonObject>();
+        Node->SetStringField(TEXT("node_guid"), (*Module)->AsObject()->GetStringField(TEXT("node_guid")));
+        Node->SetObjectField(TEXT("graph"), Graph);
+        TSharedPtr<FJsonObject> Value = MakeShared<FJsonObject>();
+        Value->SetStringField(TEXT("mode"), TEXT("local"));
+        Value->SetStringField(TEXT("value_text"), FString::Printf(TEXT("(X=%.6f,Y=%.6f)"), Size.X, Size.Y));
+        TSharedPtr<FJsonObject> Input = MakeShared<FJsonObject>();
+        Input->SetStringField(TEXT("input"), TEXT("Scale"));
+        Input->SetObjectField(TEXT("value"), Value);
+        TSharedPtr<FJsonObject> Operation = MakeShared<FJsonObject>();
+        Operation->SetStringField(TEXT("op"), TEXT("set_stack_inputs"));
+        Operation->SetObjectField(TEXT("node"), Node);
+        TArray<TSharedPtr<FJsonValue>> Inputs = {MakeShared<FJsonValueObject>(Input)};
+        if (bGeneric)
+        {
+            TSharedPtr<FJsonObject> OffsetValue = MakeShared<FJsonObject>();
+            OffsetValue->SetStringField(TEXT("mode"), TEXT("local"));
+            OffsetValue->SetStringField(TEXT("value_text"), FString::Printf(TEXT("(Value=%.6f)"), OffsetZ));
+            TSharedPtr<FJsonObject> OffsetInput = MakeShared<FJsonObject>();
+            OffsetInput->SetStringField(TEXT("input"), TEXT("OffsetZ"));
+            OffsetInput->SetObjectField(TEXT("value"), OffsetValue);
+            Inputs.Add(MakeShared<FJsonValueObject>(OffsetInput));
+        }
+        Operation->SetArrayField(TEXT("inputs"), Inputs);
+        Operations.Add(MakeShared<FJsonValueObject>(Operation));
+        if (!ToJsonString(Read).Contains(TEXT("User.CommandProgressArray")))
+        {
+        	Operations.Append(Policy->GetObjectField(TEXT("progress_graph"))->GetArrayField(Usage));
+        	RemovedEdges.Add(MakeShared<FJsonValueString>(
+        		(*Module)->AsObject()->GetStringField(TEXT("node_guid")) + TEXT(".OutputMap->")
+        		+ Read->GetArrayField(TEXT("graphs"))[0]->AsObject()->GetStringField(TEXT("output_node_guid")) + TEXT(".Out")));
+        }
+    }
+    TSharedPtr<FJsonObject> Validation = MakeShared<FJsonObject>();
+    Validation->SetBoolField(TEXT("require_ready_to_run"), true);
+    Validation->SetArrayField(TEXT("allowed_removed_edges"), RemovedEdges);
+    Validation->SetArrayField(TEXT("allowed_rapid_iteration_parameter_changes"), {
+        MakeShared<FJsonValueString>(TEXT("Constants.HealthBarRenderer_RTS.NM_UpdateAgentHealthBarFromArray_GPU.Scale")),
+        MakeShared<FJsonValueString>(TEXT("Constants.HealthBarRenderer_RTS.NM_UpdateAgentHealthBarFromArray_GPU001.Scale")),
+        MakeShared<FJsonValueString>(TEXT("Constants.HealthBarRenderer_RTS.NM_UpdateAgentHealthBarFromArray_GPU.OffsetZ")),
+        MakeShared<FJsonValueString>(TEXT("Constants.HealthBarRenderer_RTS.NM_UpdateAgentHealthBarFromArray_GPU001.OffsetZ"))});
+    TSharedPtr<FJsonObject> Edit = MakeShared<FJsonObject>();
+    Edit->SetArrayField(TEXT("operations"), Operations);
+    Edit->SetObjectField(TEXT("validation"), Validation);
+    TSharedPtr<FJsonObject> Params = MakeShared<FJsonObject>();
+    Params->SetStringField(TEXT("SystemPath"), Target);
+    Params->SetStringField(TEXT("EditJson"), ToJsonString(Edit));
+    Params->SetBoolField(TEXT("bSaveAssets"), bSaveAssets);
+    if (!Command(TEXT("MCP_NiagaraApplyGraphEdit"), Params)) return false;
+    Params = MakeShared<FJsonObject>();
+    Params->SetStringField(TEXT("TargetClassPath"), RendererClass->GetPathName());
+    Params->SetStringField(TEXT("AgentMeshPath"), TEXT(""));
+    Params->SetStringField(TEXT("NiagaraSystemPath"), System->GetPathName());
+    Params->SetNumberField(TEXT("SubType"), Unit->SubType.Index);
+    Params->SetBoolField(TEXT("bSaveAssets"), bSaveAssets);
+    return Command(TEXT("MCP_SetClassDefaultProperties"), Params).IsValid();
+#else
+    return true;
+#endif
 }

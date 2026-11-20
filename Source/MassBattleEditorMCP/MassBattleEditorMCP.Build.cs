@@ -5,6 +5,16 @@ public class MassBattleEditorMCP : ModuleRules
 	public MassBattleEditorMCP(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
+		if (Target.Version.MinorVersion >= 8)
+		{
+			PublicDependencyModuleNames.Add("MassCore");
+		}
+		else
+		{
+			PrivateDependencyModuleNames.Add("RHI");
+		}
+		
+		
 		
 		PublicIncludePaths.AddRange(
 			new string[] {
@@ -21,7 +31,7 @@ public class MassBattleEditorMCP : ModuleRules
 			{
 				"Core",
 				"DeveloperSettings",
-				"MassCore",
+				
 				"MassEntity",
 				"MassAPI",
 				"MassBattle",

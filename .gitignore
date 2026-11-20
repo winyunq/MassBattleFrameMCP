@@ -1,6 +1,7 @@
 # Public plugin source, documentation and supported user tooling.
 /*
 !/.gitignore
+!/.github/
 !/.gitattributes
 !/.gitmodules
 !/[Rr][Ee][Aa][Dd][Mm][Ee]*

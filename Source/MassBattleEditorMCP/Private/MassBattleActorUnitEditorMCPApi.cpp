@@ -25,6 +25,7 @@
 #include "Materials/MaterialInterface.h"
 #include "Materials/MaterialInstanceConstant.h"
 #include "MaterialEditingLibrary.h"
+#include "Misc/AutomationTest.h"
 #include "MeshDescription.h"
 #include "Misc/PackageName.h"
 #include "ObjectTools.h"
@@ -2093,7 +2094,13 @@ static TArray<FString> GetSourceMaterialTexturePaths(UMaterialInterface* Materia
 		return {};
 	}
 
-	for (UTexture* Texture : UMaterialEditingLibrary::GetMaterialUsedTextures(Material))
+	#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 8
+	const TArray<UTexture*> UsedTextures = UMaterialEditingLibrary::GetMaterialUsedTextures(Material);
+	#else
+	TArray<UTexture*> UsedTextures;
+	Material->GetUsedTextures(UsedTextures, EMaterialQualityLevel::High, true, GMaxRHIFeatureLevel, true);
+	#endif
+	for (UTexture* Texture : UsedTextures)
 	{
 		if (Texture)
 		{
@@ -2133,8 +2140,11 @@ static TSharedPtr<FJsonObject> BuildVatMaterialAudit(
 	ExpectedSwitches.Add(TEXT("UseUV1"), DataAsset && DataAsset->UVChannel == 1);
 	ExpectedSwitches.Add(TEXT("UseUV2"), DataAsset && DataAsset->UVChannel == 2);
 	ExpectedSwitches.Add(TEXT("UseUV3"), DataAsset && DataAsset->UVChannel == 3);
-	ExpectedSwitches.Add(TEXT("UseTwoInfluences"), bBoneMode && DataAsset->NumBoneInfluences == EMassBattleATTNumBoneInfluences::Two);
-	ExpectedSwitches.Add(TEXT("UseFourInfluences"), bBoneMode && DataAsset->NumBoneInfluences == EMassBattleATTNumBoneInfluences::Four);
+	if (bBoneMode)
+	{
+		ExpectedSwitches.Add(TEXT("UseTwoInfluences"), DataAsset->NumBoneInfluences == EMassBattleATTNumBoneInfluences::Two);
+		ExpectedSwitches.Add(TEXT("UseFourInfluences"), DataAsset->NumBoneInfluences == EMassBattleATTNumBoneInfluences::Four);
+	}
 	if (StaticMesh)
 	{
 		for (int32 SlotIndex = 0; SlotIndex < StaticMesh->GetStaticMaterials().Num(); ++SlotIndex)
@@ -2188,22 +2198,28 @@ static TSharedPtr<FJsonObject> BuildVatMaterialAudit(
 				TSet<FName> FoundCriticalSwitches;
 				int32 StaticSwitchMismatchCount = 0;
 				const FStaticParameterSet StaticParameters = Instance->GetStaticParameters();
-				for (const FStaticSwitchParameter& StaticSwitch : StaticParameters.StaticSwitchParameters)
+				TArray<FMaterialParameterInfo> DeclaredSwitches;
+				TArray<FGuid> DeclaredSwitchGuids;
+				Instance->GetAllStaticSwitchParameterInfo(DeclaredSwitches, DeclaredSwitchGuids);
+				for (const FMaterialParameterInfo& ParameterInfo : DeclaredSwitches)
 				{
-					const FMaterialParameterInfo& ParameterInfo = StaticSwitch.ParameterInfo;
-					const bool bValue = StaticSwitch.Value;
+					bool bValue = false;
+					FGuid ExpressionGuid;
+					const bool bResolved = Instance->GetStaticSwitchParameterValue(ParameterInfo, bValue, ExpressionGuid);
+					const FStaticSwitchParameter* Override = StaticParameters.StaticSwitchParameters.FindByPredicate(
+						[&](const FStaticSwitchParameter& Parameter) { return Parameter.ParameterInfo == ParameterInfo; });
 					TSharedPtr<FJsonObject> Switch = MakeShared<FJsonObject>();
 					Switch->SetStringField(TEXT("name"), ParameterInfo.Name.ToString());
 					Switch->SetNumberField(TEXT("association"), static_cast<int32>(ParameterInfo.Association));
 					Switch->SetNumberField(TEXT("index"), ParameterInfo.Index);
-					Switch->SetBoolField(TEXT("resolved"), true);
-					Switch->SetBoolField(TEXT("overridden"), StaticSwitch.bOverride);
+					Switch->SetBoolField(TEXT("resolved"), bResolved);
+					Switch->SetBoolField(TEXT("overridden"), Override && Override->bOverride);
 					Switch->SetBoolField(TEXT("value"), bValue);
 					if (const bool* Expected = ExpectedSwitches.Find(ParameterInfo.Name))
 					{
 						FoundCriticalSwitches.Add(ParameterInfo.Name);
 						Switch->SetBoolField(TEXT("expected"), *Expected);
-						const bool bMatches = bValue == *Expected;
+						const bool bMatches = bResolved && bValue == *Expected;
 						Switch->SetBoolField(TEXT("matches_expected"), bMatches);
 						if (!bMatches)
 						{
@@ -2214,8 +2230,9 @@ static TSharedPtr<FJsonObject> BuildVatMaterialAudit(
 				}
 				Material->SetArrayField(TEXT("actual_static_switches"), ActualStaticSwitches);
 
-				const bool bCriticalSwitchesValid = FoundCriticalSwitches.Num() == ExpectedSwitches.Num()
-					&& StaticSwitchMismatchCount == 0;
+				const FName SelectedUV(*FString::Printf(TEXT("UseUV%d"), DataAsset ? DataAsset->UVChannel : 0));
+				const bool bCriticalSwitchesValid = FoundCriticalSwitches.Contains(TEXT("BoneMode"))
+					&& FoundCriticalSwitches.Contains(SelectedUV) && StaticSwitchMismatchCount == 0;
 				bool bTexturesValid = DataAsset != nullptr;
 				if (DataAsset)
 				{
@@ -2623,7 +2640,30 @@ static USkeletalMesh* CreatePersistentAssembledSkeletalMesh(
 	{
 		AssembledMesh->Modify();
 		AssembledMesh->PreEditChange(nullptr);
+		#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 8
 		AssembledMesh->Clear();
+		#else
+		AssembledMesh->UnregisterAllMorphTarget();
+		if (FSkeletalMeshModel* PreviousModel = AssembledMesh->GetImportedModel())
+		{
+			PreviousModel->EmptyOriginalReductionSourceMeshData();
+			PreviousModel->LODModels.Empty();
+			PreviousModel->InlineReductionCacheDatas.Empty();
+		}
+		AssembledMesh->ResetLODInfo();
+		AssembledMesh->GetMaterials().Empty();
+		AssembledMesh->GetRefSkeleton().Empty();
+		AssembledMesh->SetSkeleton(nullptr);
+		AssembledMesh->SetPhysicsAsset(nullptr);
+		AssembledMesh->GetRefBasesInvMatrix().Empty();
+		AssembledMesh->GetMeshOnlySocketList().Empty();
+		AssembledMesh->GetNodeMappingData().Empty();
+		AssembledMesh->GetMeshClothingAssets().Empty();
+		AssembledMesh->SetHasActiveClothingAssets(false);
+		AssembledMesh->GetSkinWeightProfiles().Empty();
+		AssembledMesh->ReleaseResources();
+		AssembledMesh->InvalidateDeriveDataCacheGUID();
+		#endif
 		AssembledMesh->SetFlags(RF_Public | RF_Standalone | RF_Transactional);
 	}
 	else
@@ -3143,6 +3183,48 @@ FString UMassBattleUnitEditorMCPApi::MCP_EditorInspectVatAnimation(const FString
 	Result->SetArrayField(TEXT("issues"), Issues);
 	return MassBattleActorUnitEditorMCP::ToJsonString(Result);
 }
+
+#if WITH_DEV_AUTOMATION_TESTS
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMassBattleVatDeclaredSwitchAuditTest, "MassBattle.MCP.VatDeclaredSwitchAudit",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FMassBattleVatDeclaredSwitchAuditTest::RunTest(const FString& Parameters)
+{
+	for (bool bBoneMode : { true, false })
+	{
+		const TCHAR* ParentPath = bBoneMode
+			? TEXT("/MassBattle/Core/AgentRenderer/VAT/M_VATMaster_CS.M_VATMaster_CS")
+			: TEXT("/MassBattle/Core/AgentRenderer/VAT/M_VATMaster.M_VATMaster");
+		UMaterialInterface* Parent = LoadObject<UMaterialInterface>(nullptr, ParentPath);
+		if (!TestNotNull(TEXT("VAT master material is available"), Parent)) return false;
+		UMaterialInstanceConstant* Instance = NewObject<UMaterialInstanceConstant>();
+		Instance->SetParentEditorOnly(Parent);
+		for (EMaterialParameterAssociation Association : { EMaterialParameterAssociation::GlobalParameter, EMaterialParameterAssociation::LayerParameter })
+		{
+			UMaterialEditingLibrary::SetMaterialInstanceStaticSwitchParameterValue(Instance, TEXT("BoneMode"), bBoneMode, Association);
+			UMaterialEditingLibrary::SetMaterialInstanceStaticSwitchParameterValue(Instance, TEXT("UseVAT"), true, Association);
+			UMaterialEditingLibrary::SetMaterialInstanceStaticSwitchParameterValue(Instance, TEXT("LegacyAnimData"), false, Association);
+			UMaterialEditingLibrary::SetMaterialInstanceStaticSwitchParameterValue(Instance, TEXT("UseUV0"), false, Association);
+			UMaterialEditingLibrary::SetMaterialInstanceStaticSwitchParameterValue(Instance, TEXT("UseUV1"), true, Association);
+			UMaterialEditingLibrary::SetMaterialInstanceStaticSwitchParameterValue(Instance, TEXT("UseUV2"), false, Association);
+			UMaterialEditingLibrary::SetMaterialInstanceStaticSwitchParameterValue(Instance, TEXT("UseUV3"), false, Association);
+			UMaterialEditingLibrary::SetMaterialInstanceStaticSwitchParameterValue(Instance, TEXT("UseFourInfluences"), true, Association);
+			UMaterialEditingLibrary::SetMaterialInstanceStaticSwitchParameterValue(Instance, TEXT("UseTwoInfluences"), false, Association);
+		}
+		UStaticMesh* Mesh = NewObject<UStaticMesh>();
+		Mesh->GetStaticMaterials().Add(FStaticMaterial(Instance));
+		UMassBattleATTDataAsset* Data = NewObject<UMassBattleATTDataAsset>();
+		Data->Mode = bBoneMode ? EMassBattleATTMode::Bone : EMassBattleATTMode::Vertex;
+		Data->UVChannel = 1;
+		Data->NumBoneInfluences = EMassBattleATTNumBoneInfluences::Four;
+		const TSharedPtr<FJsonObject> Audit = MassBattleActorUnitEditorMCP::BuildVatMaterialAudit(Mesh, nullptr, Data);
+		const TSharedPtr<FJsonObject> Material = Audit->GetArrayField(TEXT("materials"))[0]->AsObject();
+		TestTrue(bBoneMode ? TEXT("CS master does not require a retired legacy switch")
+			: TEXT("Vertex decoding ignores unused bone influence switches"), Material->GetBoolField(TEXT("critical_static_switches_valid")));
+	}
+	return !HasAnyErrors();
+}
+#endif
 
 FString UMassBattleUnitEditorMCPApi::MCP_EditorPlanCreateVatUnitFromActor(const FString& SpecJson)
 {
