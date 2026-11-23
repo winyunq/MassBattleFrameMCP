@@ -2748,6 +2748,9 @@ FString UMassBattleUnitMCPApi::MCP_UnitPlanMergeUpdate(const FString& UnitPath, 
 	}
 
 	TSharedPtr<FJsonObject> Plan = BuildPlanBase(TEXT("merge_update_unit"));
+	bool bPropertiesOnly = false;
+	Options->TryGetBoolField(TEXT("properties_only"), bPropertiesOnly);
+	Plan->SetBoolField(TEXT("properties_only"), bPropertiesOnly);
 	if (bChangeExportPath) Plan->SetStringField(TEXT("export_path"), ExportPath);
 	Plan->SetStringField(TEXT("target_path"), UnitPath);
 	Plan->SetStringField(TEXT("merge_semantics"), TEXT("union: only JSON fields present in UnitDataJson are written; omitted fields remain unchanged."));
@@ -2766,6 +2769,7 @@ FString UMassBattleUnitMCPApi::MCP_UnitPlanMergeUpdate(const FString& UnitPath, 
 	Root->SetStringField(TEXT("plan_id"), Plan->GetStringField(TEXT("plan_id")));
 	Root->SetStringField(TEXT("plan_path"), PlanPath);
 	Root->SetStringField(TEXT("merge_semantics"), Plan->GetStringField(TEXT("merge_semantics")));
+	Root->SetBoolField(TEXT("properties_only"), bPropertiesOnly);
 	Root->SetBoolField(TEXT("applicable"), !bHasError);
 	Root->SetArrayField(TEXT("diff"), Diff);
 	Root->SetArrayField(TEXT("merge_errors"), MergeErrors);
@@ -2804,6 +2808,36 @@ FString UMassBattleUnitMCPApi::MCP_UnitMergeUpdate(const FString& UnitPath, cons
 	}
 
 	const FString PlanId = PlanResultJson->GetStringField(TEXT("plan_id"));
+	bool bPropertiesOnly = false;
+	PlanResultJson->TryGetBoolField(TEXT("properties_only"), bPropertiesOnly);
+	if (Source && bPropertiesOnly)
+	{
+		const FString Destination = Source->ExportPath.IsEmpty()
+			? GetDefault<UMassBattleUnitSourceSettings>()->ExportRoot / Source->GetSourceAsset()->GetName()
+			: Source->ExportPath;
+		FString Error;
+		UMassBattleAgentConfigDataAsset* ExportedUnit = LoadUnit(Destination, Error);
+		if (!ExportedUnit || ExportedUnit->GetTypedOuter<AMassBattleUnitSource>())
+			return MakeErrorJson(TEXT("A property-only export requires an existing game Unit."));
+		const FString ExportedPath = ExportedUnit->GetPathName();
+		const FString ExportPlanResult = MCP_UnitPlanMergeUpdate(ExportedPath, DataJson);
+		const TSharedPtr<FJsonObject> ExportPlan = ParseObject(ExportPlanResult);
+		bool bExportApplicable = false;
+		if (!ExportPlan.IsValid() || !ExportPlan->TryGetBoolField(TEXT("applicable"), bExportApplicable) || !bExportApplicable)
+			return ExportPlanResult;
+
+		Source->Modify();
+		Source->ExportedUnit = ExportedUnit;
+		const FString SourceResult = MCP_UnitApplyPlan(PlanId, bSaveAssets);
+		if (!ParseObject(SourceResult)->GetBoolField(TEXT("success"))) return SourceResult;
+		const FString ExportResult = MCP_UnitApplyPlan(ExportPlan->GetStringField(TEXT("plan_id")), bSaveAssets);
+		const TSharedPtr<FJsonObject> Export = ParseObject(ExportResult);
+		if (!Export.IsValid() || !Export->GetBoolField(TEXT("success"))) return ExportResult;
+		Export->SetStringField(TEXT("asset_path"), ExportedPath);
+		Export->SetBoolField(TEXT("vat_rebaked"), false);
+		Export->SetBoolField(TEXT("properties_only"), true);
+		return ToJsonString(Export);
+	}
 	const bool bDeferredExport = Source && !bRebakeVAT;
 	const FString Applied = MCP_UnitApplyPlan(PlanId, bDeferredExport ? false : bSaveAssets);
 	const TSharedPtr<FJsonObject> AppliedJson = ParseObject(Applied);
@@ -3337,6 +3371,8 @@ FString UMassBattleUnitMCPApi::MCP_UnitApplyPlan(const FString& PlanId, bool bSa
 		return MakeErrorJson(TEXT("Plan is not applicable. Inspect diff errors first."));
 	}
 
+	bool bPropertiesOnly = false;
+	Plan->TryGetBoolField(TEXT("properties_only"), bPropertiesOnly);
 	FString Type;
 	Plan->TryGetStringField(TEXT("type"), Type);
 
@@ -3391,14 +3427,15 @@ FString UMassBattleUnitMCPApi::MCP_UnitApplyPlan(const FString& PlanId, bool bSa
 	{
 		Plan->TryGetStringField(TEXT("export_path"), Source->ExportPath);
 		FBlueprintEditorUtils::MarkBlueprintAsModified(CastChecked<UBlueprint>(Source->GetSourceAsset()));
-		if (bSaveAssets)
+		if (bSaveAssets && !bPropertiesOnly)
 		{
 			const FString Result = UpdateSource(Source, true);
 			Source->LastReport = Result;
 			if (!ParseObject(Result)->GetBoolField(TEXT("success"))) return Result;
 		}
 	}
-	if (UMassBattleAgentConfigDataAsset* Unit = Cast<UMassBattleAgentConfigDataAsset>(Target); Unit && !Unit->GetTypedOuter<AMassBattleUnitSource>())
+	if (UMassBattleAgentConfigDataAsset* Unit = Cast<UMassBattleAgentConfigDataAsset>(Target);
+		!bPropertiesOnly && Unit && !Unit->GetTypedOuter<AMassBattleUnitSource>())
 	{
 		if (!ApplyHealthBarDefaults(Unit, bSaveAssets, Error)) return MakeErrorJson(Error);
 	}
