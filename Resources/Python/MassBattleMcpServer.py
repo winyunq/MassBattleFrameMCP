@@ -186,11 +186,11 @@ async def unit_create(options: Any, save_assets: bool = True) -> Dict[str, Any]:
 
 @mcp.tool()
 async def unit_delete(unit_path: str, options: Any = None) -> Dict[str, Any]:
-    """Preview or execute a unit asset deletion plan.
-    Builds the explicit unit deletion plan. dry_run=true returns would_delete and the plan without changing the asset; dry_run=false applies an applicable plan through the same mutation API.
+    """Check or execute a unit asset deletion.
+    dry_run=true checks the selected asset and reports whether deletion is allowed. dry_run=false performs the deletion if its reference checks pass.
     UnitPath: Unreal object path of the existing MassBattle unit config or supported Unit Source Actor Blueprint.
-    OptionsJson: JSON object; pass {} to use the defaults. dry_run defaults to true. Deletion mode and plan validation are handled by the explicit unit deletion plan.
-    Returns: A deletion preview with would_delete, or the actual deletion result; dry_run distinguishes the two and applicable explains whether the plan can execute."""
+    OptionsJson: JSON object; pass {} to use the defaults. dry_run defaults to true. mode selects a soft move to trash or permanent deletion.
+    Returns: Deletion eligibility or the executed deletion result."""
     return await get_connection().send_command(
         "MCP_UnitDelete",
         {"UnitPath": unit_path, "OptionsJson": _json_arg(options)},
@@ -369,7 +369,7 @@ async def editor_apply_create_vat_unit(
     compact_response: bool = True,
 ) -> Dict[str, Any]:
     """Create a unit that plays baked skeletal animation through a static mesh.
-    Converts the skeletal mesh, bakes animation textures and configures the renderer. New units use the selected style for omitted creation values. A rebuild of an existing unit applies the generated references and explicitly requested unit changes through the unit change plan.
+    Converts the skeletal mesh, bakes animation textures and configures the renderer. New units use the selected style for omitted creation values. A rebuild of an existing unit writes the generated references and explicitly requested unit changes.
     OptionsJson: JSON options for skeletal_mesh, unit_name, output, parent_material, source_renderer_class, niagara_system, vat_sample_rate and animations. Supply target_unit to rebuild an existing unit. style_profile is optional when creating a unit. dry_run or preview_only selects a preview, overwrite_existing allows replacement of generated outputs, and compact_response selects result detail.
     bSaveAssets: Whether to save the assets modified or created by this operation to disk.
     Returns: Generation-step results or a compact summary; previews return the plan and validation. Validation failures are described by validation.valid and validation.issues; execution_steps records completed and failed steps when execution stops.
@@ -381,42 +381,16 @@ async def editor_apply_create_vat_unit(
 
 
 @mcp.tool()
-async def unit_plan_write(unit_path: str, unit_data: Any) -> Dict[str, Any]:
-    """Review field changes before writing a partial unit update.
-    Stores a partial update plan for the selected Unit Source Actor or unit DataAsset. Target the source Actor for routine maintenance so edits are retained in UnitData. Omitted fields are retained. The plan reports whether the proposed update can be applied.
-    UnitPath: Unreal object path of the existing MassBattle unit config or supported Unit Source Actor Blueprint.
-    UnitDataJson: Partial unit JSON using source property names. Include the fields to change. A Unit Source Actor patch can set export_path and request an export with options.export_source=true.
-    Returns: A stored update plan: plan_id identifies it for later review or application, diff describes field changes, and applicable with merge_errors explains whether it can run."""
+async def unit_write(unit_path: str, unit_data: Any, save_assets: bool = True) -> Dict[str, Any]:
+    """Write the requested fields of an existing unit.
+    Target the Actor Source Blueprint for routine edits or a unit DataAsset for direct edits to that asset. Fields omitted from the patch keep their current values.
+    UnitPath: Unreal object path of the Actor Source Blueprint or unit DataAsset.
+    UnitDataJson: Partial unit JSON using source property names. Use options.export_source=true to regenerate the linked unit when saving the Actor Source.
+    bSaveAssets: Save the edited asset to disk. When false, edit it only in memory.
+    Returns: Success or an error explaining which write failed."""
     return await get_connection().send_command(
-        "MCP_UnitPlanMergeUpdate",
-        {"UnitPath": unit_path, "UnitDataJson": _json_arg(unit_data)},
-    )
-
-
-@mcp.tool()
-async def unit_preview_plan(plan_id: str) -> Dict[str, Any]:
-    """Inspect a stored plan's full diff and applicability.
-    Loads a previously stored mutation plan and returns its complete diff and applicability without applying it. This is the review step between planning and an explicit apply.
-    PlanId: plan_id returned by a unit planning operation.
-    Returns: The complete stored plan and its diff, with applicable indicating whether it is executable; an unavailable plan produces an error.
-    Before calling: Obtain PlanId from a planning operation such as UMassBattleUnitMCPApi::MCP_UnitPlanMergeUpdate."""
-    return await get_connection().send_command(
-        "MCP_UnitPreviewDiff",
-        {"PlanId": plan_id},
-    )
-
-
-@mcp.tool()
-async def unit_apply_plan(plan_id: str, save_assets: bool = True) -> Dict[str, Any]:
-    """Write the changes recorded in a reviewed unit plan.
-    Loads and applies the stored plan to its target. A source Actor plan runs Update when the plan requests export_source and bSaveAssets=true. A plan targeting a DataAsset writes directly to that asset.
-    PlanId: Identifier of the reviewed stored unit mutation plan.
-    bSaveAssets: Whether to save the assets modified or created by this operation to disk.
-    Returns: The executed plan's ID, applied_diff and saved state; rejected plans, failed mutations and save errors report their failure.
-    Before calling: Inspect the diff with UMassBattleUnitMCPApi::MCP_UnitPreviewDiff before submitting a reviewed plan."""
-    return await get_connection().send_command(
-        "MCP_UnitApplyPlan",
-        {"PlanId": plan_id, "bSaveAssets": save_assets},
+        "MCP_UnitWrite",
+        {"UnitPath": unit_path, "UnitDataJson": _json_arg(unit_data), "bSaveAssets": save_assets},
     )
 
 

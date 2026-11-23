@@ -10,7 +10,7 @@
 
 `UnitData` 直接使用现有 `UMassBattleAgentConfigDataAsset`，没有第二套单位字段。源码保存上次成功 Update 的配置快照和导出单位引用。初次 Update 创建单位；后续只导出相对源码快照改变的字段。数组按整个数组比较和替换，普通结构体按现有 MCP 属性路径处理。
 
-例如源码 HP=100，导出后手动把产物 HP 改为200：源码未改 HP，Update 保留200；源码改成120再 Update，则产物变为120。其他字段变更不会顺带重写 HP。读取、差异预览、应用和审计复用现有单位 MCP 实现。
+例如源码 HP 为 100，导出后手动将产物 HP 改为 200。之后将源码 HP 改为 120 并执行 Update，产物 HP 变为 120。只改其他字段时，Update 保留产物的 HP 值 200。Update 复用单位 MCP 的属性写入实现。
 
 `ExportPath` 是完整 UE 包名，例如 `/Game/Units/DA_Tank`。设置新路径后，Update 使用 UE AssetTools 移动原单位资产，保留重定向和引用修复。目标已被其他资产占用时返回失败。路径为空时，首次导出使用项目默认目录和源码资产名，已有产物继续使用自己的路径。模型、材质等共享引用保存在原位置。
 
@@ -18,17 +18,17 @@ Destroy 按钮只销毁导出的 Unit，保留源码 Actor。执行前询问：�
 
 在内容浏览器删除源码 Actor 资产时，复用 UE 的 `OnAddExtraObjectsToDelete` 事件询问是否一起销毁 Unit。确认则把 Unit 加入同一删除批次；拒绝则仅删除源码 Actor。此阶段不提前删除任何资产，之后取消 UE 删除窗口会一起取消。删除关卡中的 Actor 实例不会触发资产清理。
 
-MCP 删除源码路径默认仅删除源码，保留原 dry_run、soft/hard 行为；明确传入 `delete_exported_unit:true` 才规划并执行关联 Unit 的删除/移动。无交互命令行不会默认同意弹窗。外部引用仍由原删除流程检查。
+MCP 删除源码路径默认仅删除源码，支持 `dry_run` 及 soft/hard 模式。传入 `delete_exported_unit:true` 可将关联 Unit 纳入同一次删除操作。无交互命令行不会默认同意弹窗。删除前检查外部引用。
 
 自动化测试 `MassBattle.MCP.SourceDestroy` 已在 UE 5.8 通过：拒绝直接销毁保留 Unit、确认后仅删除 Unit、源码可重新生成，以及资产删除事件按回答决定是否加入 Unit。测试只使用 `/Game/__MCPDestroyTest`，结束时清理该测试资产。
 
 ## 读写与维护
 
-大部分单位操作同时支持两类资产。`MCP_UnitList` 可以查到源码 Actor 和单位 DataAsset，读取、变更规划、写入和删除根据 `UnitPath` 选择目标，表格导出也可以读取两类资产。
+大部分单位操作同时支持两类资产。`MCP_UnitList` 可以查到源码 Actor 和单位 DataAsset，读取、写入和删除根据 `UnitPath` 选择目标，表格导出也可以读取两类资产。
 
-**日常维护优先改源码 Actor。** 传源码蓝图路径修改 `UnitData`，普通保存只写源码。要更新导出单位，在编辑器执行 Update，或在 MCP 变更计划中显式请求导出，再读取产物核对。直接传 DataAsset 路径时，操作目标是产物。
+**日常维护优先改源码 Actor。** 传源码蓝图路径修改 `UnitData`，普通保存只写源码。要更新导出单位，在编辑器执行 Update，或在 `unit_write` 保存源码时显式传入 `options.export_source=true`。直接传 DataAsset 路径时，操作目标是产物。
 
-已有单位按 diff 编辑。目标是本次操作的源码 Actor 或单位 DataAsset，变更只作用于 diff 中列出的资产和字段。应用计划时传 `plan_id`，计划已记录目标。新建单位时由 style 补齐缺省项，省略 `style_profile` 使用默认 style。
+`unit_write` 接收目标路径和本次要写的增量。省略的字段保留原值。新建单位时由 style 补齐缺省项，省略 `style_profile` 使用默认 style。
 
 创建一个只保存源码、尚未导出单位的资产：
 
@@ -44,13 +44,11 @@ MCP 删除源码路径默认仅删除源码，保留原 dry_run、soft/hard 行�
 
 将上面的 JSON 传给 `MCP_UnitCreate`。可用 `style_profile` 选择缺省规则，用 `template_unit` 指定基础单位。传 `asset_type` 为 `source_actor` 时创建源码 Actor。
 
-将源码蓝图路径与下面的局部 JSON 传给 `unit_plan_write`。用 `unit_preview_plan` 检查变更字段、路径及导出意图。确认 `success` 和 `applicable` 均为 `true` 后，将 `plan_id` 传给 `unit_apply_plan`。`options.export_source=true` 在保存时执行 Update，把导出单位移到新路径。只需要保存源码时可省略此项。`save_assets=false` 只修改源码内存。
+将源码蓝图路径和下面的局部 JSON 传给 `unit_write`，即可保存源码的最大生命值。调用成功返回 `success=true`，失败时返回错误。`save_assets=false` 只修改内存。
 
 ```json
 {
-  "options": { "export_source": true },
-  "export_path": "/Game/Units/Tanks/DA_Tank",
-  "Data": { "Health": { "Maximum": 350 } }
+  "Health": { "Maximum": 350 }
 }
 ```
 

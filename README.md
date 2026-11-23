@@ -100,7 +100,7 @@ Quickly check the installation and UE bridge:
 ```
 
 After installation, restart Codex or start a new session. The UE editor must also load this plugin before the bridge starts listening.
-After successful installation, you should see `massbattle-editor-mcp` and be able to call tools such as `unit_get`, `unit_plan_write`, `unit_apply_plan`, `projectile_list`, `editor_apply_create_vat_unit`, `effect_asset_read_summary`, and `niagara_set_module_pin`.
+After successful installation, you should see `massbattle-editor-mcp` and be able to call tools such as `unit_get`, `unit_write`, `projectile_list`, `editor_apply_create_vat_unit`, `effect_asset_read_summary`, and `niagara_set_module_pin`.
 
 Note: `FFxConfig.AgentBehaviorState` uses `EAgentBehaviorState`. Writable values include `None`, `Appearing`, `Sleeping`, `Patrolling`, `Attacking`, `Hit`, and `Dying`. Hit FX should use `Hit`; do not write the runtime flag name `BeingHit` into this field.
 
@@ -119,9 +119,7 @@ Note: `FFxConfig.AgentBehaviorState` uses `EAgentBehaviorState`. Writable values
 | Unit MCP | `unit_export` | Available | Export compact unit balance tables for analysis or batch review. |
 | Unit MCP | `unit_find_assets` | Available | Find candidate SkeletalMesh, Renderer, Niagara, and related assets for unit authoring. |
 | Unit MCP | `unit_create` | Available | Create a new unit with explicit initial data and style defaults for omitted values. |
-| Unit MCP | `unit_plan_write` | Available | Plan a union-write and return a reviewable diff without mutating the unit. |
-| Unit MCP | `unit_preview_plan` | Available | Read a saved unit mutation plan and its complete diff. |
-| Unit MCP | `unit_apply_plan` | Available | Apply a reviewed unit mutation plan and optionally save the unit. |
+| Unit MCP | `unit_write` | Available | Apply the supplied delta to an Actor Source or unit DataAsset and save by default. |
 | Unit MCP | `unit_delete` | Available | Explicitly delete or soft-delete a unit; dry-run by default. |
 | Projectile MCP | `projectile_list` | Available | List projectile configs under selected roots and filter by name or path with `options.query`. |
 | Projectile MCP | `projectile_get` | Available | Read one projectile in active-only or complete source-aligned form. |
@@ -186,7 +184,7 @@ Modular SkeletalMesh components are merged through a persistent editor `MeshDesc
 
 For a new unit, pass `style_profile` to select the creation defaults, or leave it out to use the default style. Review the resolved animations and supply compatible assets where the mapping is incomplete. Source animation keys are resampled to the requested `vat_sample_rate` before the AnimToTexture bake. Generated material instances record their VAT switches, UV channel and blend settings.
 
-The VAT build validates its resolved inputs before producing assets. Specify the source mesh or Actor and any inputs the selected style leaves open. `target_unit` identifies an existing unit. Use `unit_plan_write` followed by `unit_apply_plan` for ordinary field edits, and request the VAT build explicitly when changing generated presentation assets. Use `overwrite_existing=true` to authorize replacing existing generated meshes.
+The VAT build validates its resolved inputs before producing assets. Specify the source mesh or Actor and any inputs the selected style leaves open. `target_unit` identifies an existing unit. For ordinary edits, pass the target and changed fields to `unit_write`. Request the VAT build explicitly when changing generated presentation assets. Use `overwrite_existing=true` to authorize replacing existing generated meshes.
 
 MassBattleTools DoAll correspondence for VAT units:
 
@@ -296,6 +294,6 @@ Recommended template flow:
 5. Write renderer, emitter data, bounds, and other UObject properties with `niagara_merge_write`.
 6. Fine-tune module input pins such as Lifetime, Scale, Spawn Count, or random ranges with `niagara_set_module_pin`.
 7. Write renderer CDO Niagara, NDC, SubType, and batch size with `batch_fx_set_renderer_defaults`.
-8. Use `unit_plan_write` and `unit_apply_plan` to point unit `FFxConfig` entries to the corresponding `SubType`.
+8. Use `unit_write` to point unit `FFxConfig` entries to the corresponding `SubType`.
 
 This pattern is similar to a code diff: templates carry most of the structure, and MCP performs small reviewable edits.

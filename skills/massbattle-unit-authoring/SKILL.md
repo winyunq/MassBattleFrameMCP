@@ -45,8 +45,8 @@ Before writing `Attack.SpawnProjectile`, read and validate the referenced `UMass
 ## Inspect Or Edit
 
 1. List or locate units with the Unit MCP discovery tools, scoped to style roots such as `/Game/Unit`, `/Game/Toon_Soldiers_WW2`, `/Game/StylizedArmyPackA`, and `/Game/World_Flags`.
-2. Read normal unit data with simple JSON first. Request detailed mode or a specific object only for complex fields such as `Attack`, `Visualize`, `LODShared`, or `AnimShared`.
-3. Pass the Actor Source or unit DataAsset path as the target. Apply the explicit diff through `MCP_UnitPlanMergeUpdate` then `MCP_UnitApplyPlan`. Keep the existing values and assets for all omissions. Include `options.export_source=true` in a source edit plan when the request includes regenerating the linked unit. Use `MCP_UnitDelete` for planned deletes.
+2. When an edit depends on current values, read the relevant unit object. Request schema details for unfamiliar fields.
+3. Pass the Actor Source or unit DataAsset path and the changed fields to `unit_write` (`MCP_UnitWrite`). Include `options.export_source=true` when saving a source edit that also regenerates the linked unit. Use `MCP_UnitDelete` to delete a unit.
 4. For array fields such as `Attack.SpawnProjectile`, `Attack.SpawnFx`, and `Attack.PlaySound`, union merge can append missing elements by default. Pass `append_arrays=false` only when append should be rejected.
 
 ## Organize Or Clean Up Assets
@@ -102,7 +102,7 @@ Official DoAll correspondence:
 The editor MCP must reject incomplete VAT unit creation instead of generating partial assets.
 
 - Before a VAT build, review the resolved mesh, unit name, output paths, material, renderer, Niagara, sample rate, and animations.
-- For an ordinary edit to an existing unit, use the unit diff tools. For an explicit VAT rebuild, pass `target_unit` with the required build inputs.
+- For an ordinary edit to an existing unit, use `unit_write`. For an explicit VAT rebuild, pass `target_unit` with the required build inputs.
 - For new units, supply a destination and any required creation inputs that the style leaves open.
 - Use `overwrite_existing=true` and `refresh_materials=true` when refreshing generated assets. Existing generated StaticMeshes block strict create when overwrite is false.
 - Do not pass old aliases such as `unit_path`, `existing_unit`, `mesh`, `source_mesh`, `sub_type`, `renderer_template_class`, `template_renderer_class`, `niagara`, `sample_rate`, or `VATSampleRate`.

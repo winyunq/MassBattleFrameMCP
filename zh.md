@@ -100,7 +100,7 @@ MassBattleEditorMCP 的 Codex 入口由两层组成：
 ```
 
 安装后需要重启 Codex 或新开会话；UE 编辑器也需要加载本插件，bridge 才会开始监听。
-安装成功后应能看到 `massbattle-editor-mcp`，并可调用 `unit_get`、`unit_plan_write`、`unit_apply_plan`、`projectile_list`、`editor_apply_create_vat_unit`、`effect_asset_read_summary` 和 `niagara_set_module_pin` 等工具。
+安装成功后应能看到 `massbattle-editor-mcp`，并可调用 `unit_get`、`unit_write`、`projectile_list`、`editor_apply_create_vat_unit`、`effect_asset_read_summary` 和 `niagara_set_module_pin` 等工具。
 
 单位制作的工具调用顺序由 skill 说明。`editor_apply_create_vat_unit` 构建网格、材质、VAT 纹理、渲染器和单位配置。从选中资产开始时，先用 `editor_plan_create_vat_unit_from_selection`，核对警告和 `resolved_options`，再将这些参数作为 `options` 传给生成入口。
 
@@ -123,9 +123,7 @@ MassBattleEditorMCP 的 Codex 入口由两层组成：
 | Unit MCP | `unit_export` | 可用 | 导出紧凑单位数值表，支持给平衡分析或批量复核使用。 |
 | Unit MCP | `unit_find_assets` | 可用 | 按单位制作场景查找 SkeletalMesh、Renderer、Niagara 等候选资产。 |
 | Unit MCP | `unit_create` | 可用 | 创建新单位，缺省项由所选 style 补齐。 |
-| Unit MCP | `unit_plan_write` | 可用 | 规划单位或源码 Actor 的局部变更，返回可审核的差异和计划 ID。 |
-| Unit MCP | `unit_preview_plan` | 可用 | 按 ID 读取已保存的变更计划及完整差异。 |
-| Unit MCP | `unit_apply_plan` | 可用 | 应用已审核的变更计划，可保存单位或导出源码 Actor。 |
+| Unit MCP | `unit_write` | 可用 | 按传入的增量修改源码 Actor 或单位 DataAsset，默认保存。 |
 | Unit MCP | `unit_delete` | 可用 | 显式删除或软删除单位；默认 dry-run。 |
 | Projectile MCP | `projectile_list` | 可用 | 在指定根目录列出抛体配置，可用 `options.query` 按名称或路径筛选。 |
 | Projectile MCP | `projectile_get` | 可用 | 以 active-only 或完整源码对齐视图读取一个抛体。 |
@@ -190,7 +188,7 @@ VAT 单位创建会先使用发现到的原始贴图；如果基于文件名的�
 
 新建单位时，可用 `style_profile` 选择缺省规则，省略时使用默认 style。核对解析出的动画映射，并补齐缺少的骨架兼容动画。源动画关键帧会先按 `vat_sample_rate` 重采样，再交给 AnimToTexture 烘焙。生成的材质实例保存 VAT 静态开关、UV 通道和混合设置。
 
-VAT 构建会先验证解析后的参数。指定来源网格或 Actor，补齐 style 留空的必填项。`target_unit` 表示已有的操作对象。普通字段编辑走 `unit_plan_write` 和 `unit_apply_plan`，需要修改表现资产时再显式调用 VAT 构建。用 `overwrite_existing=true` 授权替换已有网格产物。
+VAT 构建会先验证解析后的参数。指定来源网格或 Actor，补齐 style 留空的必填项。`target_unit` 表示已有的操作对象。普通字段编辑时，将目标和增量直接传给 `unit_write`。需要修改表现资产时显式调用 VAT 构建。用 `overwrite_existing=true` 授权替换已有网格产物。
 
 VAT 单位的 MassBattleTools DoAll 对应关系：
 
@@ -217,6 +215,6 @@ VAT 单位的 MassBattleTools DoAll 对应关系：
 5. 用 `niagara_merge_write` 写 renderer、emitter data、bounds 等 UObject 属性。
 6. 用 `niagara_set_module_pin` 微调模块输入 pin，例如 Lifetime、Scale、Spawn Count 或随机范围。
 7. 用 `batch_fx_set_renderer_defaults` 写 renderer CDO 的 Niagara、NDC、SubType 和 batch size。
-8. 用 `unit_plan_write` 规划更新，再用 `unit_apply_plan` 把单位 `FFxConfig` 指向对应 `SubType`。
+8. 用 `unit_write` 把单位 `FFxConfig` 指向对应 `SubType`。
 
 这个模式的产物应明确标记为“优化复刻/近似版本”，不能在保真转译验收数量中计数。

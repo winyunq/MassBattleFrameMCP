@@ -67,7 +67,6 @@ struct FPatchPreview
 	FString Operation;
 	FString Before;
 	FString After;
-	FString Error;
 };
 
 static FString RoleToString(const EFieldRole Role)
@@ -239,11 +238,6 @@ static FString GetSavedRoot()
 	return FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("MassBattleEditorMCP"));
 }
 
-static FString GetPlanDir()
-{
-	return FPaths::Combine(GetSavedRoot(), TEXT("Plans"));
-}
-
 static FString GetAuditDir()
 {
 	return FPaths::Combine(GetSavedRoot(), TEXT("Audit"));
@@ -329,11 +323,6 @@ static TSharedPtr<FJsonObject> LoadUnitStyleConfig(const TSharedPtr<FJsonObject>
 
 	const FString FilePath = FindConfigFileById(GetUnitManagementStyleDir(), StyleId);
 	return FilePath.IsEmpty() ? nullptr : LoadJsonFileObject(FilePath);
-}
-
-static FString PlanPathFromId(const FString& PlanId)
-{
-	return FPaths::Combine(GetPlanDir(), PlanId + TEXT(".json"));
 }
 
 static FString GetObjectPathString(const UObject* Object)
@@ -491,6 +480,13 @@ static FProperty* FindPropertyBySegment(UStruct* Struct, const FString& Segment)
 	return nullptr;
 }
 
+static FProperty* FindRootProperty(UObject* Object, const FString& Path)
+{
+	int32 SeparatorIndex = 0;
+	const FString RootName = Path.FindChar(TEXT('.'), SeparatorIndex) ? Path.Left(SeparatorIndex) : Path;
+	return FindPropertyBySegment(Object->GetClass(), RootName);
+}
+
 static bool IsNumericSegment(const FString& Segment, int32& OutIndex)
 {
 	if (Segment.IsNumeric())
@@ -501,7 +497,7 @@ static bool IsNumericSegment(const FString& Segment, int32& OutIndex)
 	return false;
 }
 
-static bool ResolvePropertyPath(void* ContainerPtr, UStruct* ContainerStruct, const FString& Path, FResolvedPropertyPath& Out)
+static bool ResolvePropertyPath(void* ContainerPtr, UStruct* ContainerStruct, const FString& Path, FResolvedPropertyPath& Out, void* StagedRootValue = nullptr)
 {
 	TArray<FString> Segments;
 	Path.ParseIntoArray(Segments, TEXT("."), true);
@@ -523,7 +519,9 @@ static bool ResolvePropertyPath(void* ContainerPtr, UStruct* ContainerStruct, co
 			return false;
 		}
 
-		void* ValuePtr = Property->ContainerPtrToValuePtr<void>(CurrentPtr);
+		void* ValuePtr = Index == 0 && StagedRootValue
+			? StagedRootValue
+			: Property->ContainerPtrToValuePtr<void>(CurrentPtr);
 		const bool bLast = Index == Segments.Num() - 1;
 		if (bLast)
 		{
@@ -643,74 +641,6 @@ static FString JsonValueToImportText(const TSharedPtr<FJsonValue>& Value)
 	}
 }
 
-static bool ComputePatchAfterValue(FProperty* Property, const FString& BeforeText, const TSharedPtr<FJsonObject>& Patch, FString& OutAfter, FString& OutError)
-{
-	FString Operation = TEXT("set");
-	Patch->TryGetStringField(TEXT("op"), Operation);
-	Patch->TryGetStringField(TEXT("operation"), Operation);
-
-	if (Operation.Equals(TEXT("set"), ESearchCase::IgnoreCase))
-	{
-		const TSharedPtr<FJsonValue> Value = Patch->TryGetField(TEXT("value"));
-		if (!Value.IsValid())
-		{
-			OutError = TEXT("set patch requires 'value'");
-			return false;
-		}
-		OutAfter = JsonValueToImportText(Value);
-		return true;
-	}
-
-	if (Operation.Equals(TEXT("append"), ESearchCase::IgnoreCase))
-	{
-		const TSharedPtr<FJsonValue> Value = Patch->TryGetField(TEXT("value"));
-		if (!Value.IsValid())
-		{
-			OutError = TEXT("append patch requires 'value'");
-			return false;
-		}
-		OutAfter = BeforeText + TEXT(" + ") + JsonValueToImportText(Value);
-		return true;
-	}
-
-	const TSharedPtr<FJsonValue> Value = Patch->TryGetField(TEXT("value"));
-	if (!Value.IsValid() || Value->Type != EJson::Number)
-	{
-		OutError = FString::Printf(TEXT("%s patch requires numeric 'value'"), *Operation);
-		return false;
-	}
-
-	if (!Property->IsA<FNumericProperty>())
-	{
-		OutError = FString::Printf(TEXT("%s patch requires numeric target property"), *Operation);
-		return false;
-	}
-
-	const double Before = FCString::Atod(*BeforeText);
-	const double Arg = Value->AsNumber();
-	double After = Before;
-	if (Operation.Equals(TEXT("multiply"), ESearchCase::IgnoreCase))
-	{
-		After = Before * Arg;
-	}
-	else if (Operation.Equals(TEXT("add"), ESearchCase::IgnoreCase) || Operation.Equals(TEXT("increase"), ESearchCase::IgnoreCase))
-	{
-		After = Before + Arg;
-	}
-	else if (Operation.Equals(TEXT("subtract"), ESearchCase::IgnoreCase) || Operation.Equals(TEXT("decrease"), ESearchCase::IgnoreCase))
-	{
-		After = Before - Arg;
-	}
-	else
-	{
-		OutError = FString::Printf(TEXT("Unsupported patch operation: %s"), *Operation);
-		return false;
-	}
-
-	OutAfter = FString::SanitizeFloat(After);
-	return true;
-}
-
 static bool ApplyImportText(FProperty* Property, void* ValuePtr, const FString& ImportText, UObject* Owner, FString& OutError)
 {
 	if (!Property || !ValuePtr)
@@ -787,126 +717,47 @@ static bool ApplyJsonValueToProperty(FProperty* Property, void* ValuePtr, const 
 	return ApplyImportText(Property, ValuePtr, JsonValueToImportText(Value), Owner, OutError);
 }
 
-static FPatchPreview PreviewPatch(UObject* Object, const TSharedPtr<FJsonObject>& Patch)
+static bool ApplyPatch(UObject* Object, const TSharedPtr<FJsonObject>& Patch, FString& OutError,
+	FPatchPreview* OutPreview = nullptr, void* StagedRootValue = nullptr)
 {
-	FPatchPreview Preview;
-	if (!Object || !Patch.IsValid())
-	{
-		Preview.Error = TEXT("Invalid object or patch");
-		return Preview;
-	}
-
-	if (!Patch->TryGetStringField(TEXT("path"), Preview.Path) && !Patch->TryGetStringField(TEXT("field"), Preview.Path))
-	{
-		Preview.Error = TEXT("Patch requires 'path'");
-		return Preview;
-	}
-	Patch->TryGetStringField(TEXT("op"), Preview.Operation);
-	Patch->TryGetStringField(TEXT("operation"), Preview.Operation);
-	if (Preview.Operation.IsEmpty())
-	{
-		Preview.Operation = TEXT("set");
-	}
-
+	const FString Path = Patch->GetStringField(TEXT("path"));
 	FResolvedPropertyPath Resolved;
-	if (!ResolvePropertyPath(Object, Object->GetClass(), Preview.Path, Resolved))
+	if (!ResolvePropertyPath(Object, Object->GetClass(), Path, Resolved, StagedRootValue))
 	{
-		Preview.Error = Resolved.Error;
-		return Preview;
+		OutError = FString::Printf(TEXT("%s: %s"), *Path, *Resolved.Error);
+		return false;
 	}
 
-	Preview.Before = ExportProperty(Resolved.Property, Resolved.ValuePtr);
-	if (Preview.Operation.Equals(TEXT("append"), ESearchCase::IgnoreCase) && !Resolved.Property->IsA<FArrayProperty>())
+	const FString Operation = Patch->GetStringField(TEXT("op"));
+	if (OutPreview)
 	{
-		Preview.Error = FString::Printf(TEXT("append patch requires array target property, got %s"), *Resolved.Property->GetName());
-		return Preview;
+		OutPreview->Path = Path;
+		OutPreview->Operation = Operation;
+		OutPreview->Before = ExportProperty(Resolved.Property, Resolved.ValuePtr);
 	}
 
+	const TSharedPtr<FJsonValue> Value = Patch->TryGetField(TEXT("value"));
 	FString Error;
-	if (!ComputePatchAfterValue(Resolved.Property, Preview.Before, Patch, Preview.After, Error))
+	if (Operation == TEXT("append"))
 	{
-		Preview.Error = Error;
-	}
-	return Preview;
-}
-
-static bool ApplyPatch(UObject* Object, const TSharedPtr<FJsonObject>& Patch, bool bForce, FPatchPreview& OutPreview)
-{
-	OutPreview = PreviewPatch(Object, Patch);
-	if (!OutPreview.Error.IsEmpty())
-	{
-		return false;
-	}
-
-	FString Expected;
-	if (!bForce && Patch->TryGetStringField(TEXT("expected_before"), Expected) && Expected != OutPreview.Before)
-	{
-		OutPreview.Error = FString::Printf(TEXT("Conflict at %s. Expected '%s', current '%s'"), *OutPreview.Path, *Expected, *OutPreview.Before);
-		return false;
-	}
-
-	FResolvedPropertyPath Resolved;
-	if (!ResolvePropertyPath(Object, Object->GetClass(), OutPreview.Path, Resolved))
-	{
-		OutPreview.Error = Resolved.Error;
-		return false;
-	}
-
-	FString Error;
-	if (OutPreview.Operation.Equals(TEXT("append"), ESearchCase::IgnoreCase))
-	{
-		FArrayProperty* ArrayProperty = CastField<FArrayProperty>(Resolved.Property);
-		if (!ArrayProperty)
-		{
-			OutPreview.Error = FString::Printf(TEXT("append patch requires array target property, got %s"), *Resolved.Property->GetName());
-			return false;
-		}
-
-		const TSharedPtr<FJsonValue> Value = Patch->TryGetField(TEXT("value"));
-		if (!Value.IsValid())
-		{
-			OutPreview.Error = TEXT("append patch requires 'value'");
-			return false;
-		}
-
+		FArrayProperty* ArrayProperty = CastFieldChecked<FArrayProperty>(Resolved.Property);
 		FScriptArrayHelper Helper(ArrayProperty, Resolved.ValuePtr);
-		const int32 NewIndex = Helper.AddValue();
-		if (!ApplyJsonValueToProperty(ArrayProperty->Inner, Helper.GetRawPtr(NewIndex), Value, Object, Error))
+		const int32 Index = Helper.AddValue();
+		if (!ApplyJsonValueToProperty(ArrayProperty->Inner, Helper.GetRawPtr(Index), Value, Object, Error))
 		{
-			Helper.RemoveValues(NewIndex, 1);
-			OutPreview.Error = Error;
+			OutError = FString::Printf(TEXT("%s.%d: %s"), *Path, Index, *Error);
 			return false;
 		}
-
-		OutPreview.After = ExportProperty(ArrayProperty, Resolved.ValuePtr);
-		return true;
 	}
-
-	// JSON arrays are not valid Unreal ImportText syntax ("[]" vs "()"), and
-	// array-of-struct values should not be round-tripped through text anyway.
-	// Apply the reflected JSON value directly so an explicit empty array really
-	// clears inherited template entries such as Attack.SpawnProjectile.
-	if (Resolved.Property->IsA<FArrayProperty>())
+	else if (!ApplyJsonValueToProperty(Resolved.Property, Resolved.ValuePtr, Value, Object, Error))
 	{
-		const TSharedPtr<FJsonValue> Value = Patch->TryGetField(TEXT("value"));
-		if (!Value.IsValid() || Value->Type != EJson::Array)
-		{
-			OutPreview.Error = TEXT("set patch for an array property requires a JSON array value");
-			return false;
-		}
-		if (!ApplyJsonValueToProperty(Resolved.Property, Resolved.ValuePtr, Value, Object, Error))
-		{
-			OutPreview.Error = Error;
-			return false;
-		}
-		OutPreview.After = ExportProperty(Resolved.Property, Resolved.ValuePtr);
-		return true;
-	}
-
-	if (!ApplyImportText(Resolved.Property, Resolved.ValuePtr, OutPreview.After, Object, Error))
-	{
-		OutPreview.Error = Error;
+		OutError = FString::Printf(TEXT("%s: %s"), *Path, *Error);
 		return false;
+	}
+
+	if (OutPreview)
+	{
+		OutPreview->After = ExportProperty(Resolved.Property, Resolved.ValuePtr);
 	}
 	return true;
 }
@@ -918,10 +769,6 @@ static TSharedPtr<FJsonObject> PatchPreviewToJson(const FPatchPreview& Preview)
 	Object->SetStringField(TEXT("operation"), Preview.Operation);
 	Object->SetStringField(TEXT("before"), Preview.Before);
 	Object->SetStringField(TEXT("after"), Preview.After);
-	if (!Preview.Error.IsEmpty())
-	{
-		Object->SetStringField(TEXT("error"), Preview.Error);
-	}
 	return Object;
 }
 
@@ -1410,56 +1257,6 @@ static void AddRootsToJson(TSharedPtr<FJsonObject> Root, const TSharedPtr<FJsonO
 	Root->SetArrayField(TEXT("roots"), RootValues);
 }
 
-static TArray<TSharedPtr<FJsonObject>> GetPatchObjects(const TSharedPtr<FJsonObject>& PatchRoot)
-{
-	TArray<TSharedPtr<FJsonObject>> Patches;
-	for (const TSharedPtr<FJsonValue>& Value : ParseArrayField(PatchRoot, TEXT("patches")))
-	{
-		TSharedPtr<FJsonObject> Patch = Value->AsObject();
-		if (Patch.IsValid())
-		{
-			Patches.Add(Patch);
-		}
-	}
-	return Patches;
-}
-
-static bool SavePlan(const TSharedPtr<FJsonObject>& Plan, FString& OutPath, FString& OutError)
-{
-	IFileManager::Get().MakeDirectory(*GetPlanDir(), true);
-	FString PlanId;
-	Plan->TryGetStringField(TEXT("plan_id"), PlanId);
-	if (PlanId.IsEmpty())
-	{
-		OutError = TEXT("Plan is missing plan_id");
-		return false;
-	}
-	OutPath = PlanPathFromId(PlanId);
-	if (!FFileHelper::SaveStringToFile(ToJsonString(Plan), *OutPath))
-	{
-		OutError = FString::Printf(TEXT("Failed to save plan: %s"), *OutPath);
-		return false;
-	}
-	return true;
-}
-
-static TSharedPtr<FJsonObject> LoadPlan(const FString& PlanId, FString& OutError)
-{
-	FString PlanJson;
-	const FString Path = PlanPathFromId(PlanId);
-	if (!FFileHelper::LoadFileToString(PlanJson, *Path))
-	{
-		OutError = FString::Printf(TEXT("Failed to load plan: %s"), *Path);
-		return nullptr;
-	}
-	TSharedPtr<FJsonObject> Plan = ParseObject(PlanJson);
-	if (!Plan.IsValid())
-	{
-		OutError = FString::Printf(TEXT("Failed to parse plan: %s"), *Path);
-	}
-	return Plan;
-}
-
 static bool SaveAsset(UObject* Asset, FString& OutError)
 {
 	if (AMassBattleUnitSource* Source = Asset ? Asset->GetTypedOuter<AMassBattleUnitSource>() : nullptr)
@@ -1603,42 +1400,6 @@ static bool ResolveCreateTarget(const TSharedPtr<FJsonObject>& Input, FString& O
 	return true;
 }
 
-static TSharedPtr<FJsonObject> BuildPlanBase(const FString& Type)
-{
-	TSharedPtr<FJsonObject> Plan = MakeShared<FJsonObject>();
-	Plan->SetStringField(TEXT("plan_id"), FGuid::NewGuid().ToString(EGuidFormats::DigitsWithHyphens));
-	Plan->SetStringField(TEXT("type"), Type);
-	Plan->SetStringField(TEXT("created_utc"), FDateTime::UtcNow().ToIso8601());
-	Plan->SetStringField(TEXT("risk_model"), TEXT("Diff-only until MCP_UnitApplyPlan is called. Runtime entities are not migrated by this MVP."));
-	return Plan;
-}
-
-static TArray<TSharedPtr<FJsonValue>> BuildPatchDiffArray(UObject* Target, const TArray<TSharedPtr<FJsonObject>>& Patches, bool& bHasError)
-{
-	TArray<TSharedPtr<FJsonValue>> DiffArray;
-	bHasError = false;
-	for (const TSharedPtr<FJsonObject>& Patch : Patches)
-	{
-		const FPatchPreview Preview = PreviewPatch(Target, Patch);
-		if (!Preview.Error.IsEmpty())
-		{
-			bHasError = true;
-		}
-		DiffArray.Add(MakeShared<FJsonValueObject>(PatchPreviewToJson(Preview)));
-	}
-	return DiffArray;
-}
-
-static TArray<TSharedPtr<FJsonValue>> CopyPatchesToJsonValues(const TArray<TSharedPtr<FJsonObject>>& Patches)
-{
-	TArray<TSharedPtr<FJsonValue>> Values;
-	for (const TSharedPtr<FJsonObject>& Patch : Patches)
-	{
-		Values.Add(MakeShared<FJsonValueObject>(Patch));
-	}
-	return Values;
-}
-
 static void AddMergeError(TArray<TSharedPtr<FJsonValue>>& Errors, const FString& Path, const FString& Message)
 {
 	TSharedPtr<FJsonObject> Error = MakeShared<FJsonObject>();
@@ -1685,24 +1446,30 @@ static TSharedPtr<FJsonObject> ExtractMergeDataObject(const TSharedPtr<FJsonObje
 		return nullptr;
 	}
 
-	const TSharedPtr<FJsonObject>* Data = nullptr;
-	if (Root->TryGetObjectField(TEXT("Data"), Data))
+	TSharedPtr<FJsonObject> DataObject = MakeShared<FJsonObject>();
+	const TSharedPtr<FJsonValue> Data = Root->TryGetField(TEXT("Data"));
+	if (Data.IsValid())
 	{
-		if (Data && Data->IsValid())
+		if (Data->Type != EJson::Object)
 		{
-			return *Data;
+			OutError = TEXT("'Data' must be an object when provided");
+			return nullptr;
 		}
-		OutError = TEXT("'Data' must be an object when provided");
-		return nullptr;
+		DataObject->Values = Data->AsObject()->Values;
 	}
 
-	TSharedPtr<FJsonObject> DataObject = MakeShared<FJsonObject>();
 	for (const TPair<FString, TSharedPtr<FJsonValue>>& Pair : Root->Values)
 	{
-		if (!IsMergeMetadataField(Pair.Key))
+		if (Pair.Key == TEXT("Data") || IsMergeMetadataField(Pair.Key))
 		{
-			DataObject->SetField(Pair.Key, Pair.Value);
+			continue;
 		}
+		if (Data.IsValid() && HasJsonField(DataObject, Pair.Key))
+		{
+			OutError = FString::Printf(TEXT("Field '%s' occurs both in Data and at the root"), *Pair.Key);
+			return nullptr;
+		}
+		DataObject->SetField(Pair.Key, Pair.Value);
 	}
 	return DataObject;
 }
@@ -1925,19 +1692,13 @@ static TSharedPtr<FJsonValue> CloneJsonValue(const TSharedPtr<FJsonValue>& Value
 	return Value;
 }
 
-static void AddSetPatchForMerge(UObject* Target, const FString& Path, const TSharedPtr<FJsonValue>& Value, const TSharedPtr<FJsonObject>& Options, TArray<TSharedPtr<FJsonObject>>& Patches, TArray<TSharedPtr<FJsonValue>>& Errors, UObject* ChangedSource = nullptr)
+static void AddSetPatchForMerge(UObject* Target, const FString& Path, const TSharedPtr<FJsonValue>& Value, TArray<TSharedPtr<FJsonObject>>& Patches, TArray<TSharedPtr<FJsonValue>>& Errors, UObject* ChangedSource = nullptr)
 {
 	FResolvedPropertyPath Resolved;
 	if (!ResolvePropertyPath(Target, Target ? Target->GetClass() : nullptr, Path, Resolved))
 	{
 		AddMergeError(Errors, Path, Resolved.Error);
 		return;
-	}
-
-	bool bIncludeExpectedBefore = true;
-	if (Options.IsValid())
-	{
-		Options->TryGetBoolField(TEXT("expected_before"), bIncludeExpectedBefore);
 	}
 
 	TSharedPtr<FJsonObject> Patch = MakeShared<FJsonObject>();
@@ -1954,14 +1715,10 @@ static void AddSetPatchForMerge(UObject* Target, const FString& Path, const TSha
 		}
 		if (Resolved.Property->Identical(Resolved.ValuePtr, Current.ValuePtr, PPF_None)) return;
 	}
-	if (bIncludeExpectedBefore)
-	{
-		Patch->SetStringField(TEXT("expected_before"), ExportProperty(Resolved.Property, Resolved.ValuePtr));
-	}
 	Patches.Add(Patch);
 }
 
-static void AddAppendPatchForMerge(UObject* Target, const FString& Path, const TSharedPtr<FJsonValue>& Value, const TSharedPtr<FJsonObject>& Options, TArray<TSharedPtr<FJsonObject>>& Patches, TArray<TSharedPtr<FJsonValue>>& Errors)
+static void AddAppendPatchForMerge(UObject* Target, const FString& Path, const TSharedPtr<FJsonValue>& Value, TArray<TSharedPtr<FJsonObject>>& Patches, TArray<TSharedPtr<FJsonValue>>& Errors)
 {
 	FResolvedPropertyPath Resolved;
 	if (!ResolvePropertyPath(Target, Target ? Target->GetClass() : nullptr, Path, Resolved))
@@ -2007,7 +1764,7 @@ static void FlattenMergeValue(UObject* Target, const UObject* DefaultObject, con
 			FResolvedPropertyPath DefaultResolved;
 			if (DefaultObject && ResolvePropertyPath(const_cast<UObject*>(DefaultObject), DefaultObject->GetClass(), Path, DefaultResolved))
 			{
-				AddSetPatchForMerge(Target, Path, PropertyToJsonValue(DefaultResolved.Property, DefaultResolved.ValuePtr, MaxPropertyDepth), Options, Patches, Errors, ChangedSource);
+				AddSetPatchForMerge(Target, Path, PropertyToJsonValue(DefaultResolved.Property, DefaultResolved.ValuePtr, MaxPropertyDepth), Patches, Errors, ChangedSource);
 			}
 			else
 			{
@@ -2063,7 +1820,7 @@ static void FlattenMergeValue(UObject* Target, const UObject* DefaultObject, con
 			// Union merge remains the default. Explicit replacement is required for
 			// authoritative manifests that need to remove inherited template entries,
 			// including clearing Attack.SpawnProjectile with an empty JSON array.
-			AddSetPatchForMerge(Target, Path, Value, Options, Patches, Errors, ChangedSource);
+			AddSetPatchForMerge(Target, Path, Value, Patches, Errors, ChangedSource);
 			return;
 		}
 
@@ -2083,7 +1840,7 @@ static void FlattenMergeValue(UObject* Target, const UObject* DefaultObject, con
 			{
 				if (bAppendArrays && Index >= Helper.Num())
 				{
-					AddAppendPatchForMerge(Target, Path, ElementValue, Options, Patches, Errors);
+					AddAppendPatchForMerge(Target, Path, ElementValue, Patches, Errors);
 				}
 				else
 				{
@@ -2101,13 +1858,13 @@ static void FlattenMergeValue(UObject* Target, const UObject* DefaultObject, con
 			}
 			else
 			{
-				AddSetPatchForMerge(Target, IndexPath, ElementValue, Options, Patches, Errors, ChangedSource);
+				AddSetPatchForMerge(Target, IndexPath, ElementValue, Patches, Errors, ChangedSource);
 			}
 		}
 		return;
 	}
 
-	AddSetPatchForMerge(Target, Path, Value, Options, Patches, Errors, ChangedSource);
+	AddSetPatchForMerge(Target, Path, Value, Patches, Errors, ChangedSource);
 }
 
 static TArray<TSharedPtr<FJsonObject>> BuildUnionMergePatches(UMassBattleAgentConfigDataAsset* Unit, const TSharedPtr<FJsonObject>& MergeRoot, const TSharedPtr<FJsonObject>& Options, TArray<TSharedPtr<FJsonValue>>& Errors, UObject* ChangedSource = nullptr)
@@ -2125,7 +1882,8 @@ static TArray<TSharedPtr<FJsonObject>> BuildUnionMergePatches(UMassBattleAgentCo
 	for (const TPair<FString, TSharedPtr<FJsonValue>>& Pair : DataObject->Values)
 	{
 		FString RoleError;
-		if (!IsWritableTopLevelField(Pair.Key, Options, RoleError))
+		const FProperty* Property = FindRootProperty(Unit, Pair.Key);
+		if (Property && !IsWritableTopLevelField(Property->GetName(), Options, RoleError))
 		{
 			AddMergeError(Errors, Pair.Key, RoleError);
 			continue;
@@ -2133,6 +1891,259 @@ static TArray<TSharedPtr<FJsonObject>> BuildUnionMergePatches(UMassBattleAgentCo
 		FlattenMergeValue(Unit, DefaultUnit, Pair.Key, Pair.Value, Options, Patches, Errors, ChangedSource);
 	}
 	return Patches;
+}
+
+/// @brief Owns transient storage for one reflected property value.
+class FUnitPropertyValue
+{
+public:
+	explicit FUnitPropertyValue(FProperty* InProperty)
+		: Property(InProperty)
+		, Data(FMemory::Malloc(Property->GetSize(), Property->GetMinAlignment()))
+	{
+		Property->InitializeValue(Data);
+	}
+
+	~FUnitPropertyValue()
+	{
+		Property->DestroyValue(Data);
+		FMemory::Free(Data);
+	}
+
+	FUnitPropertyValue(const FUnitPropertyValue&) = delete;
+	FUnitPropertyValue& operator=(const FUnitPropertyValue&) = delete;
+
+	FProperty* const Property;
+	void* const Data;
+};
+
+/// @brief Imports the submitted fields in scratch storage before changing the unit.
+class FStagedUnitFields
+{
+public:
+	bool Stage(UMassBattleAgentConfigDataAsset* Unit, const TArray<TSharedPtr<FJsonObject>>& Patches,
+		FString& OutError, TArray<TSharedPtr<FJsonValue>>* OutChanges = nullptr)
+	{
+		for (const TSharedPtr<FJsonObject>& Patch : Patches)
+		{
+			const FString Path = Patch->GetStringField(TEXT("path"));
+			FProperty* Property = FindRootProperty(Unit, Path);
+			if (!Property)
+			{
+				OutError = FString::Printf(TEXT("Property '%s' not found"), *Path);
+				return false;
+			}
+
+			TUniquePtr<FStagedProperty>& Entry = Entries.FindOrAdd(Property);
+			if (!Entry)
+			{
+				Entry = MakeUnique<FStagedProperty>(Unit, Property);
+			}
+
+			FPatchPreview Change;
+			if (!ApplyPatch(Unit, Patch, OutError, OutChanges ? &Change : nullptr, Entry->Value.Data))
+			{
+				return false;
+			}
+			if (OutChanges)
+			{
+				OutChanges->Add(MakeShared<FJsonValueObject>(PatchPreviewToJson(Change)));
+			}
+		}
+		return true;
+	}
+
+	void Apply()
+	{
+		for (const TPair<FProperty*, TUniquePtr<FStagedProperty>>& Pair : Entries)
+		{
+			const FStagedProperty& Entry = *Pair.Value;
+			Pair.Key->CopyCompleteValue(Entry.Original.Data, Entry.Address);
+			Pair.Key->CopyCompleteValue(Entry.Address, Entry.Value.Data);
+		}
+	}
+
+	void Restore() const
+	{
+		for (const TPair<FProperty*, TUniquePtr<FStagedProperty>>& Pair : Entries)
+		{
+			Pair.Key->CopyCompleteValue(Pair.Value->Address, Pair.Value->Original.Data);
+		}
+	}
+
+private:
+	struct FStagedProperty
+	{
+		FStagedProperty(UMassBattleAgentConfigDataAsset* Unit, FProperty* Property)
+			: Address(Property->ContainerPtrToValuePtr<void>(Unit))
+			, Original(Property)
+			, Value(Property)
+		{
+			Property->CopyCompleteValue(Value.Data, Address);
+		}
+
+		void* const Address;
+		FUnitPropertyValue Original;
+		FUnitPropertyValue Value;
+	};
+
+	TMap<FProperty*, TUniquePtr<FStagedProperty>> Entries;
+};
+
+static bool ResolveSourceExportDestination(AMassBattleUnitSource* Source, const FString& ExportPath,
+	FString& OutDestination, FString& OutError)
+{
+	OutDestination = ExportPath;
+	if (OutDestination.IsEmpty())
+	{
+		OutDestination = Source->ExportedUnit
+			? Source->ExportedUnit->GetOutermost()->GetName()
+			: GetDefault<UMassBattleUnitSourceSettings>()->ExportRoot / Source->GetSourceAsset()->GetName();
+	}
+
+	FText PathError;
+	if (!FPackageName::IsValidLongPackageName(OutDestination, false, &PathError))
+	{
+		OutError = PathError.ToString();
+		return false;
+	}
+	const FString ObjectPath = OutDestination + TEXT(".") + FPackageName::GetLongPackageAssetName(OutDestination);
+	UObject* Occupant = LoadObject<UObject>(nullptr, *ObjectPath);
+	if (Occupant && Occupant != Source->ExportedUnit)
+	{
+		OutError = FString::Printf(TEXT("Export destination is occupied: %s"), *ObjectPath);
+		return false;
+	}
+	return true;
+}
+
+static bool WriteUnitData(const FString& UnitPath, const FString& UnitDataJson, bool bSaveAssets, bool bValidateOnly,
+	FString& OutError)
+{
+	const TSharedPtr<FJsonObject> MergeRoot = ParseObject(UnitDataJson);
+	if (!MergeRoot.IsValid())
+	{
+		OutError = TEXT("UnitDataJson is not valid JSON");
+		return false;
+	}
+
+	UMassBattleAgentConfigDataAsset* Unit = LoadUnit(UnitPath, OutError);
+	if (!Unit)
+	{
+		return false;
+	}
+
+	AMassBattleUnitSource* Source = Unit->GetTypedOuter<AMassBattleUnitSource>();
+	FString ExportPath;
+	const TSharedPtr<FJsonValue> ExportPathValue = MergeRoot->TryGetField(TEXT("export_path"));
+	const bool bChangeExportPath = ExportPathValue.IsValid();
+	if (bChangeExportPath && (!Source || ExportPathValue->Type != EJson::String))
+	{
+		OutError = TEXT("export_path requires a string and an Actor Source target");
+		return false;
+	}
+	if (bChangeExportPath)
+	{
+		ExportPath = ExportPathValue->AsString();
+	}
+	for (const FString& Key : { FString(TEXT("options")), FString(TEXT("merge_options")) })
+	{
+		const TSharedPtr<FJsonValue> Value = MergeRoot->TryGetField(Key);
+		if (Value.IsValid() && Value->Type != EJson::Object)
+		{
+			OutError = FString::Printf(TEXT("%s must be a JSON object"), *Key);
+			return false;
+		}
+	}
+	const TSharedPtr<FJsonObject> Options = ExtractMergeOptions(MergeRoot);
+	bool bExportSource = false;
+	if (Options->HasField(TEXT("export_source")) && !Options->TryGetBoolField(TEXT("export_source"), bExportSource))
+	{
+		OutError = TEXT("options.export_source must be a boolean");
+		return false;
+	}
+	if (bExportSource && (!Source || !bSaveAssets))
+	{
+		OutError = TEXT("options.export_source=true requires an Actor Source target and save_assets=true");
+		return false;
+	}
+
+	TArray<TSharedPtr<FJsonValue>> MergeErrors;
+	const TArray<TSharedPtr<FJsonObject>> Patches = BuildUnionMergePatches(Unit, MergeRoot, Options, MergeErrors);
+	if (!MergeErrors.IsEmpty())
+	{
+		const TSharedPtr<FJsonObject> Error = MergeErrors[0]->AsObject();
+		OutError = FString::Printf(TEXT("%s: %s"), *Error->GetStringField(TEXT("path")), *Error->GetStringField(TEXT("message")));
+		return false;
+	}
+	if (!bValidateOnly && Patches.IsEmpty() && !bChangeExportPath && !bExportSource)
+	{
+		OutError = TEXT("UnitDataJson does not contain any writable unit fields");
+		return false;
+	}
+
+	FStagedUnitFields Fields;
+	if (!Fields.Stage(Unit, Patches, OutError))
+	{
+		return false;
+	}
+	if (bValidateOnly)
+	{
+		FString Destination;
+		return !bExportSource || ResolveSourceExportDestination(Source,
+			bChangeExportPath ? ExportPath : Source->ExportPath, Destination, OutError);
+	}
+
+	UObject* Asset = Source ? Source->GetSourceAsset() : Unit;
+	UPackage* Package = Asset->GetOutermost();
+	const bool bWasDirty = Package->IsDirty();
+	const FString PreviousExportPath = Source ? Source->ExportPath : FString();
+	Fields.Apply();
+	if (Source && bChangeExportPath)
+	{
+		Source->ExportPath = ExportPath;
+	}
+	if (bExportSource)
+	{
+		bool bExportChanged = false;
+		const TSharedPtr<FJsonObject> Export = ParseObject(UMassBattleUnitMCPApi::UpdateSource(Source, true, &bExportChanged));
+		if (Export.IsValid() && Export->GetBoolField(TEXT("success")))
+		{
+			return true;
+		}
+		if (!Export.IsValid() || !Export->TryGetStringField(TEXT("error"), OutError))
+		{
+			OutError = TEXT("Actor Source export failed");
+		}
+		if (bExportChanged)
+		{
+			Asset->MarkPackageDirty();
+			return false;
+		}
+	}
+	else
+	{
+		if (Source)
+		{
+			FBlueprintEditorUtils::MarkBlueprintAsModified(CastChecked<UBlueprint>(Asset));
+		}
+		else
+		{
+			Asset->MarkPackageDirty();
+		}
+		if (!bSaveAssets || SaveAsset(Asset, OutError))
+		{
+			return true;
+		}
+	}
+
+	Fields.Restore();
+	if (Source && bChangeExportPath)
+	{
+		Source->ExportPath = PreviousExportPath;
+	}
+	Package->SetDirtyFlag(bWasDirty);
+	return false;
 }
 
 static TArray<TSharedPtr<FJsonValue>> BuildReferencerJson(UObject* Unit, UObject* InternalReferencer = nullptr)
@@ -2169,103 +2180,6 @@ static FString NormalizeDeleteMode(const TSharedPtr<FJsonObject>& Options)
 		return TEXT("hard");
 	}
 	return Mode == TEXT("hard") ? TEXT("hard") : TEXT("soft");
-}
-
-static bool ApplyDeletePlan(const TSharedPtr<FJsonObject>& Plan, const FString& PlanId, TSharedPtr<FJsonObject>& OutRoot, FString& OutError)
-{
-	FString TargetPath;
-	FString DeleteMode = TEXT("soft");
-	bool bForce = false;
-	Plan->TryGetStringField(TEXT("target_path"), TargetPath);
-	Plan->TryGetStringField(TEXT("delete_mode"), DeleteMode);
-	Plan->TryGetBoolField(TEXT("force"), bForce);
-	bool bDeleteExported = false;
-	Plan->TryGetBoolField(TEXT("delete_exported_unit"), bDeleteExported);
-
-	UMassBattleAgentConfigDataAsset* Unit = LoadUnit(TargetPath, OutError);
-	if (!Unit)
-	{
-		return false;
-	}
-
-	AMassBattleUnitSource* Source = Unit->GetTypedOuter<AMassBattleUnitSource>();
-	UObject* DeleteTarget = Source ? Source->GetSourceAsset() : Unit;
-	TArray<TSharedPtr<FJsonValue>> Referencers = BuildReferencerJson(DeleteTarget, Source && bDeleteExported ? Source->ExportedUnit.Get() : nullptr);
-	if (Source && bDeleteExported) Referencers.Append(BuildReferencerJson(Source->ExportedUnit, DeleteTarget));
-	if (DeleteMode == TEXT("hard") && !bForce && !Referencers.IsEmpty())
-	{
-		OutError = TEXT("Deletion blocked: assets have external referencers. Refresh the delete plan.");
-		return false;
-	}
-	TSharedPtr<FJsonObject> Audit = MakeShared<FJsonObject>();
-	Audit->SetStringField(TEXT("timestamp_utc"), FDateTime::UtcNow().ToIso8601());
-	Audit->SetStringField(TEXT("plan_id"), PlanId);
-	Audit->SetStringField(TEXT("type"), TEXT("delete_unit"));
-	Audit->SetStringField(TEXT("asset_path"), Unit->GetPathName());
-	Audit->SetStringField(TEXT("delete_mode"), DeleteMode);
-	Audit->SetArrayField(TEXT("referencers"), Referencers);
-
-	OutRoot = MakeSuccess();
-	OutRoot->SetStringField(TEXT("asset_path"), Unit->GetPathName());
-	OutRoot->SetStringField(TEXT("delete_mode"), DeleteMode);
-	OutRoot->SetArrayField(TEXT("referencers"), Referencers);
-
-	if (DeleteMode == TEXT("hard"))
-	{
-		TArray<UObject*> ObjectsToDelete = { DeleteTarget };
-		if (Source && bDeleteExported && Source->ExportedUnit) ObjectsToDelete.Add(Source->ExportedUnit);
-		int32 DeletedCount = 0;
-		if (bForce)
-		{
-			DeletedCount = ObjectTools::ForceDeleteObjects(ObjectsToDelete, false);
-		}
-		else
-		{
-			DeletedCount = ObjectTools::DeleteObjects(ObjectsToDelete, false);
-		}
-
-		const bool bDeleted = DeletedCount >= ObjectsToDelete.Num();
-		OutRoot->SetBoolField(TEXT("deleted"), bDeleted);
-		OutRoot->SetBoolField(TEXT("moved"), false);
-		OutRoot->SetNumberField(TEXT("deleted_count"), DeletedCount);
-		Audit->SetBoolField(TEXT("deleted"), bDeleted);
-		AppendAuditRecord(Audit);
-		if (!bDeleted)
-		{
-			OutError = FString::Printf(TEXT("ObjectTools deleted %d assets for %s"), DeletedCount, *TargetPath);
-			return false;
-		}
-		return true;
-	}
-
-	FString TrashPackagePath;
-	FString TrashAssetName;
-	Plan->TryGetStringField(TEXT("trash_package_path"), TrashPackagePath);
-	Plan->TryGetStringField(TEXT("trash_asset_name"), TrashAssetName);
-	if (TrashPackagePath.IsEmpty() || TrashAssetName.IsEmpty())
-	{
-		OutError = TEXT("Soft delete plan is missing trash_package_path or trash_asset_name");
-		return false;
-	}
-
-	IAssetTools& AssetTools = FModuleManager::LoadModuleChecked<FAssetToolsModule>(TEXT("AssetTools")).Get();
-	TArray<FAssetRenameData> RenameData;
-	RenameData.Emplace(DeleteTarget, TrashPackagePath, TrashAssetName);
-	if (Source && bDeleteExported && Source->ExportedUnit) RenameData.Emplace(Source->ExportedUnit, TrashPackagePath / TEXT("Generated"), Source->ExportedUnit->GetName());
-	const bool bMoved = AssetTools.RenameAssets(RenameData);
-	if (!bMoved)
-	{
-		OutError = FString::Printf(TEXT("Failed to move %s to %s/%s"), *TargetPath, *TrashPackagePath, *TrashAssetName);
-		return false;
-	}
-
-	OutRoot->SetBoolField(TEXT("deleted"), false);
-	OutRoot->SetBoolField(TEXT("moved"), true);
-	OutRoot->SetStringField(TEXT("trash_path"), TrashPackagePath / TrashAssetName + TEXT(".") + TrashAssetName);
-	Audit->SetBoolField(TEXT("moved"), true);
-	Audit->SetStringField(TEXT("trash_path"), TrashPackagePath / TrashAssetName + TEXT(".") + TrashAssetName);
-	AppendAuditRecord(Audit);
-	return true;
 }
 
 static FString EscapeCsv(const FString& In)
@@ -2475,8 +2389,12 @@ FString UMassBattleUnitMCPApi::DestroySourceUnit(AMassBattleUnitSource* Source)
 	return Result;
 }
 
-FString UMassBattleUnitMCPApi::UpdateSource(AMassBattleUnitSource* Source, bool bSaveAssets)
+FString UMassBattleUnitMCPApi::UpdateSource(AMassBattleUnitSource* Source, bool bSaveAssets, bool* OutExportChanged)
 {
+	if (OutExportChanged)
+	{
+		*OutExportChanged = false;
+	}
 	if (!Source || !Source->UnitData || !Source->GetSourceAsset())
 		return MakeErrorJson(TEXT("Update requires a saved source Actor Blueprint with UnitData."));
 	if (!Source->HasAnyFlags(RF_ClassDefaultObject))
@@ -2486,41 +2404,39 @@ FString UMassBattleUnitMCPApi::UpdateSource(AMassBattleUnitSource* Source, bool 
 		CopyOptions.bDoDelta = false;
 		UEngine::CopyPropertiesForUnrelatedObjects(Source->UnitData, Defaults->UnitData, CopyOptions);
 		Defaults->ExportPath = Source->ExportPath;
-		const FString Result = UpdateSource(Defaults, bSaveAssets);
+		const FString Result = UpdateSource(Defaults, bSaveAssets, OutExportChanged);
 		Source->ExportedUnit = Defaults->ExportedUnit;
 		return Result;
 	}
-	FString Destination = Source->ExportPath;
-	if (Destination.IsEmpty())
+	FString Error;
+	FString Destination;
+	if (!ResolveSourceExportDestination(Source, Source->ExportPath, Destination, Error))
 	{
-		Destination = Source->ExportedUnit
-			? Source->ExportedUnit->GetOutermost()->GetName()
-			: GetDefault<UMassBattleUnitSourceSettings>()->ExportRoot / Source->GetSourceAsset()->GetName();
+		return MakeErrorJson(Error);
 	}
-	FText PathError;
-	if (!FPackageName::IsValidLongPackageName(Destination, false, &PathError))
-		return MakeErrorJson(PathError.ToString());
 	const FString Name = FPackageName::GetLongPackageAssetName(Destination);
-	const FString ObjectPath = Destination + TEXT(".") + Name;
-	UObject* Occupant = LoadObject<UObject>(nullptr, *ObjectPath);
-	if (Occupant && Occupant != Source->ExportedUnit)
-		return MakeErrorJson(TEXT("Export destination is occupied; no asset was overwritten."));
 
 	TArray<TSharedPtr<FJsonObject>> Patches;
 	TArray<TSharedPtr<FJsonValue>> Errors;
 	TSharedPtr<FJsonObject> ReadOptions = ParseObject(TEXT("{\"detail\":\"full\",\"include_defaults\":true}"));
 	if (Source->bHasUpdated && Source->ExportedUnit)
 	{
-		TSharedPtr<FJsonObject> Options = ParseObject(TEXT("{\"replace_arrays\":true,\"expected_before\":false}"));
+		TSharedPtr<FJsonObject> Options = ParseObject(TEXT("{\"replace_arrays\":true}"));
 		Patches = BuildUnionMergePatches(Source->LastUpdatedSource,
 			BuildSourceAlignedUnitJson(Source->UnitData, ReadOptions), Options, Errors, Source->UnitData);
 	}
-	if (!Errors.IsEmpty()) return MakeErrorJson(TEXT("Source fields could not be converted to update patches."));
-	bool bInvalid = false;
-	TArray<TSharedPtr<FJsonValue>> Diff = BuildPatchDiffArray(Source->ExportedUnit, Patches, bInvalid);
-	if (bInvalid) return MakeErrorJson(TEXT("Source diff validation failed; export was not changed."));
+	if (!Errors.IsEmpty())
+	{
+		const TSharedPtr<FJsonObject> Error = Errors[0]->AsObject();
+		return MakeErrorJson(FString::Printf(TEXT("%s: %s"), *Error->GetStringField(TEXT("path")), *Error->GetStringField(TEXT("message"))));
+	}
 
-	FString Error;
+	FStagedUnitFields Fields;
+	TArray<TSharedPtr<FJsonValue>> Diff;
+	if (!Fields.Stage(Source->ExportedUnit, Patches, Error, &Diff))
+	{
+		return MakeErrorJson(Error);
+	}
 	bool bCreated = false;
 	bool bMoved = false;
 	if (!Source->ExportedUnit)
@@ -2539,19 +2455,43 @@ FString UMassBattleUnitMCPApi::UpdateSource(AMassBattleUnitSource* Source, bool 
 			return MakeErrorJson(TEXT("Export move failed; source baseline was not advanced."));
 		bMoved = true;
 	}
-	if (!Patches.IsEmpty())
+	Fields.Apply();
+	if (bSaveAssets && (bCreated || bMoved || !Patches.IsEmpty()) && !SaveAsset(Source->ExportedUnit, Error))
 	{
-		TSharedPtr<FJsonObject> PatchRoot = MakeShared<FJsonObject>();
-		PatchRoot->SetArrayField(TEXT("patches"), CopyPatchesToJsonValues(Patches));
-		TSharedPtr<FJsonObject> Plan = ParseObject(MCP_UnitPlanUpdate(Source->ExportedUnit->GetPathName(), ToJsonString(PatchRoot)));
-		if (!Plan.IsValid() || !Plan->GetBoolField(TEXT("success"))) return ToJsonString(Plan);
-		const FString Result = MCP_UnitApplyPlan(Plan->GetStringField(TEXT("plan_id")), bSaveAssets);
-		if (!ParseObject(Result)->GetBoolField(TEXT("success"))) return Result;
+		Fields.Restore();
+		if (bCreated)
+		{
+			UMassBattleAgentConfigDataAsset* UnsavedExport = Source->ExportedUnit;
+			Source->ExportedUnit = nullptr;
+			FAssetRegistryModule::AssetDeleted(UnsavedExport);
+			UnsavedExport->ClearFlags(RF_Public | RF_Standalone);
+			UPackage* TransientPackage = GetTransientPackage();
+			const FName TransientName = MakeUniqueObjectName(TransientPackage, UnsavedExport->GetClass());
+			UnsavedExport->Rename(*TransientName.ToString(), TransientPackage, REN_DontCreateRedirectors | REN_NonTransactional);
+		}
+		if (bMoved)
+		{
+			if (OutExportChanged)
+			{
+				*OutExportChanged = true;
+			}
+			Error = FString::Printf(TEXT("The linked unit moved to %s before saving failed. Retry the source update. %s"), *Destination, *Error);
+		}
+		return MakeErrorJson(Error);
 	}
-	if (bSaveAssets && (bCreated || bMoved) && Patches.IsEmpty() && !SaveAsset(Source->ExportedUnit, Error)) return MakeErrorJson(Error);
+	const bool bExportChanged = bCreated || bMoved || !Patches.IsEmpty();
+	if (OutExportChanged)
+	{
+		*OutExportChanged = bExportChanged;
+	}
 	Source->Modify();
 	UEngine::FCopyPropertiesForUnrelatedObjectsParams CopyOptions;
 	CopyOptions.bDoDelta = false;
+	UMassBattleAgentConfigDataAsset* PreviousBaseline = bSaveAssets && !bExportChanged
+		? DuplicateObject<UMassBattleAgentConfigDataAsset>(Source->LastUpdatedSource, GetTransientPackage())
+		: nullptr;
+	const bool bWasUpdated = Source->bHasUpdated;
+	const FString PreviousReport = Source->LastReport;
 	UEngine::CopyPropertiesForUnrelatedObjects(Source->UnitData, Source->LastUpdatedSource, CopyOptions);
 	Source->bHasUpdated = true;
 	TSharedPtr<FJsonObject> Result = MakeSuccess();
@@ -2561,7 +2501,22 @@ FString UMassBattleUnitMCPApi::UpdateSource(AMassBattleUnitSource* Source, bool 
 	Result->SetArrayField(TEXT("applied_diff"), Diff);
 	Source->LastReport = ToJsonString(Result);
 	FBlueprintEditorUtils::MarkBlueprintAsModified(CastChecked<UBlueprint>(Source->GetSourceAsset()));
-	if (bSaveAssets && !SaveAsset(Source->GetSourceAsset(), Error)) return MakeErrorJson(Error);
+	if (bSaveAssets && !SaveAsset(Source->GetSourceAsset(), Error))
+	{
+		Source->LastReport = PreviousReport;
+		if (!bExportChanged)
+		{
+			UEngine::CopyPropertiesForUnrelatedObjects(PreviousBaseline, Source->LastUpdatedSource, CopyOptions);
+			Source->bHasUpdated = bWasUpdated;
+		}
+		else
+		{
+			// Keep the baseline aligned with the persisted output so a retry can apply subsequent source edits.
+			Source->MarkPackageDirty();
+			Error = FString::Printf(TEXT("The linked unit was saved at %s before the Actor Source could be saved. Retry the source update. %s"), *Destination, *Error);
+		}
+		return MakeErrorJson(Error);
+	}
 	return Source->LastReport;
 }
 
@@ -2781,117 +2736,20 @@ FString UMassBattleUnitMCPApi::MCP_UnitExport(const FString& OptionsJson)
 	return ToJsonString(Root);
 }
 
-FString UMassBattleUnitMCPApi::MCP_UnitPlanUpdate(const FString& UnitPath, const FString& PatchJson)
+TSharedPtr<FJsonObject> UMassBattleUnitMCPApi::ReadUnitWriteData(const TSharedPtr<FJsonObject>& Root, FString& OutError)
 {
-	TSharedPtr<FJsonObject> PatchRoot = ParseObject(PatchJson);
-	if (!PatchRoot.IsValid())
-	{
-		return MakeErrorJson(TEXT("PatchJson is not valid JSON"));
-	}
-
-	FString Error;
-	UMassBattleAgentConfigDataAsset* Unit = LoadUnit(UnitPath, Error);
-	if (!Unit)
-	{
-		return MakeErrorJson(Error);
-	}
-
-	TArray<TSharedPtr<FJsonObject>> Patches = GetPatchObjects(PatchRoot);
-	if (Patches.IsEmpty())
-	{
-		return MakeErrorJson(TEXT("PatchJson requires a non-empty 'patches' array"));
-	}
-
-	bool bHasError = false;
-	TArray<TSharedPtr<FJsonValue>> Diff = BuildPatchDiffArray(Unit, Patches, bHasError);
-
-	TSharedPtr<FJsonObject> Plan = BuildPlanBase(TEXT("update_unit"));
-	Plan->SetStringField(TEXT("target_path"), UnitPath);
-	Plan->SetArrayField(TEXT("patches"), CopyPatchesToJsonValues(Patches));
-	Plan->SetArrayField(TEXT("diff"), Diff);
-	Plan->SetBoolField(TEXT("applicable"), !bHasError);
-
-	FString PlanPath;
-	if (!SavePlan(Plan, PlanPath, Error))
-	{
-		return MakeErrorJson(Error);
-	}
-
-	TSharedPtr<FJsonObject> Root = MakeSuccess();
-	Root->SetStringField(TEXT("plan_id"), Plan->GetStringField(TEXT("plan_id")));
-	Root->SetStringField(TEXT("plan_path"), PlanPath);
-	Root->SetBoolField(TEXT("applicable"), !bHasError);
-	Root->SetArrayField(TEXT("diff"), Diff);
-	return ToJsonString(Root);
+	return ExtractMergeDataObject(Root, OutError);
 }
 
-FString UMassBattleUnitMCPApi::MCP_UnitPlanMergeUpdate(const FString& UnitPath, const FString& UnitDataJson)
+bool UMassBattleUnitMCPApi::ValidateUnitWrite(const FString& UnitPath, const FString& UnitDataJson, FString& OutError)
 {
-	TSharedPtr<FJsonObject> MergeRoot = ParseObject(UnitDataJson);
-	if (!MergeRoot.IsValid())
-	{
-		return MakeErrorJson(TEXT("UnitDataJson is not valid JSON"));
-	}
+	return WriteUnitData(UnitPath, UnitDataJson, true, true, OutError);
+}
 
+FString UMassBattleUnitMCPApi::MCP_UnitWrite(const FString& UnitPath, const FString& UnitDataJson, bool bSaveAssets)
+{
 	FString Error;
-	UMassBattleAgentConfigDataAsset* Unit = LoadUnit(UnitPath, Error);
-	if (!Unit)
-	{
-		return MakeErrorJson(Error);
-	}
-
-	TSharedPtr<FJsonObject> Options = ExtractMergeOptions(MergeRoot);
-	TArray<TSharedPtr<FJsonValue>> MergeErrors;
-	TArray<TSharedPtr<FJsonObject>> Patches = BuildUnionMergePatches(Unit, MergeRoot, Options, MergeErrors);
-	AMassBattleUnitSource* Source = Unit->GetTypedOuter<AMassBattleUnitSource>();
-	FString ExportPath;
-	const bool bChangeExportPath = Source && MergeRoot->TryGetStringField(TEXT("export_path"), ExportPath);
-	bool bExportSource = false;
-	if (Options->HasField(TEXT("export_source")) && !Options->TryGetBoolField(TEXT("export_source"), bExportSource))
-	{
-		return MakeErrorJson(TEXT("export_source must be a boolean."));
-	}
-	if (bExportSource && !Source)
-	{
-		return MakeErrorJson(TEXT("export_source requires a source Actor target."));
-	}
-	if (Patches.IsEmpty() && MergeErrors.IsEmpty() && !bChangeExportPath && !bExportSource)
-	{
-		return MakeErrorJson(TEXT("UnitDataJson does not contain any mergeable unit fields"));
-	}
-
-	bool bHasError = !MergeErrors.IsEmpty();
-	TArray<TSharedPtr<FJsonValue>> Diff = BuildPatchDiffArray(Unit, Patches, bHasError);
-	if (!MergeErrors.IsEmpty())
-	{
-		bHasError = true;
-	}
-
-	TSharedPtr<FJsonObject> Plan = BuildPlanBase(TEXT("merge_update_unit"));
-	if (bChangeExportPath) Plan->SetStringField(TEXT("export_path"), ExportPath);
-	if (bExportSource) Plan->SetBoolField(TEXT("export_source"), true);
-	Plan->SetStringField(TEXT("target_path"), UnitPath);
-	Plan->SetStringField(TEXT("merge_semantics"), TEXT("union: only JSON fields present in UnitDataJson are written; omitted fields remain unchanged."));
-	Plan->SetArrayField(TEXT("patches"), CopyPatchesToJsonValues(Patches));
-	Plan->SetArrayField(TEXT("diff"), Diff);
-	Plan->SetArrayField(TEXT("merge_errors"), MergeErrors);
-	Plan->SetBoolField(TEXT("applicable"), !bHasError);
-
-	FString PlanPath;
-	if (!SavePlan(Plan, PlanPath, Error))
-	{
-		return MakeErrorJson(Error);
-	}
-
-	TSharedPtr<FJsonObject> Root = MakeSuccess();
-	Root->SetStringField(TEXT("plan_id"), Plan->GetStringField(TEXT("plan_id")));
-	Root->SetStringField(TEXT("plan_path"), PlanPath);
-	Root->SetStringField(TEXT("merge_semantics"), Plan->GetStringField(TEXT("merge_semantics")));
-	Root->SetBoolField(TEXT("applicable"), !bHasError);
-	if (bExportSource) Root->SetBoolField(TEXT("export_source"), true);
-	Root->SetArrayField(TEXT("diff"), Diff);
-	Root->SetArrayField(TEXT("merge_errors"), MergeErrors);
-	return ToJsonString(Root);
+	return WriteUnitData(UnitPath, UnitDataJson, bSaveAssets, false, Error) ? ToJsonString(MakeSuccess()) : MakeErrorJson(Error);
 }
 
 FString UMassBattleUnitMCPApi::MCP_UnitCreate(const FString& OptionsJson, bool bSaveAssets)
@@ -3001,9 +2859,10 @@ FString UMassBattleUnitMCPApi::MCP_UnitCreate(const FString& OptionsJson, bool b
 		for (const TSharedPtr<FJsonObject>& Change : Patches)
 		{
 			FPatchPreview Preview;
-			if (!ApplyPatch(Unit, Change, false, Preview))
+			FString Error;
+			if (!ApplyPatch(Unit, Change, Error, &Preview))
 			{
-				return MakeErrorJson(Preview.Error);
+				return MakeErrorJson(Error);
 			}
 			AppliedDiffs.Add(MakeShared<FJsonValueObject>(PatchPreviewToJson(Preview)));
 		}
@@ -3359,151 +3218,6 @@ FString UMassBattleUnitMCPApi::MCP_UnitCreate(const FString& OptionsJson, bool b
 	return ToJsonString(Root);
 }
 
-FString UMassBattleUnitMCPApi::MCP_UnitPreviewDiff(const FString& PlanId)
-{
-	FString Error;
-	TSharedPtr<FJsonObject> Plan = LoadPlan(PlanId, Error);
-	if (!Plan.IsValid())
-	{
-		return MakeErrorJson(Error);
-	}
-
-	TSharedPtr<FJsonObject> Root = MakeSuccess();
-	FString PlanIdValue;
-	FString Type;
-	bool bApplicable = false;
-	Plan->TryGetStringField(TEXT("plan_id"), PlanIdValue);
-	Plan->TryGetStringField(TEXT("type"), Type);
-	Plan->TryGetBoolField(TEXT("applicable"), bApplicable);
-	Root->SetStringField(TEXT("plan_id"), PlanIdValue);
-	Root->SetStringField(TEXT("type"), Type);
-	Root->SetBoolField(TEXT("applicable"), bApplicable);
-
-	const TArray<TSharedPtr<FJsonValue>>* Diff = nullptr;
-	if (Plan->TryGetArrayField(TEXT("diff"), Diff))
-	{
-		Root->SetArrayField(TEXT("diff"), *Diff);
-	}
-	if (Plan->TryGetArrayField(TEXT("diff_from_template"), Diff))
-	{
-		Root->SetArrayField(TEXT("diff_from_template"), *Diff);
-	}
-
-	Root->SetObjectField(TEXT("plan"), Plan);
-	return ToJsonString(Root);
-}
-
-FString UMassBattleUnitMCPApi::MCP_UnitApplyPlan(const FString& PlanId, bool bSaveAssets)
-{
-	FString Error;
-	TSharedPtr<FJsonObject> Plan = LoadPlan(PlanId, Error);
-	if (!Plan.IsValid())
-	{
-		return MakeErrorJson(Error);
-	}
-
-	bool bApplicable = false;
-	Plan->TryGetBoolField(TEXT("applicable"), bApplicable);
-	if (!bApplicable)
-	{
-		return MakeErrorJson(TEXT("Plan is not applicable. Inspect diff errors first."));
-	}
-
-	FString Type;
-	Plan->TryGetStringField(TEXT("type"), Type);
-
-	if (Type == TEXT("delete_unit"))
-	{
-		TSharedPtr<FJsonObject> DeleteRoot;
-		if (!ApplyDeletePlan(Plan, PlanId, DeleteRoot, Error))
-		{
-			return MakeErrorJson(Error);
-		}
-		return ToJsonString(DeleteRoot);
-	}
-
-	UObject* Target = nullptr;
-	if (Type == TEXT("update_unit") || Type == TEXT("merge_update_unit"))
-	{
-		FString TargetPath;
-		Plan->TryGetStringField(TEXT("target_path"), TargetPath);
-		Target = LoadUnit(TargetPath, Error);
-		if (!Target)
-		{
-			return MakeErrorJson(Error);
-		}
-	}
-	else
-	{
-		return MakeErrorJson(FString::Printf(TEXT("Unsupported plan type: %s"), *Type));
-	}
-
-	TArray<TSharedPtr<FJsonObject>> Patches;
-	for (const TSharedPtr<FJsonValue>& Value : ParseArrayField(Plan, TEXT("patches")))
-	{
-		TSharedPtr<FJsonObject> Patch = Value->AsObject();
-		if (Patch.IsValid())
-		{
-			Patches.Add(Patch);
-		}
-	}
-
-	TArray<TSharedPtr<FJsonValue>> AppliedDiffs;
-	for (const TSharedPtr<FJsonObject>& Patch : Patches)
-	{
-		FPatchPreview Preview;
-		if (!ApplyPatch(Target, Patch, false, Preview))
-		{
-			return MakeErrorJson(Preview.Error);
-		}
-		AppliedDiffs.Add(MakeShared<FJsonValueObject>(PatchPreviewToJson(Preview)));
-	}
-
-	TSharedPtr<FJsonObject> ExportReport;
-	if (AMassBattleUnitSource* Source = Target->GetTypedOuter<AMassBattleUnitSource>())
-	{
-		const bool bChangedExportPath = Plan->TryGetStringField(TEXT("export_path"), Source->ExportPath);
-		UBlueprint* SourceBlueprint = CastChecked<UBlueprint>(Source->GetSourceAsset());
-		const bool bHasSourceChanges = bChangedExportPath || !Patches.IsEmpty();
-		if (bHasSourceChanges)
-		{
-			FBlueprintEditorUtils::MarkBlueprintAsModified(SourceBlueprint);
-		}
-		bool bExportSource = false;
-		Plan->TryGetBoolField(TEXT("export_source"), bExportSource);
-		if (bSaveAssets && bExportSource)
-		{
-			const FString Result = UpdateSource(Source, true);
-			Source->LastReport = Result;
-			ExportReport = ParseObject(Result);
-			if (!ExportReport.IsValid() || !ExportReport->GetBoolField(TEXT("success"))) return Result;
-		}
-		else if (bSaveAssets && bHasSourceChanges && !SaveAsset(SourceBlueprint, Error))
-		{
-			return MakeErrorJson(Error);
-		}
-	}
-	else if (bSaveAssets && !SaveAsset(Target, Error))
-	{
-		return MakeErrorJson(Error);
-	}
-
-	TSharedPtr<FJsonObject> Audit = MakeShared<FJsonObject>();
-	Audit->SetStringField(TEXT("timestamp_utc"), FDateTime::UtcNow().ToIso8601());
-	Audit->SetStringField(TEXT("plan_id"), PlanId);
-	Audit->SetStringField(TEXT("type"), Type);
-	Audit->SetStringField(TEXT("asset_path"), Target->GetPathName());
-	Audit->SetArrayField(TEXT("diff"), AppliedDiffs);
-	AppendAuditRecord(Audit);
-
-	TSharedPtr<FJsonObject> Root = MakeSuccess();
-	Root->SetStringField(TEXT("asset_path"), Target->GetPathName());
-	Root->SetBoolField(TEXT("saved"), bSaveAssets);
-	Root->SetArrayField(TEXT("applied_diff"), AppliedDiffs);
-	if (ExportReport.IsValid()) Root->SetObjectField(TEXT("export_result"), ExportReport);
-	return ToJsonString(Root);
-}
-
 FString UMassBattleUnitMCPApi::MCP_UnitDeleteSoft(const FString& UnitPath, const FString& OptionsJson)
 {
 	if (AMassBattleUnitSource::Resolve(FSoftObjectPath(NormalizeObjectPath(UnitPath)).TryLoad()))
@@ -3569,9 +3283,9 @@ FString UMassBattleUnitMCPApi::MCP_UnitDeleteSoft(const FString& UnitPath, const
 	return ToJsonString(Root);
 }
 
-FString UMassBattleUnitMCPApi::MCP_UnitPlanDelete(const FString& UnitPath, const FString& OptionsJson)
+FString UMassBattleUnitMCPApi::MCP_UnitDelete(const FString& UnitPath, const FString& OptionsJson)
 {
-	TSharedPtr<FJsonObject> Options = ParseObject(OptionsJson);
+	const TSharedPtr<FJsonObject> Options = ParseObject(OptionsJson);
 	if (!Options.IsValid())
 	{
 		return MakeErrorJson(TEXT("OptionsJson is not valid JSON"));
@@ -3585,107 +3299,108 @@ FString UMassBattleUnitMCPApi::MCP_UnitPlanDelete(const FString& UnitPath, const
 	}
 
 	const FString DeleteMode = NormalizeDeleteMode(Options);
+	const bool bSoftDelete = DeleteMode == TEXT("soft");
+	bool bDryRun = true;
 	bool bDeleteExported = false;
-	Options->TryGetBoolField(TEXT("delete_exported_unit"), bDeleteExported);
-	AMassBattleUnitSource* Source = Unit->GetTypedOuter<AMassBattleUnitSource>();
-	UObject* DeleteTarget = Source ? Source->GetSourceAsset() : Unit;
-	TArray<TSharedPtr<FJsonValue>> Referencers = BuildReferencerJson(DeleteTarget, Source && bDeleteExported ? Source->ExportedUnit.Get() : nullptr);
-	if (Source && bDeleteExported) Referencers.Append(BuildReferencerJson(Source->ExportedUnit, DeleteTarget));
-
-	bool bAllowReferenced = DeleteMode == TEXT("soft");
-	Options->TryGetBoolField(TEXT("allow_referenced"), bAllowReferenced);
+	bool bAllowReferenced = bSoftDelete;
 	bool bForce = false;
+	Options->TryGetBoolField(TEXT("dry_run"), bDryRun);
+	Options->TryGetBoolField(TEXT("delete_exported_unit"), bDeleteExported);
+	Options->TryGetBoolField(TEXT("allow_referenced"), bAllowReferenced);
 	Options->TryGetBoolField(TEXT("force"), bForce);
 
+	AMassBattleUnitSource* Source = Unit->GetTypedOuter<AMassBattleUnitSource>();
+	UObject* DeleteTarget = Source ? Source->GetSourceAsset() : Unit;
+	UObject* Exported = Source && bDeleteExported ? Source->ExportedUnit.Get() : nullptr;
+	TArray<TSharedPtr<FJsonValue>> Referencers = BuildReferencerJson(DeleteTarget, Exported);
+	Referencers.Append(BuildReferencerJson(Exported, DeleteTarget));
+
+	const FString TargetPath = DeleteTarget->GetPathName();
+	const bool bApplicable = bSoftDelete || Referencers.IsEmpty() || (bAllowReferenced && bForce);
+	const FString BlockedReason = TEXT("Hard delete has external referencers and requires allow_referenced=true and force=true");
 	FString TrashRoot = TEXT("/Game/_Trash/MassBattle/Units");
 	Options->TryGetStringField(TEXT("trash_root"), TrashRoot);
-	const FString DateFolder = FDateTime::UtcNow().ToString(TEXT("%Y-%m-%d"));
-	const FString TrashPackagePath = TrashRoot / DateFolder;
+	const FString TrashPackagePath = TrashRoot / FDateTime::UtcNow().ToString(TEXT("%Y-%m-%d"));
 	const FString TrashAssetName = DeleteTarget->GetName();
 	const FString TrashPath = TrashPackagePath / TrashAssetName + TEXT(".") + TrashAssetName;
 
-	const bool bHasReferencers = !Referencers.IsEmpty();
-	const bool bApplicable = DeleteMode == TEXT("soft") || !bHasReferencers || bAllowReferenced;
-
-	TSharedPtr<FJsonObject> Plan = BuildPlanBase(TEXT("delete_unit"));
-	Plan->SetStringField(TEXT("target_path"), UnitPath);
-	Plan->SetStringField(TEXT("delete_mode"), DeleteMode);
-	Plan->SetBoolField(TEXT("delete_exported_unit"), bDeleteExported);
-	Plan->SetArrayField(TEXT("referencers"), Referencers);
-	Plan->SetBoolField(TEXT("allow_referenced"), bAllowReferenced);
-	Plan->SetBoolField(TEXT("force"), bForce);
-	Plan->SetBoolField(TEXT("applicable"), bApplicable);
-	Plan->SetStringField(TEXT("safety_note"), TEXT("Soft delete moves the asset to trash. Hard delete permanently deletes the asset and is blocked by referencers unless allow_referenced=true."));
-	if (DeleteMode == TEXT("soft"))
-	{
-		Plan->SetStringField(TEXT("trash_package_path"), TrashPackagePath);
-		Plan->SetStringField(TEXT("trash_asset_name"), TrashAssetName);
-		Plan->SetStringField(TEXT("trash_path"), TrashPath);
-	}
-	if (!bApplicable)
-	{
-		Plan->SetStringField(TEXT("blocked_reason"), TEXT("Hard delete has referencers and allow_referenced=false"));
-	}
-
-	FString PlanPath;
-	if (!SavePlan(Plan, PlanPath, Error))
-	{
-		return MakeErrorJson(Error);
-	}
-
-	TSharedPtr<FJsonObject> Root = MakeSuccess();
-	Root->SetStringField(TEXT("plan_id"), Plan->GetStringField(TEXT("plan_id")));
-	Root->SetStringField(TEXT("plan_path"), PlanPath);
-	Root->SetStringField(TEXT("target_path"), Unit->GetPathName());
+	const TSharedPtr<FJsonObject> Root = MakeSuccess();
 	Root->SetStringField(TEXT("delete_mode"), DeleteMode);
-	Root->SetBoolField(TEXT("applicable"), bApplicable);
-	Root->SetBoolField(TEXT("allow_referenced"), bAllowReferenced);
-	Root->SetBoolField(TEXT("force"), bForce);
 	Root->SetArrayField(TEXT("referencers"), Referencers);
-	if (DeleteMode == TEXT("soft"))
-	{
-		Root->SetStringField(TEXT("trash_path"), TrashPath);
-	}
-	if (!bApplicable)
-	{
-		Root->SetStringField(TEXT("blocked_reason"), TEXT("Hard delete has referencers and allow_referenced=false"));
-	}
-	return ToJsonString(Root);
-}
-
-FString UMassBattleUnitMCPApi::MCP_UnitDelete(const FString& UnitPath, const FString& OptionsJson)
-{
-	TSharedPtr<FJsonObject> Options = ParseObject(OptionsJson);
-	if (!Options.IsValid())
-	{
-		return MakeErrorJson(TEXT("OptionsJson is not valid JSON"));
-	}
-
-	bool bDryRun = true;
-	Options->TryGetBoolField(TEXT("dry_run"), bDryRun);
-	const FString PlanResult = MCP_UnitPlanDelete(UnitPath, OptionsJson);
-	TSharedPtr<FJsonObject> PlanResultJson = ParseObject(PlanResult);
-	if (!PlanResultJson.IsValid() || !PlanResultJson->GetBoolField(TEXT("success")))
-	{
-		return PlanResult;
-	}
-
 	if (bDryRun)
 	{
-		PlanResultJson->SetBoolField(TEXT("dry_run"), true);
-		PlanResultJson->SetBoolField(TEXT("would_delete"), true);
-		return ToJsonString(PlanResultJson);
+		Root->SetStringField(TEXT("target_path"), TargetPath);
+		Root->SetBoolField(TEXT("dry_run"), true);
+		Root->SetBoolField(TEXT("would_delete"), bApplicable);
+		Root->SetBoolField(TEXT("applicable"), bApplicable);
+		if (bSoftDelete)
+		{
+			Root->SetStringField(TEXT("trash_path"), TrashPath);
+		}
+		if (!bApplicable)
+		{
+			Root->SetStringField(TEXT("blocked_reason"), BlockedReason);
+		}
+		return ToJsonString(Root);
 	}
-
-	bool bApplicable = false;
-	PlanResultJson->TryGetBoolField(TEXT("applicable"), bApplicable);
 	if (!bApplicable)
 	{
-		return PlanResult;
+		return MakeErrorJson(BlockedReason);
 	}
 
-	const FString PlanId = PlanResultJson->GetStringField(TEXT("plan_id"));
-	return MCP_UnitApplyPlan(PlanId, true);
+	const TSharedPtr<FJsonObject> Audit = MakeShared<FJsonObject>();
+	Audit->SetStringField(TEXT("timestamp_utc"), FDateTime::UtcNow().ToIso8601());
+	Audit->SetStringField(TEXT("type"), TEXT("delete_unit"));
+	Audit->SetStringField(TEXT("asset_path"), TargetPath);
+	Audit->SetStringField(TEXT("delete_mode"), DeleteMode);
+	Audit->SetArrayField(TEXT("referencers"), Referencers);
+	Root->SetStringField(TEXT("asset_path"), TargetPath);
+
+	if (bSoftDelete)
+	{
+		TArray<FAssetRenameData> RenameData;
+		RenameData.Emplace(DeleteTarget, TrashPackagePath, TrashAssetName);
+		if (Exported)
+		{
+			RenameData.Emplace(Exported, TrashPackagePath / TEXT("Generated"), Exported->GetName());
+		}
+		IAssetTools& AssetTools = FModuleManager::LoadModuleChecked<FAssetToolsModule>(TEXT("AssetTools")).Get();
+		if (!AssetTools.RenameAssets(RenameData))
+		{
+			return MakeErrorJson(FString::Printf(TEXT("Failed to move %s to %s"), *TargetPath, *TrashPath));
+		}
+
+		Audit->SetBoolField(TEXT("moved"), true);
+		Audit->SetStringField(TEXT("trash_path"), TrashPath);
+		Root->SetBoolField(TEXT("deleted"), false);
+		Root->SetBoolField(TEXT("moved"), true);
+		Root->SetStringField(TEXT("trash_path"), TrashPath);
+	}
+	else
+	{
+		TArray<UObject*> Objects = { DeleteTarget };
+		if (Exported)
+		{
+			Objects.Add(Exported);
+		}
+		const int32 DeletedCount = bForce
+			? ObjectTools::ForceDeleteObjects(Objects, false)
+			: ObjectTools::DeleteObjects(Objects, false);
+		const bool bDeleted = DeletedCount >= Objects.Num();
+		Audit->SetBoolField(TEXT("deleted"), bDeleted);
+		if (!bDeleted)
+		{
+			AppendAuditRecord(Audit);
+			return MakeErrorJson(FString::Printf(TEXT("ObjectTools deleted %d assets for %s"), DeletedCount, *TargetPath));
+		}
+
+		Root->SetBoolField(TEXT("deleted"), true);
+		Root->SetBoolField(TEXT("moved"), false);
+		Root->SetNumberField(TEXT("deleted_count"), DeletedCount);
+	}
+
+	AppendAuditRecord(Audit);
+	return ToJsonString(Root);
 }
 
 FString UMassBattleUnitMCPApi::MCP_UnitFindAssets(const FString& QueryJson)
@@ -3783,9 +3498,7 @@ FString UMassBattleUnitMCPApi::MCP_UnitGetApiStatus()
 	Tools.Add(Tool(TEXT("MCP_UnitGetSchema"), TEXT("unit.schema"), TEXT("Expose editable schema and field roles.")));
 	Tools.Add(Tool(TEXT("MCP_UnitExport"), TEXT("unit.export"), TEXT("Export balance fields to CSV/JSON.")));
 	Tools.Add(Tool(TEXT("MCP_UnitCreate"), TEXT("unit.create"), TEXT("Create a unit or source Actor with explicit data and the selected style's defaults.")));
-	Tools.Add(Tool(TEXT("MCP_UnitPlanMergeUpdate"), TEXT("unit.plan"), TEXT("Plan a union-write and return its diff without mutating the unit.")));
-	Tools.Add(Tool(TEXT("MCP_UnitPreviewDiff"), TEXT("unit.plan"), TEXT("Preview a saved unit mutation plan and its complete diff.")));
-	Tools.Add(Tool(TEXT("MCP_UnitApplyPlan"), TEXT("unit.write"), TEXT("Apply a reviewed unit mutation plan and optionally save the unit.")));
+	Tools.Add(Tool(TEXT("MCP_UnitWrite"), TEXT("unit.write"), TEXT("Write the requested fields of an existing unit or Actor Source.")));
 	Tools.Add(Tool(TEXT("MCP_UnitDeleteSoft"), TEXT("unit.lifecycle"), TEXT("Move a unit to trash after referencer scan.")));
 	Tools.Add(Tool(TEXT("MCP_UnitDelete"), TEXT("unit.delete"), TEXT("Delete a unit explicitly; dry_run=true by default.")));
 	Tools.Add(Tool(TEXT("MCP_UnitFindAssets"), TEXT("unit.assets"), TEXT("Find existing assets for unit generation.")));
@@ -3796,8 +3509,6 @@ FString UMassBattleUnitMCPApi::MCP_UnitGetApiStatus()
 	Tools.Add(Tool(TEXT("MCP_EditorPlanPreparePurchasedAsset"), TEXT("unit_editor.prepare"), TEXT("Plan discovery, official naming, and optional source-folder organization for a purchased skeletal asset pack.")));
 	Tools.Add(Tool(TEXT("MCP_EditorApplyPreparePurchasedAsset"), TEXT("unit_editor.prepare"), TEXT("Apply a reviewed purchased-asset preparation plan; dry_run=true by default.")));
 	Tools.Add(Tool(TEXT("MCP_EditorDiscoverCompatibleAnimations"), TEXT("unit_editor.animation"), TEXT("Discover compatible animation sequences across explicit and style-configured search roots.")));
-	Tools.Add(Tool(TEXT("MCP_EditorPlanAddAnimationsToUnit"), TEXT("unit_editor.animation"), TEXT("Use MassBattleEditor functions to plan an AnimShared update for an existing unit.")));
-	Tools.Add(Tool(TEXT("MCP_EditorValidateAddAnimationsToUnit"), TEXT("unit_editor.animation"), TEXT("Validate whether an animation-set edit can produce an applicable unit merge plan.")));
 	Tools.Add(Tool(TEXT("MCP_EditorPlanCreateVatUnit"), TEXT("unit_editor.create.diagnostic"), TEXT("Diagnostic: preview the MassBattleTools DoAll-equivalent VAT unit plan. Strict apply still requires canonical complete inputs.")));
 	Tools.Add(Tool(TEXT("MCP_EditorValidateCreateVatUnit"), TEXT("unit_editor.create.diagnostic"), TEXT("Diagnostic: validate DoAll-equivalent VAT unit inputs without writing assets.")));
 	Tools.Add(Tool(TEXT("MCP_EditorApplyCreateVatUnit"), TEXT("unit_editor.create"), TEXT("Primary non-selection DoAll-equivalent VAT unit authoring entry. Requires canonical complete inputs and validates before writing assets.")));

@@ -23,7 +23,7 @@ class MASSBATTLEEDITORMCP_API UMassBattleUnitMCPApi : public UBlueprintFunctionL
 
 public:
 	/** Shared implementation for the source Actor's Update action; no new MCP command. */
-	static FString UpdateSource(class AMassBattleUnitSource* Source, bool bSaveAssets);
+	static FString UpdateSource(class AMassBattleUnitSource* Source, bool bSaveAssets, bool* OutExportChanged = nullptr);
 	static FString DestroySourceUnit(class AMassBattleUnitSource* Source);
 	/// @brief 解析单位资产或源码 Actor 的实际单位配置。
 	static UMassBattleAgentConfigDataAsset* ResolveUnit(const FString& UnitPath, FString& OutError);
@@ -73,19 +73,22 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "MassBattleEditorMCP|Unit")
 	static FString MCP_UnitExport(const FString& OptionsJson);
 
-	/** Internal helper for update diff/apply implementation; not part of the public MCP surface. */
-	static FString MCP_UnitPlanUpdate(const FString& UnitPath, const FString& PatchJson);
+	/// @brief Read the supplied fields from flat or Data-wrapped unit JSON.
+	static TSharedPtr<FJsonObject> ReadUnitWriteData(const TSharedPtr<FJsonObject>& Root, FString& OutError);
+	/// @brief Validate the submitted unit fields for an editor operation before it writes other assets.
+	static bool ValidateUnitWrite(const FString& UnitPath, const FString& UnitDataJson, FString& OutError);
 
 	/**
 	 * @ProductDocument
-	 * @brief Review field changes before writing a partial unit update.
-	 * @details Stores a partial update plan for the selected Unit Source Actor or unit DataAsset. Target the source Actor for routine maintenance so edits are retained in UnitData. Omitted fields are retained. The plan reports whether the proposed update can be applied.
-	 * @param[in] UnitPath Unreal object path of the existing MassBattle unit config or supported Unit Source Actor Blueprint.
-	 * @param[in] UnitDataJson Partial unit JSON using source property names. Include the fields to change. A Unit Source Actor patch can set export_path and request an export with options.export_source=true.
-	 * @return A stored update plan: plan_id identifies it for later review or application, diff describes field changes, and applicable with merge_errors explains whether it can run.
+	 * @brief Write the requested fields of an existing unit.
+	 * @details Target the Actor Source Blueprint for routine edits or a unit DataAsset for direct edits to that asset. Fields omitted from the patch keep their current values.
+	 * @param[in] UnitPath Unreal object path of the Actor Source Blueprint or unit DataAsset.
+	 * @param[in] UnitDataJson Partial unit JSON using source property names. Use options.export_source=true to regenerate the linked unit when saving the Actor Source.
+	 * @param[in] bSaveAssets Save the edited asset to disk. When false, edit it only in memory.
+	 * @return Success or an error explaining which write failed.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "MassBattleEditorMCP|Unit")
-	static FString MCP_UnitPlanMergeUpdate(const FString& UnitPath, const FString& UnitDataJson);
+	static FString MCP_UnitWrite(const FString& UnitPath, const FString& UnitDataJson, bool bSaveAssets);
 
 	/**
 	 * @ProductDocument
@@ -98,43 +101,17 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "MassBattleEditorMCP|Unit")
 	static FString MCP_UnitCreate(const FString& OptionsJson, bool bSaveAssets);
 
-	/**
-	 * @ProductDocument
-	 * @brief Inspect a stored plan's full diff and applicability.
-	 * @details Loads a previously stored mutation plan and returns its complete diff and applicability without applying it. This is the review step between planning and an explicit apply.
-	 * @param[in] PlanId plan_id returned by a unit planning operation.
-	 * @return The complete stored plan and its diff, with applicable indicating whether it is executable; an unavailable plan produces an error.
-	 * @pre Obtain PlanId from a planning operation such as @ref UMassBattleUnitMCPApi::MCP_UnitPlanMergeUpdate.
-	 */
-	UFUNCTION(BlueprintCallable, Category = "MassBattleEditorMCP|Unit")
-	static FString MCP_UnitPreviewDiff(const FString& PlanId);
-
-	/**
-	 * @ProductDocument
-	 * @brief Write the changes recorded in a reviewed unit plan.
-	 * @details Loads and applies the stored plan to its target. A source Actor plan runs Update when the plan requests export_source and bSaveAssets=true. A plan targeting a DataAsset writes directly to that asset.
-	 * @param[in] PlanId Identifier of the reviewed stored unit mutation plan.
-	 * @param[in] bSaveAssets Whether to save the assets modified or created by this operation to disk.
-	 * @return The executed plan's ID, applied_diff and saved state; rejected plans, failed mutations and save errors report their failure.
-	 * @pre Inspect the diff with @ref UMassBattleUnitMCPApi::MCP_UnitPreviewDiff before submitting a reviewed plan.
-	 */
-	UFUNCTION(BlueprintCallable, Category = "MassBattleEditorMCP|Unit")
-	static FString MCP_UnitApplyPlan(const FString& PlanId, bool bSaveAssets);
-
 	/** Move a unit asset into a dated trash folder after reporting referencers. */
 	UFUNCTION(BlueprintCallable, Category = "MassBattleEditorMCP|Unit")
 	static FString MCP_UnitDeleteSoft(const FString& UnitPath, const FString& OptionsJson);
 
-	/** Internal helper for delete implementation; not part of the public MCP surface. */
-	static FString MCP_UnitPlanDelete(const FString& UnitPath, const FString& OptionsJson);
-
 	/**
 	 * @ProductDocument
-	 * @brief Preview or execute a unit asset deletion plan.
-	 * @details Builds the explicit unit deletion plan. dry_run=true returns would_delete and the plan without changing the asset; dry_run=false applies an applicable plan through the same mutation API.
+	 * @brief Check or execute a unit asset deletion.
+	 * @details dry_run=true checks the selected asset and reports whether deletion is allowed. dry_run=false performs the deletion if its reference checks pass.
 	 * @param[in] UnitPath Unreal object path of the existing MassBattle unit config or supported Unit Source Actor Blueprint.
-	 * @param[in] OptionsJson JSON object; pass {} to use the defaults. dry_run defaults to true. Deletion mode and plan validation are handled by the explicit unit deletion plan.
-	 * @return A deletion preview with would_delete, or the actual deletion result; dry_run distinguishes the two and applicable explains whether the plan can execute.
+	 * @param[in] OptionsJson JSON object; pass {} to use the defaults. dry_run defaults to true. mode selects a soft move to trash or permanent deletion.
+	 * @return Deletion eligibility or the executed deletion result.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "MassBattleEditorMCP|Unit")
 	static FString MCP_UnitDelete(const FString& UnitPath, const FString& OptionsJson);

@@ -90,14 +90,6 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "MassBattleEditorMCP|UnitEditor")
 	static FString MCP_EditorDiscoverCompatibleAnimations(const FString& SkeletalMeshPath, const FString& OptionsJson);
 
-	/** Plan adding or replacing a unit animation set using MassBattleEditor asset-discovery/conversion functions. */
-	UFUNCTION(BlueprintCallable, Category = "MassBattleEditorMCP|UnitEditor")
-	static FString MCP_EditorPlanAddAnimationsToUnit(const FString& UnitPath, const FString& SpecJson);
-
-	/** Validate whether an animation-set edit can produce an applicable unit merge plan. */
-	UFUNCTION(BlueprintCallable, Category = "MassBattleEditorMCP|UnitEditor")
-	static FString MCP_EditorValidateAddAnimationsToUnit(const FString& UnitPath, const FString& SpecJson);
-
 	/**
 	 * @ProductDocument
 	 * @brief Inspect source assets and output layout before VAT generation.
@@ -122,7 +114,7 @@ public:
 	/**
 	 * @ProductDocument
 	 * @brief Create a unit that plays baked skeletal animation through a static mesh.
-	 * @details Converts the skeletal mesh, bakes animation textures and configures the renderer. New units use the selected style for omitted creation values. A rebuild of an existing unit applies the generated references and explicitly requested unit changes through the unit change plan.
+	 * @details Converts the skeletal mesh, bakes animation textures and configures the renderer. New units use the selected style for omitted creation values. A rebuild of an existing unit writes the generated references and explicitly requested unit changes.
 	 * @param[in] OptionsJson JSON options for skeletal_mesh, unit_name, output, parent_material, source_renderer_class, niagara_system, vat_sample_rate and animations. Supply target_unit to rebuild an existing unit. style_profile is optional when creating a unit. dry_run or preview_only selects a preview, overwrite_existing allows replacement of generated outputs, and compact_response selects result detail.
 	 * @param[in] bSaveAssets Whether to save the assets modified or created by this operation to disk.
 	 * @return Generation-step results or a compact summary; previews return the plan and validation. Validation failures are described by validation.valid and validation.issues; execution_steps records completed and failed steps when execution stops.
@@ -210,8 +202,8 @@ private:
 	static bool ResolveVatCreationOptions(const TSharedPtr<FJsonObject>& Options, const FString& SourceMeshPath, TArray<TSharedPtr<FJsonValue>>& Issues);
 	/// @brief 在写入资产前验证已解析的 VAT 参数。
 	static void ValidateVatOptions(const TSharedPtr<FJsonObject>& Options, TArray<TSharedPtr<FJsonValue>>& Issues);
-	/// @brief 应用单位制作工作流中的动画配置变更。
-	static FString ApplyAddAnimationsToUnit(const FString& UnitPath, const FString& SpecJson, bool bSaveAssets);
+	/// @brief 从已烘焙的动画数据生成单位制作工作流所需的 AnimShared 增量。
+	static bool BuildAnimationWritePatch(const TSharedPtr<FJsonObject>& Options, FString& OutPatchJson, FString& OutError);
 	/// @brief 生成关联资产的整理预览，供工作流规划与执行入口使用。
 	static FString PlanOrganizeUnitAssets(const FString& UnitPath, const FString& OptionsJson);
 };

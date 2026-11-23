@@ -25,9 +25,8 @@ def update(source):
 
 
 def apply_changes(path, changes):
-    plan = result(API.mcp_unit_plan_merge_update(path, json.dumps(changes)))
-    assert plan['applicable'], plan
-    return result(API.mcp_unit_apply_plan(plan['plan_id'], True))
+    response = result(API.mcp_unit_write(path, json.dumps(changes), True))
+    assert response == {'success': True}, response
 
 
 if not unreal.EditorAssetLibrary.does_asset_exist(SOURCE):
@@ -41,11 +40,22 @@ if not unreal.EditorAssetLibrary.does_asset_exist(SOURCE):
     assert update(source)['created']
     assert read(OUTPUT)['Current'] == 100
     apply_changes(OUTPUT, {'Health': {'Current': 200}})
+    assert read(OUTPUT)['Maximum'] == 300
+    assert read(SOURCE)['Current'] == 100
     assert not update(source)['applied_diff']
     assert read(OUTPUT)['Current'] == 200
+    source_export_path = source.get_editor_property('export_path')
     apply_changes(SOURCE, {'Health': {'Maximum': 350}})
-    assert read(SOURCE)['Maximum'] == 350
+    source_health = read(SOURCE)
+    assert source_health['Maximum'] == 350
+    assert source_health['Current'] == 100
+    assert source.get_editor_property('export_path') == source_export_path
     assert read(OUTPUT)['Maximum'] == 300
+    invalid = json.loads(API.mcp_unit_write(SOURCE, json.dumps({
+        'Health': {'Current': 240, 'UnknownField': 1},
+    }), True))
+    assert invalid.get('success') is False and 'Health.UnknownField' in json.dumps(invalid), invalid
+    assert read(SOURCE) == source_health
     apply_changes(SOURCE, {'options': {'export_source': True}})
     assert read(OUTPUT)['Current'] == 200
     assert read(OUTPUT)['Maximum'] == 350
@@ -57,7 +67,7 @@ if not unreal.EditorAssetLibrary.does_asset_exist(SOURCE):
     listing = result(API.mcp_unit_list(json.dumps({'roots': [ROOT], 'load_fields': False})))
     paths = [row['ObjectPath'] for row in listing['units']]
     assert SOURCE + '.BP_Source' in paths and MOVED + '.DA_Unit' in paths, paths
-    unreal.log('SOURCE_ACTOR_PHASE1_OK: create, diff, external edit preservation, move, list')
+    unreal.log('SOURCE_ACTOR_PHASE1_OK: create, delta write, rejected fields, export, move, list')
 else:
     # Run again in a fresh editor/commandlet to check persisted source baselines.
     bp = unreal.load_asset(SOURCE)
@@ -80,8 +90,8 @@ else:
     guard.set_editor_property('UnitReference', source.get_editor_property('exported_unit'))
     unreal.EditorAssetLibrary.save_loaded_asset(guard_bp, only_if_is_dirty=False)
     unreal.AssetRegistryHelpers.get_asset_registry().scan_paths_synchronous([ROOT], True)
-    plan = result(API.mcp_unit_delete(SOURCE, '{"mode":"hard","dry_run":true,"delete_exported_unit":true}'))
-    assert not plan['applicable'], plan
+    dry_run = result(API.mcp_unit_delete(SOURCE, '{"mode":"hard","dry_run":true,"delete_exported_unit":true}'))
+    assert not dry_run['applicable'], dry_run
     guard.set_editor_property('UnitReference', None)
     unreal.EditorAssetLibrary.save_loaded_asset(guard_bp, only_if_is_dirty=False)
     unreal.AssetRegistryHelpers.get_asset_registry().scan_paths_synchronous([ROOT], True)

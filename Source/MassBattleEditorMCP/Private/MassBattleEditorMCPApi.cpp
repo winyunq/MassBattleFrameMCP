@@ -1496,19 +1496,9 @@ FString UMassBattleEditorMCPApi::MCP_GetApiStatus()
 		TEXT("OptionsJson"),
 		TEXT("unit.export"));
 
-	AddTool(TEXT("MCP_UnitPlanMergeUpdate"),
-		TEXT("规划单位或源码 Actor 的局部更新并返回计划 ID"),
-		TEXT("UnitPath, UnitDataJson"),
-		TEXT("unit.plan"));
-
-	AddTool(TEXT("MCP_UnitPreviewDiff"),
-		TEXT("读取已保存的单位变更计划及完整差异"),
-		TEXT("PlanId"),
-		TEXT("unit.plan"));
-
-	AddTool(TEXT("MCP_UnitApplyPlan"),
-		TEXT("应用已审核的单位变更计划，可保存单位或导出源码 Actor"),
-		TEXT("PlanId, bSaveAssets"),
+	AddTool(TEXT("MCP_UnitWrite"),
+		TEXT("按提交的增量直接写入源码 Actor 或单位 DataAsset"),
+		TEXT("UnitPath, UnitDataJson, bSaveAssets"),
 		TEXT("unit.write"));
 
 	AddTool(TEXT("MCP_UnitCreate"),
@@ -1674,16 +1664,6 @@ FString UMassBattleEditorMCPApi::MCP_GetApiStatus()
 	AddTool(TEXT("MCP_EditorDiscoverCompatibleAnimations"),
 		TEXT("按显式路径和 style 默认候选根检索与目标 SkeletalMesh 兼容的 AnimSequence"),
 		TEXT("SkeletalMeshPath, OptionsJson"),
-		TEXT("unit_editor.animation"));
-
-	AddTool(TEXT("MCP_EditorPlanAddAnimationsToUnit"),
-		TEXT("调用 MassBattleEditor 动画检索与 AnimData 转换函数，为已有单位生成 AnimShared 并集写计划"),
-		TEXT("UnitPath, OptionsJson"),
-		TEXT("unit_editor.animation"));
-
-	AddTool(TEXT("MCP_EditorValidateAddAnimationsToUnit"),
-		TEXT("验证已有单位动画组编辑是否能生成可应用的并集写计划"),
-		TEXT("UnitPath, OptionsJson"),
 		TEXT("unit_editor.animation"));
 
 	AddTool(TEXT("MCP_EditorPlanCreateVatUnit"),

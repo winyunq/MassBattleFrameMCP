@@ -135,14 +135,14 @@ Read [one-shot conversion workflow](references/one-shot-conversion-workflow.md) 
 ## MCP Workflow
 
 1. Call API status for Unit, Effect Asset, and Niagara MCP.
-2. Read the unit with `unit_get`; use `unit_get_schema` before writing unfamiliar nested fields.
+2. Use `unit_get` for relevant unit values and `unit_get_schema` for unfamiliar nested fields.
 3. Query and summarize the source VFX with Effect Asset MCP.
 4. Inspect the exact source graph and dependencies through `$massbattle-effect-mcp` primitives.
 5. Duplicate the exact source asset; do not overwrite it and do not start the accepted translation from a visual template.
 6. Add the Burst NDC adapter with Niagara graph primitives. If graph insertion/rewiring or the runtime ABI is insufficient, report the precise blocker.
 7. Configure and read back the renderer Blueprint defaults.
 8. Build a partial source-aligned unit patch for `Attack`, `Damage`, `Debuff`, and `Attack.SpawnFx` as required.
-9. Pass the patch to `unit_plan_write`. When both `success` and `applicable` are true, pass its `plan_id` to `unit_apply_plan`, then read the unit back.
+9. Pass the target and patch to `unit_write`.
 10. Place the corresponding renderer actor and validate source/translation timing and visuals in a test map.
 
 Do not invent a high-level “convert” MCP call. Combine primitive tools and report every capability gap.

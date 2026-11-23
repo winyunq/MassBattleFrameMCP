@@ -594,94 +594,6 @@
     "source_hash": "788f7514167483ae88fa1d02f3bc24af3b7c7329ad8bb069c68740ddeb115db2"
   },
   {
-    "id": "1352dc5db4096033a86c953b:brief",
-    "translation": "在写入前检查局部修改将产生的字段差异。",
-    "translated_source_hash": "a25a76ea790c4c3b0fd8c24e8c12cbf9937b95bfc10bb9e77a83064770d07876",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
-    "name": "UMassBattleUnitMCPApi::MCP_UnitPlanMergeUpdate",
-    "field": "brief",
-    "source_text": "Review field changes before writing a partial unit update.",
-    "source_hash": "a25a76ea790c4c3b0fd8c24e8c12cbf9937b95bfc10bb9e77a83064770d07876"
-  },
-  {
-    "id": "1352dc5db4096033a86c953b:details",
-    "translation": "为指定的源码 Actor 或单位 DataAsset 生成并保存局部更新计划。日常维护优先选源码 Actor，使变更保存在 UnitData 中。保留未指定的字段。计划会说明拟议的更新能否执行。",
-    "translated_source_hash": "a3deb0fb335d3aa088673ede3119cc900b5d7b59eaee1b8bdbfb7f844a61d5a8",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
-    "name": "UMassBattleUnitMCPApi::MCP_UnitPlanMergeUpdate",
-    "field": "details",
-    "source_text": "Stores a partial update plan for the selected Unit Source Actor or unit DataAsset. Target the source Actor for routine maintenance so edits are retained in UnitData. Omitted fields are retained. The plan reports whether the proposed update can be applied.",
-    "source_hash": "a3deb0fb335d3aa088673ede3119cc900b5d7b59eaee1b8bdbfb7f844a61d5a8"
-  },
-  {
-    "id": "1352dc5db4096033a86c953b:param/UnitDataJson",
-    "translation": "按源码属性名提供部分单位 JSON，只填写所需的变更。源码 Actor 可以设置 export_path，并通过 options.export_source=true 请求导出。",
-    "translated_source_hash": "754b5c8dc30fe41a4a381a6de5a26ead1dcdaf0b7aefdab41fc0fa7919b72ad9",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
-    "name": "UMassBattleUnitMCPApi::MCP_UnitPlanMergeUpdate",
-    "field": "param/UnitDataJson",
-    "source_text": "Partial unit JSON using source property names. Include the fields to change. A Unit Source Actor patch can set export_path and request an export with options.export_source=true.",
-    "source_hash": "754b5c8dc30fe41a4a381a6de5a26ead1dcdaf0b7aefdab41fc0fa7919b72ad9"
-  },
-  {
-    "id": "1352dc5db4096033a86c953b:param/UnitPath",
-    "translation": "现有 MassBattle 单位配置或受支持 Unit Source Actor 蓝图的 Unreal 对象路径。",
-    "translated_source_hash": "aa864c2f5df0d27965098c8920e077deb0767d26081bb0ea2707a830423841d2",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
-    "name": "UMassBattleUnitMCPApi::MCP_UnitPlanMergeUpdate",
-    "field": "param/UnitPath",
-    "source_text": "Unreal object path of the existing MassBattle unit config or supported Unit Source Actor Blueprint.",
-    "source_hash": "aa864c2f5df0d27965098c8920e077deb0767d26081bb0ea2707a830423841d2"
-  },
-  {
-    "id": "1352dc5db4096033a86c953b:returns",
-    "translation": "已保存的更新方案；plan_id 用于后续查看或执行，diff 给出字段改动，applicable 与 merge_errors 说明方案能否执行。",
-    "translated_source_hash": "f0d75d1c57da8ba4f8295ab77ef4d85c4f1bcbba5d21e612efc7b54fba390dca",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
-    "name": "UMassBattleUnitMCPApi::MCP_UnitPlanMergeUpdate",
-    "field": "returns",
-    "source_text": "A stored update plan: plan_id identifies it for later review or application, diff describes field changes, and applicable with merge_errors explains whether it can run.",
-    "source_hash": "f0d75d1c57da8ba4f8295ab77ef4d85c4f1bcbba5d21e612efc7b54fba390dca"
-  },
-  {
-    "id": "1352dc5db4096033a86c953b:term/UnitDataJson",
-    "translation": "单位数据 JSON",
-    "translated_source_hash": "710a83a457c5a481980ece4b705da42f60f8f4661ed52bc8c7c854f7b20a6be0",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
-    "name": "UMassBattleUnitMCPApi::MCP_UnitPlanMergeUpdate",
-    "field": "term/UnitDataJson",
-    "source_text": "UnitDataJson",
-    "source_hash": "710a83a457c5a481980ece4b705da42f60f8f4661ed52bc8c7c854f7b20a6be0"
-  },
-  {
-    "id": "1352dc5db4096033a86c953b:term/UnitPath",
-    "translation": "单位路径",
-    "translated_source_hash": "3ae1b0beedb14bb68abf12e7080a31269b38e25ba6006e22f58a0b03c1ca1421",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
-    "name": "UMassBattleUnitMCPApi::MCP_UnitPlanMergeUpdate",
-    "field": "term/UnitPath",
-    "source_text": "UnitPath",
-    "source_hash": "3ae1b0beedb14bb68abf12e7080a31269b38e25ba6006e22f58a0b03c1ca1421"
-  },
-  {
-    "id": "1352dc5db4096033a86c953b:title/user",
-    "translation": "规划单位合并写入",
-    "translated_source_hash": "b34dd2aada2b6f571befa1913ba10d73b5e8d90ba6546145a43c4ea4840d3237",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
-    "name": "UMassBattleUnitMCPApi::MCP_UnitPlanMergeUpdate",
-    "field": "title/user",
-    "source_text": "MCP Unit Plan Merge Update",
-    "source_hash": "b34dd2aada2b6f571befa1913ba10d73b5e8d90ba6546145a43c4ea4840d3237"
-  },
-  {
     "id": "141783df34aa4d987d0041c6:brief",
     "translation": "核对组件材质和武器绑骨，判断装配能否完成。",
     "translated_source_hash": "da0f9d13109b1f832b272282e38796aeaba9a1e1753cf892508dcafda556604c",
@@ -1189,36 +1101,36 @@
   },
   {
     "id": "3467883ba4fc1ad77711d87d:brief",
-    "translation": "预览或执行单位资产删除方案。",
-    "translated_source_hash": "d6ccacf5f0af1083afd5b6d22ae95a118dce1e29bec2651ae69d7aba757c2e07",
+    "translation": "检查或执行单位资产删除。",
+    "translated_source_hash": "293349b7f52c63de4343a598626ddd1591fbbf3ac6d8922f95ae8d30bc635cec",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
     "name": "UMassBattleUnitMCPApi::MCP_UnitDelete",
     "field": "brief",
-    "source_text": "Preview or execute a unit asset deletion plan.",
-    "source_hash": "d6ccacf5f0af1083afd5b6d22ae95a118dce1e29bec2651ae69d7aba757c2e07"
+    "source_text": "Check or execute a unit asset deletion.",
+    "source_hash": "293349b7f52c63de4343a598626ddd1591fbbf3ac6d8922f95ae8d30bc635cec"
   },
   {
     "id": "3467883ba4fc1ad77711d87d:details",
-    "translation": "生成明确的单位删除规划。dry_run=true 返回 would_delete 和规划，保留资产原状；dry_run=false 经同一变更 API 应用可执行的规划。",
-    "translated_source_hash": "216806b53ed2df2479a8b41721748375afc9285d2fb4487b0abd713f0032cead",
+    "translation": "dry_run=true 时检查选定资产能否删除。dry_run=false 且引用检查通过时执行删除。",
+    "translated_source_hash": "dd9be2a2b4651b35f75bd6d50ea70c448ead06105dcc20bf3e3c29cb03702010",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
     "name": "UMassBattleUnitMCPApi::MCP_UnitDelete",
     "field": "details",
-    "source_text": "Builds the explicit unit deletion plan. dry_run=true returns would_delete and the plan without changing the asset; dry_run=false applies an applicable plan through the same mutation API.",
-    "source_hash": "216806b53ed2df2479a8b41721748375afc9285d2fb4487b0abd713f0032cead"
+    "source_text": "dry_run=true checks the selected asset and reports whether deletion is allowed. dry_run=false performs the deletion if its reference checks pass.",
+    "source_hash": "dd9be2a2b4651b35f75bd6d50ea70c448ead06105dcc20bf3e3c29cb03702010"
   },
   {
     "id": "3467883ba4fc1ad77711d87d:param/OptionsJson",
-    "translation": "JSON 对象；{} 使用默认选项。dry_run 默认为 true；删除模式及校验由显式单位删除规划处理。",
-    "translated_source_hash": "688867d3aab713f98e31c019e34770de71b8e4d5f72479adc5eac79aa7df1090",
+    "translation": "JSON 对象，传 {} 使用默认参数。dry_run 默认为 true。mode 选择移入回收目录或永久删除。",
+    "translated_source_hash": "8ef8006b81b09e44ceae6772581c3725613a503a925ab54371fe341f04b60440",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
     "name": "UMassBattleUnitMCPApi::MCP_UnitDelete",
     "field": "param/OptionsJson",
-    "source_text": "JSON object; pass {} to use the defaults. dry_run defaults to true. Deletion mode and plan validation are handled by the explicit unit deletion plan.",
-    "source_hash": "688867d3aab713f98e31c019e34770de71b8e4d5f72479adc5eac79aa7df1090"
+    "source_text": "JSON object; pass {} to use the defaults. dry_run defaults to true. mode selects a soft move to trash or permanent deletion.",
+    "source_hash": "8ef8006b81b09e44ceae6772581c3725613a503a925ab54371fe341f04b60440"
   },
   {
     "id": "3467883ba4fc1ad77711d87d:param/UnitPath",
@@ -1233,14 +1145,14 @@
   },
   {
     "id": "3467883ba4fc1ad77711d87d:returns",
-    "translation": "待删除内容的 would_delete 预览或实际删除结果；dry_run 区分预览与执行，applicable 说明方案是否可执行。",
-    "translated_source_hash": "deeacce47d3b3b91edf36d2b5321a4e24d7be0bb2006b09b0688a8693c6cf127",
+    "translation": "返回能否删除，或已执行的删除结果。",
+    "translated_source_hash": "6f1bb73f46ccfb5b141661f0b54801ba5c73e13dac19ea38f0bc03a2f5c70ff2",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
     "name": "UMassBattleUnitMCPApi::MCP_UnitDelete",
     "field": "returns",
-    "source_text": "A deletion preview with would_delete, or the actual deletion result; dry_run distinguishes the two and applicable explains whether the plan can execute.",
-    "source_hash": "deeacce47d3b3b91edf36d2b5321a4e24d7be0bb2006b09b0688a8693c6cf127"
+    "source_text": "Deletion eligibility or the executed deletion result.",
+    "source_hash": "6f1bb73f46ccfb5b141661f0b54801ba5c73e13dac19ea38f0bc03a2f5c70ff2"
   },
   {
     "id": "3467883ba4fc1ad77711d87d:term/OptionsJson",
@@ -2396,182 +2308,6 @@
     "field": "title/user",
     "source_text": "MCP Unit Get Schema",
     "source_hash": "4a79ea2d9c877625ca27f063bea94b553d54e004e7e91027b743adfc5e52eab6"
-  },
-  {
-    "id": "7a05a9ee35a81326094b0c55:brief",
-    "translation": "查看已保存方案的完整差异及可执行状态。",
-    "translated_source_hash": "aa89a61930d4d6756d1a5f282e2f8ee10d90972610b9fa7b9c4bbdf67349c67c",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
-    "name": "UMassBattleUnitMCPApi::MCP_UnitPreviewDiff",
-    "field": "brief",
-    "source_text": "Inspect a stored plan's full diff and applicability.",
-    "source_hash": "aa89a61930d4d6756d1a5f282e2f8ee10d90972610b9fa7b9c4bbdf67349c67c"
-  },
-  {
-    "id": "7a05a9ee35a81326094b0c55:details",
-    "translation": "加载已存储的变更规划，返回完整差异及可应用状态。本入口只供规划后、应用前审阅，不执行变更。",
-    "translated_source_hash": "c73f0fe4273cdf3896f087301dff6dd759ccb268e0e89e705f2b624d4e8b1197",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
-    "name": "UMassBattleUnitMCPApi::MCP_UnitPreviewDiff",
-    "field": "details",
-    "source_text": "Loads a previously stored mutation plan and returns its complete diff and applicability without applying it. This is the review step between planning and an explicit apply.",
-    "source_hash": "c73f0fe4273cdf3896f087301dff6dd759ccb268e0e89e705f2b624d4e8b1197"
-  },
-  {
-    "id": "7a05a9ee35a81326094b0c55:param/PlanId",
-    "translation": "单位规划操作返回的 plan_id。",
-    "translated_source_hash": "728e1d4c8b019d8ebc2ea1e6edb23bded7217989109ae8a06c32f7b47a306d7a",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
-    "name": "UMassBattleUnitMCPApi::MCP_UnitPreviewDiff",
-    "field": "param/PlanId",
-    "source_text": "plan_id returned by a unit planning operation.",
-    "source_hash": "728e1d4c8b019d8ebc2ea1e6edb23bded7217989109ae8a06c32f7b47a306d7a"
-  },
-  {
-    "id": "7a05a9ee35a81326094b0c55:preconditions/0",
-    "translation": "先从 @ref UMassBattleUnitMCPApi::MCP_UnitPlanMergeUpdate 等规划操作取得 PlanId。",
-    "translated_source_hash": "25c81376e84a0dfa47fa0c2e8d4f0a25e9f7cf2deb843c8d93a061e1f99cb160",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
-    "name": "UMassBattleUnitMCPApi::MCP_UnitPreviewDiff",
-    "field": "preconditions/0",
-    "source_text": "Obtain PlanId from a planning operation such as @ref UMassBattleUnitMCPApi::MCP_UnitPlanMergeUpdate.",
-    "source_hash": "25c81376e84a0dfa47fa0c2e8d4f0a25e9f7cf2deb843c8d93a061e1f99cb160"
-  },
-  {
-    "id": "7a05a9ee35a81326094b0c55:returns",
-    "translation": "完整方案及其字段差异；applicable 说明是否可执行，方案不存在或无法读取时返回错误。",
-    "translated_source_hash": "8c4527b468928b07a21adf120e5767c90e8a2a869a8befb1759a3700b14480d3",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
-    "name": "UMassBattleUnitMCPApi::MCP_UnitPreviewDiff",
-    "field": "returns",
-    "source_text": "The complete stored plan and its diff, with applicable indicating whether it is executable; an unavailable plan produces an error.",
-    "source_hash": "8c4527b468928b07a21adf120e5767c90e8a2a869a8befb1759a3700b14480d3"
-  },
-  {
-    "id": "7a05a9ee35a81326094b0c55:term/PlanId",
-    "translation": "规划标识",
-    "translated_source_hash": "640f2fbd7abbcfb8dfdfa0abb6a890cb8db181822c31d73910a142bdefb039bd",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
-    "name": "UMassBattleUnitMCPApi::MCP_UnitPreviewDiff",
-    "field": "term/PlanId",
-    "source_text": "PlanId",
-    "source_hash": "640f2fbd7abbcfb8dfdfa0abb6a890cb8db181822c31d73910a142bdefb039bd"
-  },
-  {
-    "id": "7a05a9ee35a81326094b0c55:title/user",
-    "translation": "预览单位规划差异",
-    "translated_source_hash": "3be273f2de514a1ef9bf4d01b58401d47e274d2921d8af416c095bbe7e3e472a",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
-    "name": "UMassBattleUnitMCPApi::MCP_UnitPreviewDiff",
-    "field": "title/user",
-    "source_text": "MCP Unit Preview Diff",
-    "source_hash": "3be273f2de514a1ef9bf4d01b58401d47e274d2921d8af416c095bbe7e3e472a"
-  },
-  {
-    "id": "7b779567d9d6cabf5c6056f9:brief",
-    "translation": "将已审阅方案中的改动写入单位资产。",
-    "translated_source_hash": "c2b4b9dba4299bc1408100dea9bc09933d29ae9b17dc99bdf35ed082217b4e5a",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
-    "name": "UMassBattleUnitMCPApi::MCP_UnitApplyPlan",
-    "field": "brief",
-    "source_text": "Write the changes recorded in a reviewed unit plan.",
-    "source_hash": "c2b4b9dba4299bc1408100dea9bc09933d29ae9b17dc99bdf35ed082217b4e5a"
-  },
-  {
-    "id": "7b779567d9d6cabf5c6056f9:details",
-    "translation": "加载计划并应用到它的目标。源码 Actor 计划请求 export_source 且 bSaveAssets=true 时运行 Update。DataAsset 计划直接写对应资产。",
-    "translated_source_hash": "94c3517914b39a9c019a7c60b6e0a5ee4f625e00266031830c4b49724938e023",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
-    "name": "UMassBattleUnitMCPApi::MCP_UnitApplyPlan",
-    "field": "details",
-    "source_text": "Loads and applies the stored plan to its target. A source Actor plan runs Update when the plan requests export_source and bSaveAssets=true. A plan targeting a DataAsset writes directly to that asset.",
-    "source_hash": "94c3517914b39a9c019a7c60b6e0a5ee4f625e00266031830c4b49724938e023"
-  },
-  {
-    "id": "7b779567d9d6cabf5c6056f9:param/PlanId",
-    "translation": "已审阅并存储的单位变更规划标识。",
-    "translated_source_hash": "9aa3ce39c9b1d8c9f8262888c090e3f65e9a7031b8b770b8ce176b2452ea7555",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
-    "name": "UMassBattleUnitMCPApi::MCP_UnitApplyPlan",
-    "field": "param/PlanId",
-    "source_text": "Identifier of the reviewed stored unit mutation plan.",
-    "source_hash": "9aa3ce39c9b1d8c9f8262888c090e3f65e9a7031b8b770b8ce176b2452ea7555"
-  },
-  {
-    "id": "7b779567d9d6cabf5c6056f9:param/bSaveAssets",
-    "translation": "是否将本次修改或创建的资产保存到磁盘。",
-    "translated_source_hash": "46acb1f6c5d7d09bbd1e8025856eaca691d8236d15a643216a12160c0fbe6a66",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
-    "name": "UMassBattleUnitMCPApi::MCP_UnitApplyPlan",
-    "field": "param/bSaveAssets",
-    "source_text": "Whether to save the assets modified or created by this operation to disk.",
-    "source_hash": "46acb1f6c5d7d09bbd1e8025856eaca691d8236d15a643216a12160c0fbe6a66"
-  },
-  {
-    "id": "7b779567d9d6cabf5c6056f9:preconditions/0",
-    "translation": "提交已审阅的规划前，使用 @ref UMassBattleUnitMCPApi::MCP_UnitPreviewDiff 查看差异。",
-    "translated_source_hash": "1c03d0179e7d7411ea71601c45586ab815fca230aaed4b841f47aaf2b1cc5616",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
-    "name": "UMassBattleUnitMCPApi::MCP_UnitApplyPlan",
-    "field": "preconditions/0",
-    "source_text": "Inspect the diff with @ref UMassBattleUnitMCPApi::MCP_UnitPreviewDiff before submitting a reviewed plan.",
-    "source_hash": "1c03d0179e7d7411ea71601c45586ab815fca230aaed4b841f47aaf2b1cc5616"
-  },
-  {
-    "id": "7b779567d9d6cabf5c6056f9:returns",
-    "translation": "已执行方案的标识、applied_diff 中的实际改动及 saved 保存状态；方案、修改或保存失败时报告对应错误。",
-    "translated_source_hash": "5f3e7611165d7761e78aed7d53399e3f0db999968a82dfc23a69be76290a5149",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
-    "name": "UMassBattleUnitMCPApi::MCP_UnitApplyPlan",
-    "field": "returns",
-    "source_text": "The executed plan's ID, applied_diff and saved state; rejected plans, failed mutations and save errors report their failure.",
-    "source_hash": "5f3e7611165d7761e78aed7d53399e3f0db999968a82dfc23a69be76290a5149"
-  },
-  {
-    "id": "7b779567d9d6cabf5c6056f9:term/PlanId",
-    "translation": "规划标识",
-    "translated_source_hash": "640f2fbd7abbcfb8dfdfa0abb6a890cb8db181822c31d73910a142bdefb039bd",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
-    "name": "UMassBattleUnitMCPApi::MCP_UnitApplyPlan",
-    "field": "term/PlanId",
-    "source_text": "PlanId",
-    "source_hash": "640f2fbd7abbcfb8dfdfa0abb6a890cb8db181822c31d73910a142bdefb039bd"
-  },
-  {
-    "id": "7b779567d9d6cabf5c6056f9:term/bSaveAssets",
-    "translation": "保存资产",
-    "translated_source_hash": "4629c309c923a90e4d95af6cdf005400ed07f7706ccc73170d1590334a467ed3",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
-    "name": "UMassBattleUnitMCPApi::MCP_UnitApplyPlan",
-    "field": "term/bSaveAssets",
-    "source_text": "bSaveAssets",
-    "source_hash": "4629c309c923a90e4d95af6cdf005400ed07f7706ccc73170d1590334a467ed3"
-  },
-  {
-    "id": "7b779567d9d6cabf5c6056f9:title/user",
-    "translation": "应用单位变更规划",
-    "translated_source_hash": "50c5ac33ea4f9436fa065d2bc2c1c22e3d6c0b4b7d2e031e68cc9222d48acefa",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
-    "name": "UMassBattleUnitMCPApi::MCP_UnitApplyPlan",
-    "field": "title/user",
-    "source_text": "MCP Unit Apply Plan",
-    "source_hash": "50c5ac33ea4f9436fa065d2bc2c1c22e3d6c0b4b7d2e031e68cc9222d48acefa"
   },
   {
     "id": "8304f02e918c6dd9d6fb1580:brief",
@@ -3994,14 +3730,14 @@
   },
   {
     "id": "cd233af70f1d8c2728f692b2:details",
-    "translation": "转换骨骼网格，烘焙动画贴图并设置渲染器。创建单位时按所选 style 补齐省略的值。重建已有单位时，将本次生成的引用及明确要求的改动通过单位变更计划应用。",
-    "translated_source_hash": "6dae85972a4fa3c79f07a439aef08a4c7f9d2cb42b9096631846022d3da92b1d",
+    "translation": "转换骨骼网格，烘焙动画贴图并设置渲染器。创建单位时按所选 style 补齐省略的值。重建已有单位时写入本次生成的引用和明确要求的改动。",
+    "translated_source_hash": "3502d34e9dfb1b7540cce4e7c24de5588127bddfaabcccdba26a09914f295d8d",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
     "name": "UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnit",
     "field": "details",
-    "source_text": "Converts the skeletal mesh, bakes animation textures and configures the renderer. New units use the selected style for omitted creation values. A rebuild of an existing unit applies the generated references and explicitly requested unit changes through the unit change plan.",
-    "source_hash": "6dae85972a4fa3c79f07a439aef08a4c7f9d2cb42b9096631846022d3da92b1d"
+    "source_text": "Converts the skeletal mesh, bakes animation textures and configures the renderer. New units use the selected style for omitted creation values. A rebuild of an existing unit writes the generated references and explicitly requested unit changes.",
+    "source_hash": "3502d34e9dfb1b7540cce4e7c24de5588127bddfaabcccdba26a09914f295d8d"
   },
   {
     "id": "cd233af70f1d8c2728f692b2:notes/0",
