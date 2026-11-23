@@ -45,7 +45,7 @@ Developers should not spend most of their time manually adapting one unit or eff
 
 ## Core Capabilities
 
-The default rhythm is read first, create or union-write next, explicitly delete only when needed, and read back after changes. The goal is repeatability and traceability.
+Read the target first, preview the change, apply it, then read back the result. Edits use a diff. Only the assets and fields named by that diff change. New units use the selected style for missing values and use the default style when `style_profile` is omitted.
 You can use it to differentiate unit presentation and balance data, or to adapt non-batched assets into scalable batch-processing systems.
 
 ## Entry Points
@@ -78,7 +78,7 @@ Copy-Item -Recurse -Force .\skills\massbattle-projectile-authoring $env:USERPROF
 ```
 
 If `CODEX_HOME` is set, copy them to `$env:CODEX_HOME\skills\`.
-MCP is the editor tool interface. `editor_apply_create_vat_unit` mirrors the official `/MassBattle/Core/MassBattleTools` DoAll button and creates or refreshes the mesh, materials, VAT textures, renderer, and unit config. To generate from selected assets, call `editor_plan_create_vat_unit_from_selection`, review its warnings and `resolved_spec`, then pass that spec to `editor_apply_create_vat_unit`.
+MCP is the editor tool interface. The unit authoring skill describes how to use it. `editor_apply_create_vat_unit` runs the VAT build for the mesh, materials, VAT textures, renderer, and unit configuration. To build from selected assets, call `editor_plan_create_vat_unit_from_selection`, review its warnings and `resolved_options`, then pass those values as `options` to `editor_apply_create_vat_unit`.
 
 ### Codex MCP Server Installation
 
@@ -118,7 +118,7 @@ Note: `FFxConfig.AgentBehaviorState` uses `EAgentBehaviorState`. Writable values
 | Unit MCP | `unit_get_schema` | Available | Read editable unit fields, types, roles, and tooltips. |
 | Unit MCP | `unit_export` | Available | Export compact unit balance tables for analysis or batch review. |
 | Unit MCP | `unit_find_assets` | Available | Find candidate SkeletalMesh, Renderer, Niagara, and related assets for unit authoring. |
-| Unit MCP | `unit_create` | Available | Create a new unit; use the default template when no template is provided; optional initial unit data is supported. |
+| Unit MCP | `unit_create` | Available | Create a new unit with explicit initial data and style defaults for omitted values. |
 | Unit MCP | `unit_plan_write` | Available | Plan a union-write and return a reviewable diff without mutating the unit. |
 | Unit MCP | `unit_preview_plan` | Available | Read a saved unit mutation plan and its complete diff. |
 | Unit MCP | `unit_apply_plan` | Available | Apply a reviewed unit mutation plan and optionally save the unit. |
@@ -131,14 +131,14 @@ Note: `FFxConfig.AgentBehaviorState` uses `EAgentBehaviorState`. Writable values
 | Projectile MCP | `projectile_validate` | Available | Validate movement, damage ownership, triggers, lifecycle FX, linked units, and duplicate explosions. |
 | Projectile MCP | `projectile_delete` | Available | Plan or execute guarded soft/hard deletion; dry-run by default. |
 | Unit Editor MCP | `editor_get_status` | Available | Read unit editor workflow capabilities. |
-| Unit Editor MCP | `editor_list_profiles` | Available | List style profiles and authoring recipes. |
-| Unit Editor MCP | `editor_get_profile` | Available | Read one profile or recipe. |
+| Unit Editor MCP | `editor_list_styles` | Available | List styles available for unit creation. |
+| Unit Editor MCP | `editor_get_style` | Available | Read the defaults and rules of a style. |
 | Unit Editor MCP | `editor_plan_create_vat_unit` | Diagnostic | Preview the DoAll-equivalent VAT unit plan; strict apply still requires complete canonical inputs. |
-| Unit Editor MCP | `editor_apply_create_vat_unit` | Available | Validate a complete spec and generate the mesh, materials, VAT, renderer, and unit config. |
-| Unit Editor MCP | `editor_plan_create_vat_unit_from_selection` | Available | Resolve a generation spec from editor selection or `selected_assets` and review it before apply. |
+| Unit Editor MCP | `editor_apply_create_vat_unit` | Available | Validate the options and build the mesh, materials, VAT, renderer, and unit configuration. |
+| Unit Editor MCP | `editor_plan_create_vat_unit_from_selection` | Available | Resolve build options from editor selection or `selected_assets` for review. |
 | Unit Editor MCP | `editor_inspect_actor_assembly` | Available | Inspect an Actor's modular skeletal/static components, effective materials, socket transforms, and resolved weapon bind bones without writing assets. |
-| Unit Editor MCP | `editor_inspect_vat_animation` | Available | Audit skin weights, baked vertex/bone motion, VAT lookup UVs, material switches/textures/scalars, and the canonical soldier animation profile. |
-| Unit Editor MCP | `editor_plan_create_vat_unit_from_actor` | Diagnostic | Validate an Actor component/weapon override recipe and preview its persistent assembled SkeletalMesh plus strict VAT unit plan. |
+| Unit Editor MCP | `editor_inspect_vat_animation` | Available | Audit skin weights, baked vertex and bone motion, VAT lookup UVs, and material parameters. |
+| Unit Editor MCP | `editor_plan_create_vat_unit_from_actor` | Diagnostic | Validate Actor component and weapon overrides, and preview its assembled SkeletalMesh and VAT build. |
 | Unit Editor MCP | `editor_apply_create_vat_unit_from_actor` | Available | Assemble an Actor and rigidly bound static weapon into an animation-compatible persistent SkeletalMesh, then run the strict DoAll-equivalent VAT workflow. |
 | Unit Editor MCP | `editor_apply_organize_unit_assets` | Available | Return a linked-asset organization plan in dry-run mode or execute the reviewed moves. |
 | Effect Asset MCP | `effect_asset_query` | Available | Query visual assets such as Niagara, Cascade, Blueprint, Material, Texture, and Sound by `query/root/classes/limit`. |
@@ -177,16 +177,16 @@ The implementation path is:
 
 1. [`Resources/Python/MassBattleMcpServer.py`](Resources/Python/MassBattleMcpServer.py) exposes `editor_apply_create_vat_unit_from_actor` to MCP clients.
 2. [`MassBattleMCPBridge.cpp`](Source/MassBattleEditorMCP/Private/MassBattleMCPBridge.cpp) or [`MassBattleEditorMCPCommandlet.cpp`](Source/MassBattleEditorMCP/Private/MassBattleEditorMCPCommandlet.cpp) dispatches the request inside Unreal Editor.
-3. [`MassBattleActorUnitEditorMCPApi.cpp`](Source/MassBattleEditorMCP/Private/MassBattleActorUnitEditorMCPApi.cpp) spawns and inspects the Blueprint, applies component overrides, assembles a persistent SkeletalMesh, and resolves Actor-authoring defaults.
+3. [`MassBattleActorUnitEditorMCPApi.cpp`](Source/MassBattleEditorMCP/Private/MassBattleActorUnitEditorMCPApi.cpp) spawns and inspects the Blueprint, applies component overrides, and assembles a persistent SkeletalMesh.
 4. [`MassBattleUnitEditorMCPApi.cpp`](Source/MassBattleEditorMCP/Private/MassBattleUnitEditorMCPApi.cpp) runs the strict unit workflow that creates or refreshes the StaticMesh, material instances, VAT data and textures, renderer Blueprint, and AgentConfig.
 
 VAT unit creation first uses discovered original textures. If filename-based discovery misses a source material texture, the editor MCP can inherit common texture parameters and used textures from the source skeletal material before creating the VAT material instance. Treat `defaulted_original_textures_from_source_material` warnings as review items and verify the generated material dependencies.
 
 Modular SkeletalMesh components are merged through a persistent editor `MeshDescription`. Visible StaticMesh attachments such as weapons are copied into the root skeleton's **reference-pose model space** and rigidly weighted to the bone resolved from their socket. The attachment transform is `ComponentRelative * SocketLocal * ReferenceBoneToRoot`. Do not bake an evaluated animation-pose socket transform into source vertices, because skeletal skinning applies that bone animation later. `editor_inspect_actor_assembly` exposes `relative_to_root` for the spawned pose and `reference_pose_relative_to_root` for assembly. Source material slots remain canonical, and their texture expressions and package dependencies populate the generated VAT material inputs.
 
-When Actor-driven authoring omits `animations`, it selects the 10 canonical `/Game/Unit/Action/Solider` sequences by default: Idle, Move, Appear, Attack, Hit, and Death A-E. It also defaults to configurable 30 Hz BoneMode with four bone influences and animation blend level 2. Source animation keys are resampled to the configured VAT rate before the official AnimToTexture bake, so projects such as Winyunq can explicitly select 24 Hz without changing the plugin default. Generated material instances persist both global and VAT-layer static overrides (`UseVAT`, `BoneMode`, the selected UV channel, influence count, and blend switches) so commandlet authoring cannot lose the animation permutation.
+For a new unit, pass `style_profile` to select the creation defaults, or leave it out to use the default style. Review the resolved animations and supply compatible assets where the mapping is incomplete. Source animation keys are resampled to the requested `vat_sample_rate` before the AnimToTexture bake. Generated material instances record their VAT switches, UV channel and blend settings.
 
-Strict non-selection VAT create requires canonical complete inputs: `skeletal_mesh`, `unit_name`, `target_package_path`, `parent_material`, `source_renderer_class`, `niagara_system`, `vat_sample_rate`, and `animations`. The Actor-driven wrapper resolves its documented animation, sample-rate, and LOD defaults before entering that strict workflow. Existing-unit refresh uses `target_unit`; new-unit creation also requires `template_unit`, `target_unit_package_path`, and `subtype`. Existing generated StaticMeshes block the run unless `overwrite_existing=true` is supplied, so refreshes cannot silently reuse stale mesh/material assets.
+The VAT build validates its resolved inputs before producing assets. Specify the source mesh or Actor and any inputs the selected style leaves open. `target_unit` identifies an existing unit. Use `unit_plan_write` followed by `unit_apply_plan` for ordinary field edits, and request the VAT build explicitly when changing generated presentation assets. Use `overwrite_existing=true` to authorize replacing existing generated meshes.
 
 MassBattleTools DoAll correspondence for VAT units:
 
@@ -198,7 +198,7 @@ The `Content/ActorToMassBattleUnitEditor/MassBattleTools` widget uses the MCP-ow
 4. `CreateDataAsset` writes `Visualize`, `LODShared`, `AnimShared`, and runtime sample-rate defaults to the unit config.
 5. `CreateRenderer` duplicates or updates the renderer Blueprint defaults.
 
-The apply call runs validation before writing assets. The plan and validate calls expose these steps for review, but a normal AI command should still provide the complete spec up front.
+Use plan or validate to review the build inputs and steps before applying changes. For an existing unit, review which assets the build will replace and which unit fields it will write.
 
 ## Lossless Niagara Graph Editing
 
@@ -283,15 +283,13 @@ Pin references accept an existing contextual node `reference` or an earlier inse
 
 ## Default Style And Optional Template Workflow
 
-The default style profile is `Resources/UnitManagementStyles/default.massbattle_unit_style.json`.
-It is not a runtime feature. It is authoring context for AI and MCP tools: scan roots, unit organization rules, unit authoring defaults, and batch FX templates.
-When `unit_create` does not receive `template_unit`, it reads `authoring_defaults.default_unit_template` as the default unit template. Configure that path before using default-template creation.
+The built-in default style is `Resources/UnitManagementStyles/default.massbattle_unit_style.json`. A style defines how to initialize missing values when a unit is created. Explicit creation options take precedence. Change existing assets through a diff that names the affected fields and assets. Styles also expose scan roots, organization settings, and batch FX templates for the tools that request them.
 
 Use this template workflow only for a new effect or an explicitly requested optimized recreation. A source-faithful Marketplace translation must duplicate the exact source instead.
 
 Recommended template flow:
 
-1. Read `style/default` with `editor_get_profile`.
+1. Read the default style with `editor_get_style(style_id="default")`.
 2. Choose the closest template from `batch_fx_templates`, such as `mesh_burst_hit`, `sprite_explosion_burst`, or `projectile_muzzle_burst`.
 3. Duplicate the template Niagara and renderer Blueprint with `effect_duplicate_asset`.
 4. Disable unnecessary emitters with `niagara_set_emitter_enabled` / `niagara_delete`.

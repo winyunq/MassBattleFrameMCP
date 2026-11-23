@@ -172,15 +172,15 @@ async def unit_export(options: Any = None) -> Dict[str, Any]:
 
 
 @mcp.tool()
-async def unit_create(create_spec: Any, save_assets: bool = True) -> Dict[str, Any]:
-    """Use a template to create unit data or a Unit Source Actor.
-    Creates a unit from the default or explicit template and optionally merges initial authored data. asset_type=source_actor creates a Unit Source Actor Blueprint; the ordinary branch creates the unit config. Target names must resolve to an unoccupied Unreal asset path.
-    CreateSpecJson: JSON with either unit_path/new_unit_path or both asset_name and package_path. template_unit selects a template; unit_data supplies initial authored values. asset_type=source_actor enables the source Blueprint branch and export_path configures its output.
+async def unit_create(options: Any, save_assets: bool = True) -> Dict[str, Any]:
+    """Create a unit DataAsset or a Unit Source Actor.
+    Fills omitted creation values from the selected style, preserving explicitly supplied values. asset_type=source_actor creates a Unit Source Actor Blueprint. The destination must be unoccupied.
+    OptionsJson: JSON with unit_path or both asset_name and package_path. style_profile is optional and defaults to default. template_unit selects a template and unit_data supplies initial authored values. asset_type=source_actor selects the source Blueprint branch and export_path configures its output.
     bSaveAssets: Whether to save the assets modified or created by this operation to disk.
     Returns: The created asset's identity and persistence result; failures explain destination conflicts or initial-data merge problems."""
     return await get_connection().send_command(
         "MCP_UnitCreate",
-        {"CreateSpecJson": _json_arg(create_spec), "bSaveAssets": save_assets},
+        {"OptionsJson": _json_arg(options), "bSaveAssets": save_assets},
     )
 
 
@@ -316,68 +316,67 @@ async def projectile_delete(projectile_path: str, options: Any = None) -> Dict[s
 @mcp.tool()
 async def editor_get_status() -> Dict[str, Any]:
     """Discover VAT authoring and asset organization capabilities in the editor.
-    Returns categorized capabilities for the non-UI counterpart of the MassBattleTools editor widget. The list describes available profile, VAT, Actor assembly and organization workflows without executing them.
+    Lists available styles, VAT generation, Actor assembly and asset organization capabilities.
     Returns: The editor API identity, capability description and tools grouped by authoring workflow."""
     return await get_connection().send_command("MCP_EditorGetStatus")
 
 
 @mcp.tool()
-async def editor_list_profiles(options: Any = None) -> Dict[str, Any]:
-    """Choose styles and recipes for VAT unit authoring.
-    Reads the installed unit style profiles and authoring recipes so a caller can choose an existing profile id before constructing a VAT or organization spec.
-    OptionsJson: JSON object; pass {} to use the defaults. This entry parses the options object before enumerating installed profiles.
-    Returns: Available style and recipe profiles used to select profile IDs for authoring requests."""
-    return await get_connection().send_command("MCP_EditorListProfiles", {"OptionsJson": _json_arg(options)})
+async def editor_list_styles(options: Any = None) -> Dict[str, Any]:
+    """List the available unit styles.
+    Lists the styles that provide creation defaults. New unit creation uses the default style when the caller omits style_profile.
+    OptionsJson: JSON object. Pass {} to list the installed styles.
+    Returns: Installed styles and their identifiers."""
+    return await get_connection().send_command("MCP_EditorListStyles", {"OptionsJson": _json_arg(options)})
 
 
 @mcp.tool()
-async def editor_get_profile(profile_type: str, profile_id: str) -> Dict[str, Any]:
-    """Inspect the complete JSON settings of a style or recipe.
-    Resolves a style or recipe profile by its type and id, reads its JSON file and returns both the file identity and complete profile contents.
-    ProfileType: Profile kind: style or recipe.
-    ProfileId: Existing profile id returned by the profile-list tool.
-    Returns: The selected profile's complete JSON settings and source file path; an unavailable or malformed profile produces an error.
-    UMassBattleUnitEditorMCPApi::MCP_EditorListProfiles to discover ids."""
+async def editor_get_style(style_id: str) -> Dict[str, Any]:
+    """Read a unit style and its creation defaults.
+    Loads the style file identified by StyleId.
+    StyleId: Style identifier returned by the style-list tool.
+    Returns: The style contents and source file path, or an error for an unavailable or malformed style.
+    UMassBattleUnitEditorMCPApi::MCP_EditorListStyles to discover style identifiers."""
     return await get_connection().send_command(
-        "MCP_EditorGetProfile",
-        {"ProfileType": profile_type, "ProfileId": profile_id},
+        "MCP_EditorGetStyle",
+        {"StyleId": style_id},
     )
 
 
 @mcp.tool()
-async def editor_plan_create_vat_unit(spec: Any) -> Dict[str, Any]:
+async def editor_plan_create_vat_unit(options: Any) -> Dict[str, Any]:
     """Inspect source assets and output layout before VAT generation.
-    Output paths are derived from the source mesh, unit name and target layout. Recipe defaults, generated mesh/animation/LOD references and the explicit unit_patch are merged in that order to form the proposed unit configuration.
-    SpecJson: JSON object describing the source skeletal_mesh and unit_name, target_package_path and optional recipe_id/style_profile, animation discovery paths and unit_patch. target_unit selects an existing unit; template_unit and target_unit_package_path describe a new unit.
+    For a new unit, resolve omitted generation options from the selected style, then plan the generated asset references and explicit unit patch. An explicit target_unit selects an existing unit for a requested VAT rebuild. The unit patch contains the requested edits and generated references for that rebuild.
+    OptionsJson: JSON object with source skeletal_mesh, unit_name, output location, optional style_profile for creation, and unit_patch. Use target_unit for an explicit rebuild of an existing unit.
     Returns: The resolved output layout, discovered inputs and proposed generation steps, with applicability and warnings describing unresolved problems.
     UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnit for the primary generation entry."""
-    return await get_connection().send_command("MCP_EditorPlanCreateVatUnit", {"SpecJson": _json_arg(spec)})
+    return await get_connection().send_command("MCP_EditorPlanCreateVatUnit", {"OptionsJson": _json_arg(options)})
 
 
 @mcp.tool()
-async def editor_validate_create_vat_unit(spec: Any) -> Dict[str, Any]:
+async def editor_validate_create_vat_unit(options: Any) -> Dict[str, Any]:
     """Check required VAT fields and referenced assets.
     Resolves the skeletal mesh, parent material, renderer and Niagara asset references, checks the animation category mapping and VAT settings, and combines the findings with the planned execution steps.
-    SpecJson: VAT generation specification using the fields documented by UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnit. Mesh, animation, material, renderer, output and subtype settings are checked without generating assets.
+    OptionsJson: JSON options accepted by UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnit. The validation checks mesh, animation, material, renderer, output and subtype settings before generating assets.
     Returns: The validation conclusion in valid, field problems in issues and proposed workflow in execution_preview."""
-    return await get_connection().send_command("MCP_EditorValidateCreateVatUnit", {"SpecJson": _json_arg(spec)})
+    return await get_connection().send_command("MCP_EditorValidateCreateVatUnit", {"OptionsJson": _json_arg(options)})
 
 
 @mcp.tool()
 async def editor_apply_create_vat_unit(
-    spec: Any,
+    options: Any,
     save_assets: bool = True,
     compact_response: bool = True,
 ) -> Dict[str, Any]:
     """Create a unit that plays baked skeletal animation through a static mesh.
-    The skeletal mesh is converted into a static mesh with LODs and instances of the parent material. For each LOD, bone or vertex mode samples the animations into VAT textures; these textures, an animation-index texture and decoding parameters are assigned to that LOD's materials so the static mesh can reproduce the animation. The renderer receives the mesh, Niagara system and subtype; the unit receives Visualize.RendererClass, AnimShared.AnimData and the baked animation sample rate. New units are created through UMassBattleUnitMCPApi::MCP_UnitCreate, then configuration is written through UMassBattleUnitMCPApi::MCP_UnitPlanMergeUpdate and UMassBattleUnitMCPApi::MCP_UnitApplyPlan.
-    SpecJson: JSON specification containing skeletal_mesh, unit_name, target_package_path, parent_material, source_renderer_class, niagara_system, vat_sample_rate and a nonempty animations category-to-AnimSequence mapping. target_unit selects an existing unit; otherwise template_unit, target_unit_package_path and subtype describe creation. dry_run/preview_only selects a preview; overwrite_existing controls replacement of generated outputs. compact_response selects result detail: false in this native entry, true by default in the MCP wrapper, with an explicit JSON value taking precedence.
+    Converts the skeletal mesh, bakes animation textures and configures the renderer. New units use the selected style for omitted creation values. A rebuild of an existing unit applies the generated references and explicitly requested unit changes through the unit change plan.
+    OptionsJson: JSON options for skeletal_mesh, unit_name, output, parent_material, source_renderer_class, niagara_system, vat_sample_rate and animations. Supply target_unit to rebuild an existing unit. style_profile is optional when creating a unit. dry_run or preview_only selects a preview, overwrite_existing allows replacement of generated outputs, and compact_response selects result detail.
     bSaveAssets: Whether to save the assets modified or created by this operation to disk.
     Returns: Generation-step results or a compact summary; previews return the plan and validation. Validation failures are described by validation.valid and validation.issues; execution_steps records completed and failed steps when execution stops.
     Validation is performed automatically; diagnostic plan/validate calls are optional before this primary entry."""
     return await get_connection().send_command(
         "MCP_EditorApplyCreateVatUnit",
-        {"SpecJson": _json_arg_with_defaults(spec, {"compact_response": compact_response}), "bSaveAssets": save_assets},
+        {"OptionsJson": _json_arg_with_defaults(options, {"compact_response": compact_response}), "bSaveAssets": save_assets},
     )
 
 
@@ -386,7 +385,7 @@ async def unit_plan_write(unit_path: str, unit_data: Any) -> Dict[str, Any]:
     """Review field changes before writing a partial unit update.
     Stores a partial update plan for the selected Unit Source Actor or unit DataAsset. Target the source Actor for routine maintenance so edits are retained in UnitData. Omitted fields are retained. The plan reports whether the proposed update can be applied.
     UnitPath: Unreal object path of the existing MassBattle unit config or supported Unit Source Actor Blueprint.
-    UnitDataJson: Partial unit JSON using source property names. Include the fields to change; a Unit Source Actor patch may also contain export_path.
+    UnitDataJson: Partial unit JSON using source property names. Include the fields to change. A Unit Source Actor patch can set export_path and request an export with options.export_source=true.
     Returns: A stored update plan: plan_id identifies it for later review or application, diff describes field changes, and applicable with merge_errors explains whether it can run."""
     return await get_connection().send_command(
         "MCP_UnitPlanMergeUpdate",
@@ -410,7 +409,7 @@ async def unit_preview_plan(plan_id: str) -> Dict[str, Any]:
 @mcp.tool()
 async def unit_apply_plan(plan_id: str, save_assets: bool = True) -> Dict[str, Any]:
     """Write the changes recorded in a reviewed unit plan.
-    Loads the stored plan, rejects a plan marked inapplicable, and executes its supported mutation type. With bSaveAssets=true, applying a source Actor update runs Update to export the unit at its configured ExportPath. A plan targeting a DataAsset writes directly to that asset.
+    Loads and applies the stored plan to its target. A source Actor plan runs Update when the plan requests export_source and bSaveAssets=true. A plan targeting a DataAsset writes directly to that asset.
     PlanId: Identifier of the reviewed stored unit mutation plan.
     bSaveAssets: Whether to save the assets modified or created by this operation to disk.
     Returns: The executed plan's ID, applied_diff and saved state; rejected plans, failed mutations and save errors report their failure.
@@ -423,10 +422,10 @@ async def unit_apply_plan(plan_id: str, save_assets: bool = True) -> Dict[str, A
 
 @mcp.tool()
 async def editor_plan_create_vat_unit_from_selection(options: Any = None) -> Dict[str, Any]:
-    """Inspect the VAT specification resolved from selected assets.
-    Review the selected assets and generation plan, then pass resolved_spec to UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnit to generate the unit.
-    OptionsJson: JSON object. Pass {} to use the defaults. selected_assets supplies asset paths for selection resolution. Additional generation options are included in resolved_spec.
-    Returns: The resolved selection, VAT specification and generation plan; ready_to_apply identifies whether the resolved request is ready for execution."""
+    """Inspect VAT creation options from selected assets.
+    Review the selected assets and generation plan, then pass resolved_options to UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnit.
+    OptionsJson: JSON object. selected_assets supplies asset paths for selection resolution. Additional generation options are included in resolved_options.
+    Returns: The resolved selection, generation options and plan. ready_to_apply indicates whether the request is ready for execution."""
     return await get_connection().send_command(
         "MCP_EditorPlanCreateVatUnitFromSelection",
         {"OptionsJson": _json_arg(options)},
@@ -437,7 +436,7 @@ async def editor_plan_create_vat_unit_from_selection(options: Any = None) -> Dic
 async def editor_inspect_actor_assembly(actor_path: str, options: Any = None) -> Dict[str, Any]:
     """Check component materials and weapon bones before assembling an Actor.
     Spawns/resolves the requested Actor for inspection, evaluates included skeletal/static components, effective materials and weapon bind bones, and reports whether the assembly can be produced. Bounds are reported in root-skeleton model space without recentering. No generated assets are written.
-    ActorPath: Actor Blueprint or class object path. When supplied, it becomes actor_class in the inspection spec.
+    ActorPath: Actor Blueprint or class object path. When supplied, it sets actor_class for the inspection.
     OptionsJson: JSON object; pass {} to use the defaults. Optional component_overrides selects assembly participation and component-specific authoring overrides.
     Returns: An assembly inspection containing components, materials, weapon binding information, bounds and issues; can_assemble indicates assembly feasibility."""
     return await get_connection().send_command(
@@ -447,44 +446,44 @@ async def editor_inspect_actor_assembly(actor_path: str, options: Any = None) ->
 
 
 @mcp.tool()
-async def editor_inspect_vat_animation(spec: Any) -> Dict[str, Any]:
+async def editor_inspect_vat_animation(options: Any) -> Dict[str, Any]:
     """Check skin weights, frame motion, lookup UVs and animation settings.
-    Loads the VAT data and referenced skeletal/static meshes, audits deforming skin weights, position-frame motion and lookup UVs, and compares baked animation paths with the selected soldier animation profile. This entry reports evidence without baking or editing assets.
-    SpecJson: JSON containing vat_data_asset (or anim_to_texture_data_asset); skeletal_mesh and static_mesh select the meshes explicitly. ground_tolerance_uu configures the ground audit tolerance in Unreal units.
+    Loads the VAT data and referenced meshes, audits deforming skin weights, position-frame motion and lookup UVs, and reports the baked animations without editing assets.
+    OptionsJson: JSON containing vat_data_asset or anim_to_texture_data_asset. skeletal_mesh and static_mesh select the meshes explicitly. ground_tolerance_uu sets the ground audit tolerance in Unreal units.
     Returns: The VAT animation audit, including skin-weight, frame-motion, animation-resource and UV evidence together with detected issues."""
     return await get_connection().send_command(
         "MCP_EditorInspectVatAnimation",
-        {"SpecJson": _json_arg(spec)},
+        {"OptionsJson": _json_arg(options)},
     )
 
 
 @mcp.tool()
-async def editor_plan_create_vat_unit_from_actor(spec: Any) -> Dict[str, Any]:
-    """Inspect an Actor assembly plan and its resolved VAT specification.
-    Actor inspection supplies component meshes, materials and weapon bindings. Animation, sample-rate and LOD settings are resolved together with the proposed assembled mesh path to produce resolved_vat_spec.
-    SpecJson: JSON object with actor_class, optional component_overrides and the desired output folder/name. VAT settings use the fields documented by UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnit; animation, sample-rate and LOD values are resolved from the Actor and supplied settings.
-    Returns: The resolved_vat_spec, proposed assembled mesh and resolved animation, sample-rate and LOD settings; applicable and issues describe executability."""
+async def editor_plan_create_vat_unit_from_actor(options: Any) -> Dict[str, Any]:
+    """Inspect the Actor assembly plan and VAT creation options.
+    Inspects the Actor's meshes, materials and bindings. For a new unit the style fills omitted generation options. A rebuild uses the supplied options and an explicit target.
+    OptionsJson: JSON object with actor_class, optional component_overrides and the options documented by UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnit.
+    Returns: The resolved_options and proposed assembled mesh. applicable and issues report whether the plan can run."""
     return await get_connection().send_command(
         "MCP_EditorPlanCreateVatUnitFromActor",
-        {"SpecJson": _json_arg(spec)},
+        {"OptionsJson": _json_arg(options)},
     )
 
 
 @mcp.tool()
 async def editor_apply_create_vat_unit_from_actor(
-    spec: Any,
+    options: Any,
     save_assets: bool = True,
     compact_response: bool = True,
 ) -> Dict[str, Any]:
     """Combine an Actor's components and weapon into an animated VAT unit.
-    The resolved Actor components and weapon are assembled into an animation-compatible skeletal mesh. That mesh and the resolved VAT specification are then passed to UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnit to build the unit resources.
-    SpecJson: JSON object with actor_class, optional component_overrides and VAT generation settings. assembled_skeletal_mesh_path selects the assembly output; otherwise target_package_path and unit_name determine it, with assembled_skeletal_mesh_name overriding the name. overwrite_existing selects replacement and dry_run/preview_only selects preview. compact_response controls response detail; its MCP wrapper default is true and an explicit JSON value takes precedence.
+    Assembles the Actor components into an animation-compatible skeletal mesh, then passes that mesh and the resolved options to UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnit.
+    OptionsJson: JSON object with actor_class, optional component_overrides and VAT generation options. assembled_skeletal_mesh_path or assembled_skeletal_mesh_name selects the assembly output. overwrite_existing selects replacement and dry_run or preview_only selects preview. compact_response controls result detail.
     bSaveAssets: Whether to save the assets modified or created by this operation to disk.
-    Returns: The plan for a preview request, or the assembled skeletal mesh, resolved VAT specification and vat_result after execution; failures report the relevant assembly or VAT step.
+    Returns: The plan for a preview request, or the assembled skeletal mesh, resolved_options and vat_result. Failures report the relevant assembly or VAT step.
     UMassBattleUnitEditorMCPApi::MCP_EditorPlanCreateVatUnitFromActor for the resolved inputs and assembly preview."""
     return await get_connection().send_command(
         "MCP_EditorApplyCreateVatUnitFromActor",
-        {"SpecJson": _json_arg_with_defaults(spec, {"compact_response": compact_response}), "bSaveAssets": save_assets},
+        {"OptionsJson": _json_arg_with_defaults(options, {"compact_response": compact_response}), "bSaveAssets": save_assets},
     )
 
 

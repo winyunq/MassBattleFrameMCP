@@ -1,47 +1,47 @@
 [
   {
     "id": "00888c985e70f798d418dac3:brief",
-    "translation": "检查所选资产解析出的 VAT 生成参数。",
-    "translated_source_hash": "76308588717b26e85790ffce3605963e25401c5b713ddb73382d9c3f7371a358",
+    "translation": "查看从选中资产解析出的 VAT 创建参数。",
+    "translated_source_hash": "5a988bdac3d75cc0517fcf0e314284dce58d2e3fa3d8ad8d00be480edb8ed7c2",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
     "name": "UMassBattleUnitEditorMCPApi::MCP_EditorPlanCreateVatUnitFromSelection",
     "field": "brief",
-    "source_text": "Inspect the VAT specification resolved from selected assets.",
-    "source_hash": "76308588717b26e85790ffce3605963e25401c5b713ddb73382d9c3f7371a358"
+    "source_text": "Inspect VAT creation options from selected assets.",
+    "source_hash": "5a988bdac3d75cc0517fcf0e314284dce58d2e3fa3d8ad8d00be480edb8ed7c2"
   },
   {
     "id": "00888c985e70f798d418dac3:details",
-    "translation": "核对选中的资产和生成计划，再将 resolved_spec 传给 @ref UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnit 生成单位。",
-    "translated_source_hash": "218eba91871f89f7c3e6839cdc633eb697eb4ddbefbff3f8e655ba0eac5f023d",
+    "translation": "核对选中的资产和生成计划，再将 resolved_options 传给 @ref UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnit。",
+    "translated_source_hash": "5e766950bfc91385db16627d6f98ff0e6d9697693949a4349c3337ca2258f885",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
     "name": "UMassBattleUnitEditorMCPApi::MCP_EditorPlanCreateVatUnitFromSelection",
     "field": "details",
-    "source_text": "Review the selected assets and generation plan, then pass resolved_spec to @ref UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnit to generate the unit.",
-    "source_hash": "218eba91871f89f7c3e6839cdc633eb697eb4ddbefbff3f8e655ba0eac5f023d"
+    "source_text": "Review the selected assets and generation plan, then pass resolved_options to @ref UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnit.",
+    "source_hash": "5e766950bfc91385db16627d6f98ff0e6d9697693949a4349c3337ca2258f885"
   },
   {
     "id": "00888c985e70f798d418dac3:param/OptionsJson",
-    "translation": "JSON 对象。传 {} 使用默认值。selected_assets 提供待解析的资产路径。额外的生成选项会包含在 resolved_spec 中。",
-    "translated_source_hash": "cb90c07adf56ec3d08ba497e13a5abc133e029a017bf39814b9d5ba24f0c43b9",
+    "translation": "JSON 对象。selected_assets 提供待解析的资产路径。额外的生成参数包含在 resolved_options 中。",
+    "translated_source_hash": "b87e328b6f9eabbb08820a59babab5d39cc64cba15a88d94f7b97e86d356c84c",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
     "name": "UMassBattleUnitEditorMCPApi::MCP_EditorPlanCreateVatUnitFromSelection",
     "field": "param/OptionsJson",
-    "source_text": "JSON object. Pass {} to use the defaults. selected_assets supplies asset paths for selection resolution. Additional generation options are included in resolved_spec.",
-    "source_hash": "cb90c07adf56ec3d08ba497e13a5abc133e029a017bf39814b9d5ba24f0c43b9"
+    "source_text": "JSON object. selected_assets supplies asset paths for selection resolution. Additional generation options are included in resolved_options.",
+    "source_hash": "b87e328b6f9eabbb08820a59babab5d39cc64cba15a88d94f7b97e86d356c84c"
   },
   {
     "id": "00888c985e70f798d418dac3:returns",
-    "translation": "实际采用的选区、解析出的 VAT 参数和生成方案；ready_to_apply 说明该请求是否已具备执行条件。",
-    "translated_source_hash": "0213ec0e1ecc7d2df38aa6ec31051968dd167c29730efb552d7bcbf30f0c51c0",
+    "translation": "解析出的选区、生成参数和计划。ready_to_apply 表示请求是否可执行。",
+    "translated_source_hash": "51778dc71a743cbbb18e3cbb2cddb507c23f3936b7e2c7b1a3dbfa6fd04595e6",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
     "name": "UMassBattleUnitEditorMCPApi::MCP_EditorPlanCreateVatUnitFromSelection",
     "field": "returns",
-    "source_text": "The resolved selection, VAT specification and generation plan; ready_to_apply identifies whether the resolved request is ready for execution.",
-    "source_hash": "0213ec0e1ecc7d2df38aa6ec31051968dd167c29730efb552d7bcbf30f0c51c0"
+    "source_text": "The resolved selection, generation options and plan. ready_to_apply indicates whether the request is ready for execution.",
+    "source_hash": "51778dc71a743cbbb18e3cbb2cddb507c23f3936b7e2c7b1a3dbfa6fd04595e6"
   },
   {
     "id": "00888c985e70f798d418dac3:term/OptionsJson",
@@ -78,25 +78,25 @@
   },
   {
     "id": "02c2006ee72102c8ecbb0ccd:details",
-    "translation": "将解析后的 Actor 组件和武器合并为兼容动画的骨骼网格体，再把该网格与 VAT 参数交给 @ref UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnit 制作单位资源。",
-    "translated_source_hash": "c077014571e8ed854ff2a9132cf0606ff341942052d2305e73136700675c2350",
+    "translation": "将 Actor 组件组装成可动画的骨骼网格，再把网格和解析后的参数传给 @ref UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnit。",
+    "translated_source_hash": "6be59155c57b21e073616a8e1617940af217de4b47f3741e49044297347186b4",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
     "name": "UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnitFromActor",
     "field": "details",
-    "source_text": "The resolved Actor components and weapon are assembled into an animation-compatible skeletal mesh. That mesh and the resolved VAT specification are then passed to @ref UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnit to build the unit resources.",
-    "source_hash": "c077014571e8ed854ff2a9132cf0606ff341942052d2305e73136700675c2350"
+    "source_text": "Assembles the Actor components into an animation-compatible skeletal mesh, then passes that mesh and the resolved options to @ref UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnit.",
+    "source_hash": "6be59155c57b21e073616a8e1617940af217de4b47f3741e49044297347186b4"
   },
   {
-    "id": "02c2006ee72102c8ecbb0ccd:param/SpecJson",
-    "translation": "JSON 对象，包含 actor_class、可选 component_overrides 和 VAT 制作设置。assembled_skeletal_mesh_path 指定装配输出；否则由 target_package_path 与 unit_name 确定，可用 assembled_skeletal_mesh_name 覆盖名称。overwrite_existing 控制替换，dry_run/preview_only 选择预览；compact_response 控制结果详略，MCP 封装默认为 true，JSON 中显式值优先。",
-    "translated_source_hash": "c5b4f06d3d0e040c46ce71328d0e3ac0abcba44b6bc7456cb4289e25d58c31ff",
+    "id": "02c2006ee72102c8ecbb0ccd:param/OptionsJson",
+    "translation": "包含 actor_class、可选 component_overrides 和 VAT 生成参数的 JSON。assembled_skeletal_mesh_path 或 assembled_skeletal_mesh_name 指定组装产物。overwrite_existing 控制替换，dry_run 或 preview_only 选择预览，compact_response 控制响应详情。",
+    "translated_source_hash": "f70a5cdd82c59f7f026a31f0cdb188982aedbdc0fa4ca7133281023f8e8c3faf",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
     "name": "UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnitFromActor",
-    "field": "param/SpecJson",
-    "source_text": "JSON object with actor_class, optional component_overrides and VAT generation settings. assembled_skeletal_mesh_path selects the assembly output; otherwise target_package_path and unit_name determine it, with assembled_skeletal_mesh_name overriding the name. overwrite_existing selects replacement and dry_run/preview_only selects preview. compact_response controls response detail; its MCP wrapper default is true and an explicit JSON value takes precedence.",
-    "source_hash": "c5b4f06d3d0e040c46ce71328d0e3ac0abcba44b6bc7456cb4289e25d58c31ff"
+    "field": "param/OptionsJson",
+    "source_text": "JSON object with actor_class, optional component_overrides and VAT generation options. assembled_skeletal_mesh_path or assembled_skeletal_mesh_name selects the assembly output. overwrite_existing selects replacement and dry_run or preview_only selects preview. compact_response controls result detail.",
+    "source_hash": "f70a5cdd82c59f7f026a31f0cdb188982aedbdc0fa4ca7133281023f8e8c3faf"
   },
   {
     "id": "02c2006ee72102c8ecbb0ccd:param/bSaveAssets",
@@ -111,14 +111,14 @@
   },
   {
     "id": "02c2006ee72102c8ecbb0ccd:returns",
-    "translation": "预览时返回装配方案；执行时返回装配骨骼网格体、实际 VAT 参数和 vat_result 制作结果，失败时报告对应装配或 VAT 步骤的问题。",
-    "translated_source_hash": "5e0c3480573bf1a1dfd8afb4cedbdfb7a81770376300310cd422cb13a85fb1dc",
+    "translation": "预览时返回计划。执行时返回组装网格、resolved_options 和 vat_result。失败时报告相关组装或 VAT 步骤。",
+    "translated_source_hash": "6b93fefcfa4f0b7e5e5735f7d701fe83dfa7e54adf7035289518e108c014fec5",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
     "name": "UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnitFromActor",
     "field": "returns",
-    "source_text": "The plan for a preview request, or the assembled skeletal mesh, resolved VAT specification and vat_result after execution; failures report the relevant assembly or VAT step.",
-    "source_hash": "5e0c3480573bf1a1dfd8afb4cedbdfb7a81770376300310cd422cb13a85fb1dc"
+    "source_text": "The plan for a preview request, or the assembled skeletal mesh, resolved_options and vat_result. Failures report the relevant assembly or VAT step.",
+    "source_hash": "6b93fefcfa4f0b7e5e5735f7d701fe83dfa7e54adf7035289518e108c014fec5"
   },
   {
     "id": "02c2006ee72102c8ecbb0ccd:see/0",
@@ -132,15 +132,15 @@
     "source_hash": "a311aa8566db7887381aa2e3a944cc01d51cd485b77099b51d7e7de41a7f0773"
   },
   {
-    "id": "02c2006ee72102c8ecbb0ccd:term/SpecJson",
-    "translation": "创作规格 JSON",
-    "translated_source_hash": "b9c62330a72412a77d5da173ade3e3f1d80118c47fc342c20739016bddbe2835",
+    "id": "02c2006ee72102c8ecbb0ccd:term/OptionsJson",
+    "translation": "OptionsJson",
+    "translated_source_hash": "a0f14957c58f02a60e9117fccc518532f585fb2162c355fddc249812432496d8",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
     "name": "UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnitFromActor",
-    "field": "term/SpecJson",
-    "source_text": "SpecJson",
-    "source_hash": "b9c62330a72412a77d5da173ade3e3f1d80118c47fc342c20739016bddbe2835"
+    "field": "term/OptionsJson",
+    "source_text": "OptionsJson",
+    "source_hash": "a0f14957c58f02a60e9117fccc518532f585fb2162c355fddc249812432496d8"
   },
   {
     "id": "02c2006ee72102c8ecbb0ccd:term/bSaveAssets",
@@ -617,14 +617,14 @@
   },
   {
     "id": "1352dc5db4096033a86c953b:param/UnitDataJson",
-    "translation": "使用源码属性名的局部单位 JSON，只包含需要修改的字段。Unit Source Actor 补丁还可包含 export_path。",
-    "translated_source_hash": "dfd8bfc5d31451d5c2ae407eb6d3751e9d693c092235e35256ab23dfb9544f58",
+    "translation": "按源码属性名提供部分单位 JSON，只填写所需的变更。源码 Actor 可以设置 export_path，并通过 options.export_source=true 请求导出。",
+    "translated_source_hash": "754b5c8dc30fe41a4a381a6de5a26ead1dcdaf0b7aefdab41fc0fa7919b72ad9",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
     "name": "UMassBattleUnitMCPApi::MCP_UnitPlanMergeUpdate",
     "field": "param/UnitDataJson",
-    "source_text": "Partial unit JSON using source property names. Include the fields to change; a Unit Source Actor patch may also contain export_path.",
-    "source_hash": "dfd8bfc5d31451d5c2ae407eb6d3751e9d693c092235e35256ab23dfb9544f58"
+    "source_text": "Partial unit JSON using source property names. Include the fields to change. A Unit Source Actor patch can set export_path and request an export with options.export_source=true.",
+    "source_hash": "754b5c8dc30fe41a4a381a6de5a26ead1dcdaf0b7aefdab41fc0fa7919b72ad9"
   },
   {
     "id": "1352dc5db4096033a86c953b:param/UnitPath",
@@ -705,14 +705,14 @@
   },
   {
     "id": "141783df34aa4d987d0041c6:param/ActorPath",
-    "translation": "Actor 蓝图或类的对象路径；提供后写入检查规格的 actor_class。",
-    "translated_source_hash": "5db96a4afad6db57a228de3b798cccd38c02352ee9b04527071c98f1330645e7",
+    "translation": "Actor 蓝图或类的对象路径。传入时用它设定检查中的 actor_class。",
+    "translated_source_hash": "f195062ea1a7a5a24bee1da46c76cffa0a5fa03741ba954cd67d9a93c7fe0080",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
     "name": "UMassBattleUnitEditorMCPApi::MCP_EditorInspectActorAssembly",
     "field": "param/ActorPath",
-    "source_text": "Actor Blueprint or class object path. When supplied, it becomes actor_class in the inspection spec.",
-    "source_hash": "5db96a4afad6db57a228de3b798cccd38c02352ee9b04527071c98f1330645e7"
+    "source_text": "Actor Blueprint or class object path. When supplied, it sets actor_class for the inspection.",
+    "source_hash": "f195062ea1a7a5a24bee1da46c76cffa0a5fa03741ba954cd67d9a93c7fe0080"
   },
   {
     "id": "141783df34aa4d987d0041c6:param/OptionsJson",
@@ -1640,25 +1640,25 @@
   },
   {
     "id": "53ccd540ea4489640651bcb1:details",
-    "translation": "加载 VAT 数据及其骨骼、静态网格体，检查变形蒙皮权重、位置帧运动和查找 UV，并将烘焙动画路径与选定士兵动画配置比较。本入口报告证据，不烘焙或编辑资产。",
-    "translated_source_hash": "f5ba9f60c0cbdc6dbd3673520569b870bd5a371112b1e3bf9c845c4ff8c4d5f5",
+    "translation": "加载 VAT 数据和引用网格，检查变形蒙皮权重、位置帧运动和查询 UV，报告已烘焙的动画。该操作只读。",
+    "translated_source_hash": "8e17140f597345def990e7569e2df4294678fdccc88db5a95ddd1dc9df7dc77d",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
     "name": "UMassBattleUnitEditorMCPApi::MCP_EditorInspectVatAnimation",
     "field": "details",
-    "source_text": "Loads the VAT data and referenced skeletal/static meshes, audits deforming skin weights, position-frame motion and lookup UVs, and compares baked animation paths with the selected soldier animation profile. This entry reports evidence without baking or editing assets.",
-    "source_hash": "f5ba9f60c0cbdc6dbd3673520569b870bd5a371112b1e3bf9c845c4ff8c4d5f5"
+    "source_text": "Loads the VAT data and referenced meshes, audits deforming skin weights, position-frame motion and lookup UVs, and reports the baked animations without editing assets.",
+    "source_hash": "8e17140f597345def990e7569e2df4294678fdccc88db5a95ddd1dc9df7dc77d"
   },
   {
-    "id": "53ccd540ea4489640651bcb1:param/SpecJson",
-    "translation": "JSON 包含 vat_data_asset（或 anim_to_texture_data_asset）；skeletal_mesh、static_mesh 显式指定网格体。ground_tolerance_uu 指定地面检查容差，单位为 Unreal 单位。",
-    "translated_source_hash": "8ba1bb441c749fec2433c48d1121af0742b6a852d10285765be6804f0d57d376",
+    "id": "53ccd540ea4489640651bcb1:param/OptionsJson",
+    "translation": "包含 vat_data_asset 或 anim_to_texture_data_asset 的 JSON。可用 skeletal_mesh 和 static_mesh 指定网格。ground_tolerance_uu 以 Unreal 单位设置地面检查容差。",
+    "translated_source_hash": "8f1b5abf0178c6ce8dfc8ab5c68fbba68bd816624f83a0a6f223f7c9fe93f454",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
     "name": "UMassBattleUnitEditorMCPApi::MCP_EditorInspectVatAnimation",
-    "field": "param/SpecJson",
-    "source_text": "JSON containing vat_data_asset (or anim_to_texture_data_asset); skeletal_mesh and static_mesh select the meshes explicitly. ground_tolerance_uu configures the ground audit tolerance in Unreal units.",
-    "source_hash": "8ba1bb441c749fec2433c48d1121af0742b6a852d10285765be6804f0d57d376"
+    "field": "param/OptionsJson",
+    "source_text": "JSON containing vat_data_asset or anim_to_texture_data_asset. skeletal_mesh and static_mesh select the meshes explicitly. ground_tolerance_uu sets the ground audit tolerance in Unreal units.",
+    "source_hash": "8f1b5abf0178c6ce8dfc8ab5c68fbba68bd816624f83a0a6f223f7c9fe93f454"
   },
   {
     "id": "53ccd540ea4489640651bcb1:returns",
@@ -1672,15 +1672,15 @@
     "source_hash": "2cc43f3b00fa9cb685b9a2fd761cf6786506b38bfa4546dc2e04f4197a3d960d"
   },
   {
-    "id": "53ccd540ea4489640651bcb1:term/SpecJson",
-    "translation": "创作规格 JSON",
-    "translated_source_hash": "b9c62330a72412a77d5da173ade3e3f1d80118c47fc342c20739016bddbe2835",
+    "id": "53ccd540ea4489640651bcb1:term/OptionsJson",
+    "translation": "OptionsJson",
+    "translated_source_hash": "a0f14957c58f02a60e9117fccc518532f585fb2162c355fddc249812432496d8",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
     "name": "UMassBattleUnitEditorMCPApi::MCP_EditorInspectVatAnimation",
-    "field": "term/SpecJson",
-    "source_text": "SpecJson",
-    "source_hash": "b9c62330a72412a77d5da173ade3e3f1d80118c47fc342c20739016bddbe2835"
+    "field": "term/OptionsJson",
+    "source_text": "OptionsJson",
+    "source_hash": "a0f14957c58f02a60e9117fccc518532f585fb2162c355fddc249812432496d8"
   },
   {
     "id": "53ccd540ea4489640651bcb1:title/user",
@@ -1959,58 +1959,58 @@
   },
   {
     "id": "62c8bda9a7948307559a8474:brief",
-    "translation": "核对 Actor 装配方案和解析后的 VAT 生成参数。",
-    "translated_source_hash": "fd4164d040b53afa77df899a82e404de95305142c6a8c945925927a6e9a3ba2c",
+    "translation": "查看 Actor 组装计划和 VAT 创建参数。",
+    "translated_source_hash": "b05368d85c42b9d069365a93e38f22f2e72b86c36ccc42d5469499c3eda4a253",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
     "name": "UMassBattleUnitEditorMCPApi::MCP_EditorPlanCreateVatUnitFromActor",
     "field": "brief",
-    "source_text": "Inspect an Actor assembly plan and its resolved VAT specification.",
-    "source_hash": "fd4164d040b53afa77df899a82e404de95305142c6a8c945925927a6e9a3ba2c"
+    "source_text": "Inspect the Actor assembly plan and VAT creation options.",
+    "source_hash": "b05368d85c42b9d069365a93e38f22f2e72b86c36ccc42d5469499c3eda4a253"
   },
   {
     "id": "62c8bda9a7948307559a8474:details",
-    "translation": "从 Actor 检查结果取得组件网格、材质和武器绑定信息，结合动画、采样率、LOD 设置与装配网格输出路径，生成 resolved_vat_spec。",
-    "translated_source_hash": "9178b7f5827b17607dca9c7332e14ae53fdeca3fb3514fbc93ba309c8af6c502",
+    "translation": "检查 Actor 的网格、材质和绑定。新建单位时由 style 补全缺省生成参数。重建使用传入参数和明确的目标。",
+    "translated_source_hash": "cc447b10a8777b3ecb679d3303ce2fcac2a848940b5f785dd36e00029cbfb009",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
     "name": "UMassBattleUnitEditorMCPApi::MCP_EditorPlanCreateVatUnitFromActor",
     "field": "details",
-    "source_text": "Actor inspection supplies component meshes, materials and weapon bindings. Animation, sample-rate and LOD settings are resolved together with the proposed assembled mesh path to produce resolved_vat_spec.",
-    "source_hash": "9178b7f5827b17607dca9c7332e14ae53fdeca3fb3514fbc93ba309c8af6c502"
+    "source_text": "Inspects the Actor's meshes, materials and bindings. For a new unit the style fills omitted generation options. A rebuild uses the supplied options and an explicit target.",
+    "source_hash": "cc447b10a8777b3ecb679d3303ce2fcac2a848940b5f785dd36e00029cbfb009"
   },
   {
-    "id": "62c8bda9a7948307559a8474:param/SpecJson",
-    "translation": "JSON 对象，以 actor_class 指定源 Actor，可用 component_overrides 替换组件和武器，并指定输出目录与名称。VAT 字段定义见 @ref UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnit；动画、采样率和 LOD 取值由 Actor 与传入设置共同解析。",
-    "translated_source_hash": "8937729e4b47b8e1f27e43a95510dcc964dd7ae7018c899e604d3ad4c036db88",
+    "id": "62c8bda9a7948307559a8474:param/OptionsJson",
+    "translation": "包含 actor_class、可选 component_overrides 和 @ref UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnit 定义参数的 JSON。",
+    "translated_source_hash": "b1d431bc7d81caa7b2c2b69f664c2a05ebcc3380ea82440f032ddd53f1bfde02",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
     "name": "UMassBattleUnitEditorMCPApi::MCP_EditorPlanCreateVatUnitFromActor",
-    "field": "param/SpecJson",
-    "source_text": "JSON object with actor_class, optional component_overrides and the desired output folder/name. VAT settings use the fields documented by @ref UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnit; animation, sample-rate and LOD values are resolved from the Actor and supplied settings.",
-    "source_hash": "8937729e4b47b8e1f27e43a95510dcc964dd7ae7018c899e604d3ad4c036db88"
+    "field": "param/OptionsJson",
+    "source_text": "JSON object with actor_class, optional component_overrides and the options documented by @ref UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnit.",
+    "source_hash": "b1d431bc7d81caa7b2c2b69f664c2a05ebcc3380ea82440f032ddd53f1bfde02"
   },
   {
     "id": "62c8bda9a7948307559a8474:returns",
-    "translation": "resolved_vat_spec 中的实际 VAT 参数、拟生成的装配网格体及动画、采样率和 LOD 取值；applicable 与 issues 说明方案能否执行。",
-    "translated_source_hash": "d63f59803917536cf30227b585321e64c0b67b54e50af0136911955f31e59299",
+    "translation": "返回 resolved_options 和计划生成的组装网格。applicable 和 issues 表示计划是否可执行。",
+    "translated_source_hash": "ccfcdc6beead075acfb0c4f9448a3f3a9ff8e7c697a3225c3d9cb9e763429d17",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
     "name": "UMassBattleUnitEditorMCPApi::MCP_EditorPlanCreateVatUnitFromActor",
     "field": "returns",
-    "source_text": "The resolved_vat_spec, proposed assembled mesh and resolved animation, sample-rate and LOD settings; applicable and issues describe executability.",
-    "source_hash": "d63f59803917536cf30227b585321e64c0b67b54e50af0136911955f31e59299"
+    "source_text": "The resolved_options and proposed assembled mesh. applicable and issues report whether the plan can run.",
+    "source_hash": "ccfcdc6beead075acfb0c4f9448a3f3a9ff8e7c697a3225c3d9cb9e763429d17"
   },
   {
-    "id": "62c8bda9a7948307559a8474:term/SpecJson",
-    "translation": "创作规格 JSON",
-    "translated_source_hash": "b9c62330a72412a77d5da173ade3e3f1d80118c47fc342c20739016bddbe2835",
+    "id": "62c8bda9a7948307559a8474:term/OptionsJson",
+    "translation": "OptionsJson",
+    "translated_source_hash": "a0f14957c58f02a60e9117fccc518532f585fb2162c355fddc249812432496d8",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
     "name": "UMassBattleUnitEditorMCPApi::MCP_EditorPlanCreateVatUnitFromActor",
-    "field": "term/SpecJson",
-    "source_text": "SpecJson",
-    "source_hash": "b9c62330a72412a77d5da173ade3e3f1d80118c47fc342c20739016bddbe2835"
+    "field": "term/OptionsJson",
+    "source_text": "OptionsJson",
+    "source_hash": "a0f14957c58f02a60e9117fccc518532f585fb2162c355fddc249812432496d8"
   },
   {
     "id": "62c8bda9a7948307559a8474:title/user",
@@ -2267,25 +2267,25 @@
   },
   {
     "id": "713e7cc2433a3e9e5d433076:details",
-    "translation": "根据源网格、单位名称和目标布局确定输出路径；把配方默认配置、解析出的网格/动画/LOD 引用、显式 unit_patch 依次合并，形成拟写入的单位配置。",
-    "translated_source_hash": "70ec445975eae99a5c26b462f87dfe37e81e26445725542d89790ccc2c73b7d4",
+    "translation": "对于新单位，按所选 style 补齐缺省生成参数，然后规划生成资产引用和显式单位变更。显式 target_unit 选中需要重建的已有单位。重建的单位补丁包括请求的改动和本次生成的引用。",
+    "translated_source_hash": "77df4cf9c976bf49059dbd46ca91f8e9473ffdc70d526a55983b4a5eb706f2d5",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
     "name": "UMassBattleUnitEditorMCPApi::MCP_EditorPlanCreateVatUnit",
     "field": "details",
-    "source_text": "Output paths are derived from the source mesh, unit name and target layout. Recipe defaults, generated mesh/animation/LOD references and the explicit unit_patch are merged in that order to form the proposed unit configuration.",
-    "source_hash": "70ec445975eae99a5c26b462f87dfe37e81e26445725542d89790ccc2c73b7d4"
+    "source_text": "For a new unit, resolve omitted generation options from the selected style, then plan the generated asset references and explicit unit patch. An explicit target_unit selects an existing unit for a requested VAT rebuild. The unit patch contains the requested edits and generated references for that rebuild.",
+    "source_hash": "77df4cf9c976bf49059dbd46ca91f8e9473ffdc70d526a55983b4a5eb706f2d5"
   },
   {
-    "id": "713e7cc2433a3e9e5d433076:param/SpecJson",
-    "translation": "JSON 对象，描述源 skeletal_mesh、unit_name、target_package_path，以及可选的 recipe_id/style_profile、动画搜索路径和 unit_patch。target_unit 指向已有单位；template_unit 和 target_unit_package_path 描述新单位。",
-    "translated_source_hash": "488e543704ec23b048aa87cfd06ca4c47890cc6837c54622f1647035a2986965",
+    "id": "713e7cc2433a3e9e5d433076:param/OptionsJson",
+    "translation": "包含源 skeletal_mesh、unit_name、输出位置、可选的创建 style_profile 和 unit_patch 的 JSON。需要重建已有单位时指定 target_unit。",
+    "translated_source_hash": "67a74480ed3b942d1b2587f52c2b888502e8d24fa3dc4fc5a965b2f4efdd54d1",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
     "name": "UMassBattleUnitEditorMCPApi::MCP_EditorPlanCreateVatUnit",
-    "field": "param/SpecJson",
-    "source_text": "JSON object describing the source skeletal_mesh and unit_name, target_package_path and optional recipe_id/style_profile, animation discovery paths and unit_patch. target_unit selects an existing unit; template_unit and target_unit_package_path describe a new unit.",
-    "source_hash": "488e543704ec23b048aa87cfd06ca4c47890cc6837c54622f1647035a2986965"
+    "field": "param/OptionsJson",
+    "source_text": "JSON object with source skeletal_mesh, unit_name, output location, optional style_profile for creation, and unit_patch. Use target_unit for an explicit rebuild of an existing unit.",
+    "source_hash": "67a74480ed3b942d1b2587f52c2b888502e8d24fa3dc4fc5a965b2f4efdd54d1"
   },
   {
     "id": "713e7cc2433a3e9e5d433076:returns",
@@ -2310,15 +2310,15 @@
     "source_hash": "4d382fd16a273d7a06c469ca2e43edb4de3b3bdd2972c73da58a000910b8dbb9"
   },
   {
-    "id": "713e7cc2433a3e9e5d433076:term/SpecJson",
-    "translation": "创作规格 JSON",
-    "translated_source_hash": "b9c62330a72412a77d5da173ade3e3f1d80118c47fc342c20739016bddbe2835",
+    "id": "713e7cc2433a3e9e5d433076:term/OptionsJson",
+    "translation": "OptionsJson",
+    "translated_source_hash": "a0f14957c58f02a60e9117fccc518532f585fb2162c355fddc249812432496d8",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
     "name": "UMassBattleUnitEditorMCPApi::MCP_EditorPlanCreateVatUnit",
-    "field": "term/SpecJson",
-    "source_text": "SpecJson",
-    "source_hash": "b9c62330a72412a77d5da173ade3e3f1d80118c47fc342c20739016bddbe2835"
+    "field": "term/OptionsJson",
+    "source_text": "OptionsJson",
+    "source_hash": "a0f14957c58f02a60e9117fccc518532f585fb2162c355fddc249812432496d8"
   },
   {
     "id": "713e7cc2433a3e9e5d433076:title/user",
@@ -2487,14 +2487,14 @@
   },
   {
     "id": "7b779567d9d6cabf5c6056f9:details",
-    "translation": "加载已保存的计划，拒绝标为不可执行的计划，并执行支持的变更。保存源码 Actor 的更新时触发 Update 导出。结果包含已应用的变更及请求的保存状态。",
-    "translated_source_hash": "c66846507b246d9f73c2d30e67cc8492599a134d53dfabb3608adf32e89dbc2e",
+    "translation": "加载计划并应用到它的目标。源码 Actor 计划请求 export_source 且 bSaveAssets=true 时运行 Update。DataAsset 计划直接写对应资产。",
+    "translated_source_hash": "94c3517914b39a9c019a7c60b6e0a5ee4f625e00266031830c4b49724938e023",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
     "name": "UMassBattleUnitMCPApi::MCP_UnitApplyPlan",
     "field": "details",
-    "source_text": "Loads the stored plan, rejects a plan marked inapplicable, and executes its supported mutation type. With bSaveAssets=true, applying a source Actor update runs Update to export the unit at its configured ExportPath. A plan targeting a DataAsset writes directly to that asset.",
-    "source_hash": "c66846507b246d9f73c2d30e67cc8492599a134d53dfabb3608adf32e89dbc2e"
+    "source_text": "Loads and applies the stored plan to its target. A source Actor plan runs Update when the plan requests export_source and bSaveAssets=true. A plan targeting a DataAsset writes directly to that asset.",
+    "source_hash": "94c3517914b39a9c019a7c60b6e0a5ee4f625e00266031830c4b49724938e023"
   },
   {
     "id": "7b779567d9d6cabf5c6056f9:param/PlanId",
@@ -2894,14 +2894,14 @@
   },
   {
     "id": "8edb1e011964b43f299942c1:details",
-    "translation": "返回与 MassBattleTools 编辑器控件对应的非界面工具能力，分类说明配置、VAT、Actor 装配和目录整理流程，不执行这些流程。",
-    "translated_source_hash": "dd75a7f0bf997a8d1002fb08d4122fc12a698c306e3be84b1ac001aa7ee8b138",
+    "translation": "列出可用 style、VAT 生成、Actor 组装和资产整理能力。",
+    "translated_source_hash": "ebf6d37d88cf62075f9ec4015c98d1f7208592ee8127f7d6d8d7a2c9762e4cb6",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
     "name": "UMassBattleUnitEditorMCPApi::MCP_EditorGetStatus",
     "field": "details",
-    "source_text": "Returns categorized capabilities for the non-UI counterpart of the MassBattleTools editor widget. The list describes available profile, VAT, Actor assembly and organization workflows without executing them.",
-    "source_hash": "dd75a7f0bf997a8d1002fb08d4122fc12a698c306e3be84b1ac001aa7ee8b138"
+    "source_text": "Lists available styles, VAT generation, Actor assembly and asset organization capabilities.",
+    "source_hash": "ebf6d37d88cf62075f9ec4015c98d1f7208592ee8127f7d6d8d7a2c9762e4cb6"
   },
   {
     "id": "8edb1e011964b43f299942c1:returns",
@@ -3795,105 +3795,6 @@
     "source_hash": "3bbfa4cdb1dbd4f335bac02fe5b8bb1ac06e560039016bae13d5e41beb24c6f5"
   },
   {
-    "id": "bcebab4067df23167e6b26d5:brief",
-    "translation": "查看指定风格或配方的完整 JSON 配置。",
-    "translated_source_hash": "91c71379a07ac5fbdde9e7917d298d5ada2be6a440769029df29d6e1408e7feb",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
-    "name": "UMassBattleUnitEditorMCPApi::MCP_EditorGetProfile",
-    "field": "brief",
-    "source_text": "Inspect the complete JSON settings of a style or recipe.",
-    "source_hash": "91c71379a07ac5fbdde9e7917d298d5ada2be6a440769029df29d6e1408e7feb"
-  },
-  {
-    "id": "bcebab4067df23167e6b26d5:details",
-    "translation": "按类型和标识解析配置，读取其 JSON 文件，返回文件标识及完整配置内容。",
-    "translated_source_hash": "586a4d0d1a462be25532d515146d4a6f9f935a72bc4e4d2437497a7ddcc71a95",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
-    "name": "UMassBattleUnitEditorMCPApi::MCP_EditorGetProfile",
-    "field": "details",
-    "source_text": "Resolves a style or recipe profile by its type and id, reads its JSON file and returns both the file identity and complete profile contents.",
-    "source_hash": "586a4d0d1a462be25532d515146d4a6f9f935a72bc4e4d2437497a7ddcc71a95"
-  },
-  {
-    "id": "bcebab4067df23167e6b26d5:param/ProfileId",
-    "translation": "配置列表工具返回的已有配置标识。",
-    "translated_source_hash": "dca0fccd5fd1ab989cda2107f90b5c7fcaeb349c33c897dfd59b25c1b6c24992",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
-    "name": "UMassBattleUnitEditorMCPApi::MCP_EditorGetProfile",
-    "field": "param/ProfileId",
-    "source_text": "Existing profile id returned by the profile-list tool.",
-    "source_hash": "dca0fccd5fd1ab989cda2107f90b5c7fcaeb349c33c897dfd59b25c1b6c24992"
-  },
-  {
-    "id": "bcebab4067df23167e6b26d5:param/ProfileType",
-    "translation": "配置类型：style 或 recipe。",
-    "translated_source_hash": "bf38c019671abbd87776e3e48987a66b94f72e2454db7c4e72cc9134e8c26963",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
-    "name": "UMassBattleUnitEditorMCPApi::MCP_EditorGetProfile",
-    "field": "param/ProfileType",
-    "source_text": "Profile kind: style or recipe.",
-    "source_hash": "bf38c019671abbd87776e3e48987a66b94f72e2454db7c4e72cc9134e8c26963"
-  },
-  {
-    "id": "bcebab4067df23167e6b26d5:returns",
-    "translation": "指定配置的完整 JSON 内容及来源文件路径；配置不存在或格式损坏时返回错误。",
-    "translated_source_hash": "06b9d84abe94245466e7e04591895df3c20497f4a9b7245cc345db27f0b89f05",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
-    "name": "UMassBattleUnitEditorMCPApi::MCP_EditorGetProfile",
-    "field": "returns",
-    "source_text": "The selected profile's complete JSON settings and source file path; an unavailable or malformed profile produces an error.",
-    "source_hash": "06b9d84abe94245466e7e04591895df3c20497f4a9b7245cc345db27f0b89f05"
-  },
-  {
-    "id": "bcebab4067df23167e6b26d5:see/0",
-    "translation": "使用 @ref UMassBattleUnitEditorMCPApi::MCP_EditorListProfiles 获取配置标识。",
-    "translated_source_hash": "9f3c8d1cbea7b65d0cd87de67313207811342f6659e91bb13a64a3e57f484710",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
-    "name": "UMassBattleUnitEditorMCPApi::MCP_EditorGetProfile",
-    "field": "see/0",
-    "source_text": "@ref UMassBattleUnitEditorMCPApi::MCP_EditorListProfiles to discover ids.",
-    "source_hash": "9f3c8d1cbea7b65d0cd87de67313207811342f6659e91bb13a64a3e57f484710"
-  },
-  {
-    "id": "bcebab4067df23167e6b26d5:term/ProfileId",
-    "translation": "配置标识",
-    "translated_source_hash": "fbb5f09344e95669dbb3aa215733524d6f6553d459b00621b76bf1605ab73c60",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
-    "name": "UMassBattleUnitEditorMCPApi::MCP_EditorGetProfile",
-    "field": "term/ProfileId",
-    "source_text": "ProfileId",
-    "source_hash": "fbb5f09344e95669dbb3aa215733524d6f6553d459b00621b76bf1605ab73c60"
-  },
-  {
-    "id": "bcebab4067df23167e6b26d5:term/ProfileType",
-    "translation": "配置类型",
-    "translated_source_hash": "ffde369190767ec0028ef957027d3dc355f9232eb7922921c7911201501d5230",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
-    "name": "UMassBattleUnitEditorMCPApi::MCP_EditorGetProfile",
-    "field": "term/ProfileType",
-    "source_text": "ProfileType",
-    "source_hash": "ffde369190767ec0028ef957027d3dc355f9232eb7922921c7911201501d5230"
-  },
-  {
-    "id": "bcebab4067df23167e6b26d5:title/user",
-    "translation": "读取单位风格或配方",
-    "translated_source_hash": "b55a8de238665dd78d534541f37c90d9fd88eff6b914faaeaf246c6613099e65",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
-    "name": "UMassBattleUnitEditorMCPApi::MCP_EditorGetProfile",
-    "field": "title/user",
-    "source_text": "MCP Editor Get Profile",
-    "source_hash": "b55a8de238665dd78d534541f37c90d9fd88eff6b914faaeaf246c6613099e65"
-  },
-  {
     "id": "c0e0517912a3f45b7ec2d79e:brief",
     "translation": "把骨骼网格体或 Actor 制作为 VAT 单位，并整理生成资产。",
     "translated_source_hash": "9e14e5c2cc0b0bb03065655fe5e7dce9f3695564806f83802e8cbf61dec70afc",
@@ -3994,36 +3895,36 @@
   },
   {
     "id": "c984d38817739fb8647bc21b:brief",
-    "translation": "以模板为起点创建单位配置或源 Actor。",
-    "translated_source_hash": "6e41f72f929e2b058480ca7403a70fa598b89acc874dc37982919314224e5736",
+    "translation": "创建单位 DataAsset 或源码 Actor。",
+    "translated_source_hash": "bd7855aadd3b90e949a5c0da1713369df1f36a8a943af7d477c5151f4d03dfd7",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
     "name": "UMassBattleUnitMCPApi::MCP_UnitCreate",
     "field": "brief",
-    "source_text": "Use a template to create unit data or a Unit Source Actor.",
-    "source_hash": "6e41f72f929e2b058480ca7403a70fa598b89acc874dc37982919314224e5736"
+    "source_text": "Create a unit DataAsset or a Unit Source Actor.",
+    "source_hash": "bd7855aadd3b90e949a5c0da1713369df1f36a8a943af7d477c5151f4d03dfd7"
   },
   {
     "id": "c984d38817739fb8647bc21b:details",
-    "translation": "从默认或指定模板创建单位，并可合并初始创作数据。asset_type=source_actor 创建 Unit Source Actor 蓝图，其余普通路径创建单位配置；目标必须是尚未被占用的 Unreal 资产路径。",
-    "translated_source_hash": "30d8138a4102bc6349be3ff2afddc9c0e6f5017bc48e6aa44aec9f5b3d084c21",
+    "translation": "按所选 style 补齐创建时省略的值，保留显式填写的值。asset_type=source_actor 创建源码 Actor 蓝图。目标资产路径必须可用。",
+    "translated_source_hash": "7f1abea1ce74ac0ed3f2100a67547f44f22fc6892ce31193c1b42592cce9ece6",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
     "name": "UMassBattleUnitMCPApi::MCP_UnitCreate",
     "field": "details",
-    "source_text": "Creates a unit from the default or explicit template and optionally merges initial authored data. asset_type=source_actor creates a Unit Source Actor Blueprint; the ordinary branch creates the unit config. Target names must resolve to an unoccupied Unreal asset path.",
-    "source_hash": "30d8138a4102bc6349be3ff2afddc9c0e6f5017bc48e6aa44aec9f5b3d084c21"
+    "source_text": "Fills omitted creation values from the selected style, preserving explicitly supplied values. asset_type=source_actor creates a Unit Source Actor Blueprint. The destination must be unoccupied.",
+    "source_hash": "7f1abea1ce74ac0ed3f2100a67547f44f22fc6892ce31193c1b42592cce9ece6"
   },
   {
-    "id": "c984d38817739fb8647bc21b:param/CreateSpecJson",
-    "translation": "JSON 指定 unit_path/new_unit_path，或同时指定 asset_name、package_path。template_unit 选择模板，unit_data 提供初始数据。asset_type=source_actor 启用来源蓝图路径，export_path 配置其输出。",
-    "translated_source_hash": "9e24a476f00e2df3a6f06b3499bdd0fd971b897a5bcda606c794f2039af664c0",
+    "id": "c984d38817739fb8647bc21b:param/OptionsJson",
+    "translation": "包含 unit_path 或 asset_name 和 package_path 的 JSON。style_profile 可省略并默认选择 default。template_unit 选择模板，unit_data 提供显式初始值。asset_type=source_actor 选择源码蓝图，export_path 设置导出位置。",
+    "translated_source_hash": "846b07e70a3d54086a08a3933f2b3711e14fe3e748227dbc176d4fef46c471b0",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
     "name": "UMassBattleUnitMCPApi::MCP_UnitCreate",
-    "field": "param/CreateSpecJson",
-    "source_text": "JSON with either unit_path/new_unit_path or both asset_name and package_path. template_unit selects a template; unit_data supplies initial authored values. asset_type=source_actor enables the source Blueprint branch and export_path configures its output.",
-    "source_hash": "9e24a476f00e2df3a6f06b3499bdd0fd971b897a5bcda606c794f2039af664c0"
+    "field": "param/OptionsJson",
+    "source_text": "JSON with unit_path or both asset_name and package_path. style_profile is optional and defaults to default. template_unit selects a template and unit_data supplies initial authored values. asset_type=source_actor selects the source Blueprint branch and export_path configures its output.",
+    "source_hash": "846b07e70a3d54086a08a3933f2b3711e14fe3e748227dbc176d4fef46c471b0"
   },
   {
     "id": "c984d38817739fb8647bc21b:param/bSaveAssets",
@@ -4048,15 +3949,15 @@
     "source_hash": "40f157fe28238051e3f8cadf936c85d0d797aa675b8133b615dc98eadfa0e9ab"
   },
   {
-    "id": "c984d38817739fb8647bc21b:term/CreateSpecJson",
-    "translation": "创建规格 JSON",
-    "translated_source_hash": "9bc184866fd95bb21629774a6699ea9884d3bb93cf446822ff7a9ccf54097838",
+    "id": "c984d38817739fb8647bc21b:term/OptionsJson",
+    "translation": "OptionsJson",
+    "translated_source_hash": "a0f14957c58f02a60e9117fccc518532f585fb2162c355fddc249812432496d8",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
     "name": "UMassBattleUnitMCPApi::MCP_UnitCreate",
-    "field": "term/CreateSpecJson",
-    "source_text": "CreateSpecJson",
-    "source_hash": "9bc184866fd95bb21629774a6699ea9884d3bb93cf446822ff7a9ccf54097838"
+    "field": "term/OptionsJson",
+    "source_text": "OptionsJson",
+    "source_hash": "a0f14957c58f02a60e9117fccc518532f585fb2162c355fddc249812432496d8"
   },
   {
     "id": "c984d38817739fb8647bc21b:term/bSaveAssets",
@@ -4093,14 +3994,14 @@
   },
   {
     "id": "cd233af70f1d8c2728f692b2:details",
-    "translation": "先把骨骼网格转为带 LOD 的静态网格，并由父材质创建材质实例。按各 LOD 的骨骼或顶点模式采样动画，生成 VAT 贴图；把这些贴图、动画索引贴图和解码参数写入对应材质，使静态网格能够还原动画。渲染器绑定网格、Niagara 系统和子类型；单位写入 Visualize.RendererClass、AnimShared.AnimData 及实际烘焙采样率。新单位通过 @ref UMassBattleUnitMCPApi::MCP_UnitCreate 创建，再通过 @ref UMassBattleUnitMCPApi::MCP_UnitPlanMergeUpdate 和 @ref UMassBattleUnitMCPApi::MCP_UnitApplyPlan 写入配置。",
-    "translated_source_hash": "79c9390f6ece8bdde77697ec59b7b8bafb3c9afcac3b042f320f50acaf056baa",
+    "translation": "转换骨骼网格，烘焙动画贴图并设置渲染器。创建单位时按所选 style 补齐省略的值。重建已有单位时，将本次生成的引用及明确要求的改动通过单位变更计划应用。",
+    "translated_source_hash": "6dae85972a4fa3c79f07a439aef08a4c7f9d2cb42b9096631846022d3da92b1d",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
     "name": "UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnit",
     "field": "details",
-    "source_text": "The skeletal mesh is converted into a static mesh with LODs and instances of the parent material. For each LOD, bone or vertex mode samples the animations into VAT textures; these textures, an animation-index texture and decoding parameters are assigned to that LOD's materials so the static mesh can reproduce the animation. The renderer receives the mesh, Niagara system and subtype; the unit receives Visualize.RendererClass, AnimShared.AnimData and the baked animation sample rate. New units are created through @ref UMassBattleUnitMCPApi::MCP_UnitCreate, then configuration is written through @ref UMassBattleUnitMCPApi::MCP_UnitPlanMergeUpdate and @ref UMassBattleUnitMCPApi::MCP_UnitApplyPlan.",
-    "source_hash": "79c9390f6ece8bdde77697ec59b7b8bafb3c9afcac3b042f320f50acaf056baa"
+    "source_text": "Converts the skeletal mesh, bakes animation textures and configures the renderer. New units use the selected style for omitted creation values. A rebuild of an existing unit applies the generated references and explicitly requested unit changes through the unit change plan.",
+    "source_hash": "6dae85972a4fa3c79f07a439aef08a4c7f9d2cb42b9096631846022d3da92b1d"
   },
   {
     "id": "cd233af70f1d8c2728f692b2:notes/0",
@@ -4114,15 +4015,15 @@
     "source_hash": "06923bdd2fd295157ef0b5131994b00fe846a0ad669bc69060477ed4dcc8409a"
   },
   {
-    "id": "cd233af70f1d8c2728f692b2:param/SpecJson",
-    "translation": "JSON 制作规格，包含 skeletal_mesh、unit_name、target_package_path、parent_material、source_renderer_class、niagara_system、vat_sample_rate，以及 animations 分类到 AnimSequence 的非空映射。target_unit 指向已有单位；新建时由 template_unit、target_unit_package_path 和 subtype 描述目标。dry_run/preview_only 选择预览，overwrite_existing 控制是否替换已有生成物。compact_response 控制结果详略：此原生入口默认为 false，MCP 封装默认为 true，JSON 中显式值优先。",
-    "translated_source_hash": "50fa26cc24c7d7d42de179696151c23bba73750338fcab935a004b3ee3a52c7b",
+    "id": "cd233af70f1d8c2728f692b2:param/OptionsJson",
+    "translation": "骨骼网格、单位名、输出位置、父材质、渲染器类、Niagara、采样率和动画的 JSON 参数。重建已有单位时传 target_unit。创建时可传 style_profile。dry_run 或 preview_only 选择预览，overwrite_existing 允许替换生成资产，compact_response 控制响应详情。",
+    "translated_source_hash": "b419de78340d8a34f5cfc59b31651a46b51c9b6d275ab19ce495e83dd960a262",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
     "name": "UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnit",
-    "field": "param/SpecJson",
-    "source_text": "JSON specification containing skeletal_mesh, unit_name, target_package_path, parent_material, source_renderer_class, niagara_system, vat_sample_rate and a nonempty animations category-to-AnimSequence mapping. target_unit selects an existing unit; otherwise template_unit, target_unit_package_path and subtype describe creation. dry_run/preview_only selects a preview; overwrite_existing controls replacement of generated outputs. compact_response selects result detail: false in this native entry, true by default in the MCP wrapper, with an explicit JSON value taking precedence.",
-    "source_hash": "50fa26cc24c7d7d42de179696151c23bba73750338fcab935a004b3ee3a52c7b"
+    "field": "param/OptionsJson",
+    "source_text": "JSON options for skeletal_mesh, unit_name, output, parent_material, source_renderer_class, niagara_system, vat_sample_rate and animations. Supply target_unit to rebuild an existing unit. style_profile is optional when creating a unit. dry_run or preview_only selects a preview, overwrite_existing allows replacement of generated outputs, and compact_response selects result detail.",
+    "source_hash": "b419de78340d8a34f5cfc59b31651a46b51c9b6d275ab19ce495e83dd960a262"
   },
   {
     "id": "cd233af70f1d8c2728f692b2:param/bSaveAssets",
@@ -4147,15 +4048,15 @@
     "source_hash": "e70df0fce8aadea3ddaf656de9db14fde0753f8fd7742f56998449b2480bec3d"
   },
   {
-    "id": "cd233af70f1d8c2728f692b2:term/SpecJson",
-    "translation": "创作规格 JSON",
-    "translated_source_hash": "b9c62330a72412a77d5da173ade3e3f1d80118c47fc342c20739016bddbe2835",
+    "id": "cd233af70f1d8c2728f692b2:term/OptionsJson",
+    "translation": "OptionsJson",
+    "translated_source_hash": "a0f14957c58f02a60e9117fccc518532f585fb2162c355fddc249812432496d8",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
     "name": "UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnit",
-    "field": "term/SpecJson",
-    "source_text": "SpecJson",
-    "source_hash": "b9c62330a72412a77d5da173ade3e3f1d80118c47fc342c20739016bddbe2835"
+    "field": "term/OptionsJson",
+    "source_text": "OptionsJson",
+    "source_hash": "a0f14957c58f02a60e9117fccc518532f585fb2162c355fddc249812432496d8"
   },
   {
     "id": "cd233af70f1d8c2728f692b2:term/bSaveAssets",
@@ -4466,15 +4367,15 @@
     "source_hash": "f694213936eb783697c44270d7a3268598f47be5d4e4609e47aab45b5a6ac688"
   },
   {
-    "id": "da2c4941d49ab17eec32a854:param/SpecJson",
-    "translation": "VAT 制作规格，字段定义见 @ref UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnit。检查网格、动画、材质、渲染器、输出位置和子类型配置，不生成资产。",
-    "translated_source_hash": "a8dfaaac83854f93ec0904bc86400daba908197f2f0138231a44f41be5c04fc6",
+    "id": "da2c4941d49ab17eec32a854:param/OptionsJson",
+    "translation": "@ref UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnit 接受的 JSON 参数。生成资产前检查网格、动画、材质、渲染器、输出位置和子类型。",
+    "translated_source_hash": "6a7519f9f08c2b28b77c185a2694c20071af39795716b56acd412350b4247a40",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
     "name": "UMassBattleUnitEditorMCPApi::MCP_EditorValidateCreateVatUnit",
-    "field": "param/SpecJson",
-    "source_text": "VAT generation specification using the fields documented by @ref UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnit. Mesh, animation, material, renderer, output and subtype settings are checked without generating assets.",
-    "source_hash": "a8dfaaac83854f93ec0904bc86400daba908197f2f0138231a44f41be5c04fc6"
+    "field": "param/OptionsJson",
+    "source_text": "JSON options accepted by @ref UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnit. The validation checks mesh, animation, material, renderer, output and subtype settings before generating assets.",
+    "source_hash": "6a7519f9f08c2b28b77c185a2694c20071af39795716b56acd412350b4247a40"
   },
   {
     "id": "da2c4941d49ab17eec32a854:returns",
@@ -4488,15 +4389,15 @@
     "source_hash": "d90e10d24989b20e6ba5f8856b73a73c47e5674494f2b1ce79e975baefe20166"
   },
   {
-    "id": "da2c4941d49ab17eec32a854:term/SpecJson",
-    "translation": "创作规格 JSON",
-    "translated_source_hash": "b9c62330a72412a77d5da173ade3e3f1d80118c47fc342c20739016bddbe2835",
+    "id": "da2c4941d49ab17eec32a854:term/OptionsJson",
+    "translation": "OptionsJson",
+    "translated_source_hash": "a0f14957c58f02a60e9117fccc518532f585fb2162c355fddc249812432496d8",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
     "name": "UMassBattleUnitEditorMCPApi::MCP_EditorValidateCreateVatUnit",
-    "field": "term/SpecJson",
-    "source_text": "SpecJson",
-    "source_hash": "b9c62330a72412a77d5da173ade3e3f1d80118c47fc342c20739016bddbe2835"
+    "field": "term/OptionsJson",
+    "source_text": "OptionsJson",
+    "source_hash": "a0f14957c58f02a60e9117fccc518532f585fb2162c355fddc249812432496d8"
   },
   {
     "id": "da2c4941d49ab17eec32a854:title/user",
@@ -4761,72 +4662,6 @@
     "field": "title/user",
     "source_text": "MCP Projectile Validate",
     "source_hash": "ddea6ad4e91d716beaafd5f972a027b7495b34e675f38e233887959209f398c7"
-  },
-  {
-    "id": "ed8062a5e38633ab1ae47e8f:brief",
-    "translation": "选择 VAT 制作需要的风格配置与配方。",
-    "translated_source_hash": "445b2d62c086544656e0a0195e4c8f18943390ef1d01658db5eb1acfe07db0cd",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
-    "name": "UMassBattleUnitEditorMCPApi::MCP_EditorListProfiles",
-    "field": "brief",
-    "source_text": "Choose styles and recipes for VAT unit authoring.",
-    "source_hash": "445b2d62c086544656e0a0195e4c8f18943390ef1d01658db5eb1acfe07db0cd"
-  },
-  {
-    "id": "ed8062a5e38633ab1ae47e8f:details",
-    "translation": "读取已安装的单位风格配置及创作配方，供调用者在组织 VAT 或目录整理规格前选择已有配置标识。",
-    "translated_source_hash": "53943f43ff328592710591b6c067c07cc592ed595c459d45d5188ef73198d577",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
-    "name": "UMassBattleUnitEditorMCPApi::MCP_EditorListProfiles",
-    "field": "details",
-    "source_text": "Reads the installed unit style profiles and authoring recipes so a caller can choose an existing profile id before constructing a VAT or organization spec.",
-    "source_hash": "53943f43ff328592710591b6c067c07cc592ed595c459d45d5188ef73198d577"
-  },
-  {
-    "id": "ed8062a5e38633ab1ae47e8f:param/OptionsJson",
-    "translation": "JSON 对象；{} 使用默认选项。本入口先解析选项对象，再枚举已安装配置。",
-    "translated_source_hash": "25c6b0eacfaf683edc008cc0d67571bd3ad99f3a55b784579a5a358d04147f2d",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
-    "name": "UMassBattleUnitEditorMCPApi::MCP_EditorListProfiles",
-    "field": "param/OptionsJson",
-    "source_text": "JSON object; pass {} to use the defaults. This entry parses the options object before enumerating installed profiles.",
-    "source_hash": "25c6b0eacfaf683edc008cc0d67571bd3ad99f3a55b784579a5a358d04147f2d"
-  },
-  {
-    "id": "ed8062a5e38633ab1ae47e8f:returns",
-    "translation": "可用的风格配置和制作配方，可从中取得制作请求使用的配置标识。",
-    "translated_source_hash": "c515e2184af0e204328cb9b4eb71601b46e0fe5e743b2d27c855811789a14c96",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
-    "name": "UMassBattleUnitEditorMCPApi::MCP_EditorListProfiles",
-    "field": "returns",
-    "source_text": "Available style and recipe profiles used to select profile IDs for authoring requests.",
-    "source_hash": "c515e2184af0e204328cb9b4eb71601b46e0fe5e743b2d27c855811789a14c96"
-  },
-  {
-    "id": "ed8062a5e38633ab1ae47e8f:term/OptionsJson",
-    "translation": "选项 JSON",
-    "translated_source_hash": "a0f14957c58f02a60e9117fccc518532f585fb2162c355fddc249812432496d8",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
-    "name": "UMassBattleUnitEditorMCPApi::MCP_EditorListProfiles",
-    "field": "term/OptionsJson",
-    "source_text": "OptionsJson",
-    "source_hash": "a0f14957c58f02a60e9117fccc518532f585fb2162c355fddc249812432496d8"
-  },
-  {
-    "id": "ed8062a5e38633ab1ae47e8f:title/user",
-    "translation": "列出单位风格与创作配方",
-    "translated_source_hash": "ed8cde7e335d9c66d8e0c6523e77ad7329b20860f46e6995e55efe78aee7e010",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
-    "name": "UMassBattleUnitEditorMCPApi::MCP_EditorListProfiles",
-    "field": "title/user",
-    "source_text": "MCP Editor List Profiles",
-    "source_hash": "ed8cde7e335d9c66d8e0c6523e77ad7329b20860f46e6995e55efe78aee7e010"
   },
   {
     "id": "f3c18ab9e985aeaec7aad50f:brief",

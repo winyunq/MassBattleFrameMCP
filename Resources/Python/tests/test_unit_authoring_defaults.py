@@ -4,19 +4,19 @@ import unittest
 from pathlib import Path
 
 
-RECIPE_PATH = (
+STYLE_PATH = (
     Path(__file__).resolve().parents[2]
-    / "UnitAuthoringRecipes"
-    / "vat_skeletal_unit.massbattle_recipe.json"
+    / "UnitManagementStyles"
+    / "default.massbattle_unit_style.json"
 )
 
 
 class UnitAuthoringDefaultsTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        recipe = json.loads(RECIPE_PATH.read_text(encoding="utf-8"))
-        cls.recipe = recipe
-        cls.defaults = recipe["default_unit_patch"]["Data"]
+        style = json.loads(STYLE_PATH.read_text(encoding="utf-8"))
+        cls.authoring_defaults = style["authoring_defaults"]
+        cls.defaults = cls.authoring_defaults["default_unit_patch"]["Data"]
 
     def test_generated_units_disable_outgoing_launch_and_resist_live_knockback(self):
         self.assertFalse(
@@ -25,7 +25,7 @@ class UnitAuthoringDefaultsTests(unittest.TestCase):
         self.assertEqual(self.defaults["Defence"]["LaunchImmuneAlive"], 1)
 
     def test_crowd_collision_defaults_use_two_simple_compaction_presets(self):
-        presets = self.recipe["collider_mult_presets"]
+        presets = self.authoring_defaults["collider_mult_presets"]
         self.assertEqual(presets["default"], "slight_15_percent")
         self.assertEqual(presets["slight_15_percent"], 0.85)
         self.assertEqual(presets["noticeable_30_percent"], 0.7)
@@ -54,7 +54,7 @@ class UnitAuthoringDefaultsTests(unittest.TestCase):
         )
 
     def test_movement_response_is_derived_from_move_speed(self):
-        derivations = self.recipe["default_unit_patch_derivations"]
+        derivations = self.authoring_defaults["default_unit_patch_derivations"]
         self.assertEqual(len(derivations), 1)
         rule = derivations[0]
         self.assertEqual(rule["source"], "Data.Move.XY.MoveSpeed")

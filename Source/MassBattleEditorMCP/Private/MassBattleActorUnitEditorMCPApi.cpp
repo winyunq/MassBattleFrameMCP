@@ -1031,238 +1031,6 @@ static bool SpawnAndInspect(const TSharedPtr<FJsonObject>& Spec, FActorAssemblyC
 	return !HasErrors(Context.Issues);
 }
 
-static void AddRequiredVatSpecIssues(const TSharedPtr<FJsonObject>& Spec, TArray<TSharedPtr<FJsonValue>>& Issues)
-{
-	auto RequireString = [&](const FString& Name)
-	{
-		if (GetStringField(Spec, Name).IsEmpty())
-		{
-			AddIssue(Issues, TEXT("error"), TEXT("missing_required_field"), Name + TEXT(" is required for strict VAT creation."), Name);
-		}
-	};
-	RequireString(TEXT("unit_name"));
-	RequireString(TEXT("target_package_path"));
-	RequireString(TEXT("parent_material"));
-	RequireString(TEXT("source_renderer_class"));
-	RequireString(TEXT("niagara_system"));
-
-	double SampleRate = 0.0;
-	if (!Spec.IsValid() || !Spec->TryGetNumberField(TEXT("vat_sample_rate"), SampleRate) || SampleRate <= 0.0)
-	{
-		AddIssue(Issues, TEXT("error"), TEXT("missing_required_field"), TEXT("vat_sample_rate must be greater than zero."), TEXT("vat_sample_rate"));
-	}
-
-	const TSharedPtr<FJsonObject>* Animations = nullptr;
-	if (!Spec.IsValid() || !Spec->TryGetObjectField(TEXT("animations"), Animations) || !Animations || !Animations->IsValid() || (*Animations)->Values.IsEmpty())
-	{
-		AddIssue(Issues, TEXT("error"), TEXT("missing_required_field"), TEXT("animations must contain at least one animation category."), TEXT("animations"));
-	}
-
-	if (GetStringField(Spec, TEXT("target_unit")).IsEmpty())
-	{
-		RequireString(TEXT("template_unit"));
-		RequireString(TEXT("target_unit_package_path"));
-		double Subtype = 0.0;
-		if (!Spec.IsValid() || !Spec->TryGetNumberField(TEXT("subtype"), Subtype))
-		{
-			AddIssue(Issues, TEXT("error"), TEXT("missing_required_field"), TEXT("subtype is required when target_unit is not supplied."), TEXT("subtype"));
-		}
-	}
-}
-
-static TSharedPtr<FJsonObject> MakeCanonicalSoldierAnimations()
-{
-	const FString AnimationRoot = TEXT("/Game/Unit/Action/Solider/");
-	TSharedPtr<FJsonObject> Animations = MakeShared<FJsonObject>();
-	auto SetCategory = [&](const TCHAR* Category, std::initializer_list<const TCHAR*> AssetNames)
-	{
-		TArray<TSharedPtr<FJsonValue>> Values;
-		for (const TCHAR* AssetName : AssetNames)
-		{
-			Values.Add(MakeShared<FJsonValueString>(AnimationRoot + AssetName));
-		}
-		Animations->SetArrayField(Category, Values);
-	};
-
-	SetCategory(TEXT("Idle"), { TEXT("IdleSolider") });
-	SetCategory(TEXT("Move"), { TEXT("MoveSolider") });
-	SetCategory(TEXT("Appear"), { TEXT("AppearSolider") });
-	SetCategory(TEXT("Attack"), { TEXT("AttackSolider") });
-	SetCategory(TEXT("Hit"), { TEXT("HitSolider") });
-	SetCategory(TEXT("Death"), {
-		TEXT("DeathSolider_A"),
-		TEXT("DeathSolider_B"),
-		TEXT("DeathSolider_C"),
-		TEXT("DeathSolider_D"),
-		TEXT("DeathSolider_E") });
-	return Animations;
-}
-
-static int32 CountAnimationEntries(const TSharedPtr<FJsonObject>& Animations)
-{
-	int32 Count = 0;
-	if (!Animations.IsValid())
-	{
-		return Count;
-	}
-	for (const TPair<FString, TSharedPtr<FJsonValue>>& Pair : Animations->Values)
-	{
-		if (Pair.Value.IsValid() && Pair.Value->Type == EJson::Array)
-		{
-			Count += Pair.Value->AsArray().Num();
-		}
-	}
-	return Count;
-}
-
-static TSharedPtr<FJsonObject> ResolveActorDefaultAnimations(
-	const TSharedPtr<FJsonObject>& ResolvedSpec,
-	const FActorAssemblyContext& Context,
-	TArray<TSharedPtr<FJsonValue>>& Issues)
-{
-	TSharedPtr<FJsonObject> Result = MakeShared<FJsonObject>();
-	const TSharedPtr<FJsonObject>* ExplicitAnimations = nullptr;
-	if (ResolvedSpec.IsValid()
-		&& ResolvedSpec->TryGetObjectField(TEXT("animations"), ExplicitAnimations)
-		&& ExplicitAnimations
-		&& ExplicitAnimations->IsValid()
-		&& CountAnimationEntries(*ExplicitAnimations) > 0)
-	{
-		Result->SetStringField(TEXT("source"), TEXT("spec.animations"));
-		Result->SetNumberField(TEXT("animation_count"), CountAnimationEntries(*ExplicitAnimations));
-		Result->SetBoolField(TEXT("defaulted"), false);
-		return Result;
-	}
-
-	bool bUseDefaults = true;
-	if (ResolvedSpec.IsValid())
-	{
-		ResolvedSpec->TryGetBoolField(TEXT("use_default_soldier_animations"), bUseDefaults);
-	}
-	if (!bUseDefaults)
-	{
-		Result->SetStringField(TEXT("source"), TEXT("disabled"));
-		Result->SetNumberField(TEXT("animation_count"), 0);
-		Result->SetBoolField(TEXT("defaulted"), false);
-		return Result;
-	}
-
-	TSharedPtr<FJsonObject> Animations = MakeCanonicalSoldierAnimations();
-	ResolvedSpec->SetObjectField(TEXT("animations"), Animations);
-	USkeleton* ExpectedSkeleton = nullptr;
-	if (Context.RootSkeletalComponent && Context.RootSkeletalComponent->GetSkeletalMeshAsset())
-	{
-		ExpectedSkeleton = Context.RootSkeletalComponent->GetSkeletalMeshAsset()->GetSkeleton();
-	}
-
-	int32 ValidCount = 0;
-	TArray<TSharedPtr<FJsonValue>> Assets;
-	for (const TPair<FString, TSharedPtr<FJsonValue>>& Pair : Animations->Values)
-	{
-		for (const TSharedPtr<FJsonValue>& Value : Pair.Value->AsArray())
-		{
-			const FString Path = Value->AsString();
-			UAnimSequence* Sequence = Cast<UAnimSequence>(FSoftObjectPath(NormalizeObjectPath(Path)).TryLoad());
-			const bool bLoadable = Sequence != nullptr;
-			const bool bSkeletonMatches = bLoadable && (!ExpectedSkeleton || Sequence->GetSkeleton() == ExpectedSkeleton);
-			TSharedPtr<FJsonObject> Asset = MakeShared<FJsonObject>();
-			Asset->SetStringField(TEXT("category"), Pair.Key);
-			Asset->SetStringField(TEXT("path"), Path);
-			Asset->SetBoolField(TEXT("loadable"), bLoadable);
-			Asset->SetBoolField(TEXT("skeleton_matches"), bSkeletonMatches);
-			Assets.Add(MakeShared<FJsonValueObject>(Asset));
-			if (!bLoadable)
-			{
-				AddIssue(Issues, TEXT("error"), TEXT("default_soldier_animation_missing"),
-					FString::Printf(TEXT("Canonical soldier animation is not loadable: %s"), *Path), TEXT("animations"));
-			}
-			else if (!bSkeletonMatches)
-			{
-				AddIssue(Issues, TEXT("error"), TEXT("default_soldier_animation_skeleton_mismatch"),
-					FString::Printf(TEXT("Canonical soldier animation does not use the Actor root skeleton: %s"), *Path), TEXT("animations"));
-			}
-			else
-			{
-				++ValidCount;
-			}
-		}
-	}
-
-	AddIssue(Issues, TEXT("warning"), TEXT("defaulted_canonical_soldier_animations"),
-		TEXT("animations was omitted; Actor VAT authoring selected all 10 canonical /Game/Unit/Action/Solider animations (Idle, Move, Appear, Attack, Hit, Death A-E)."),
-		TEXT("animations"));
-	Result->SetStringField(TEXT("source"), TEXT("canonical_soldier_profile"));
-	Result->SetStringField(TEXT("root"), TEXT("/Game/Unit/Action/Solider"));
-	Result->SetNumberField(TEXT("animation_count"), CountAnimationEntries(Animations));
-	Result->SetNumberField(TEXT("valid_animation_count"), ValidCount);
-	Result->SetBoolField(TEXT("defaulted"), true);
-	Result->SetArrayField(TEXT("assets"), Assets);
-	return Result;
-}
-
-static TSharedPtr<FJsonObject> ResolveActorVatSampleRate(
-	const TSharedPtr<FJsonObject>& ResolvedSpec,
-	TArray<TSharedPtr<FJsonValue>>& Issues)
-{
-	TSharedPtr<FJsonObject> Result = MakeShared<FJsonObject>();
-	double SampleRate = 0.0;
-	if (ResolvedSpec.IsValid()
-		&& ResolvedSpec->TryGetNumberField(TEXT("vat_sample_rate"), SampleRate)
-		&& SampleRate > 0.0)
-	{
-		Result->SetStringField(TEXT("source"), TEXT("spec.vat_sample_rate"));
-		Result->SetNumberField(TEXT("sample_rate"), SampleRate);
-		Result->SetBoolField(TEXT("defaulted"), false);
-		return Result;
-	}
-
-	constexpr double DefaultVatSampleRate = 30.0;
-	ResolvedSpec->SetNumberField(TEXT("vat_sample_rate"), DefaultVatSampleRate);
-	AddIssue(Issues, TEXT("warning"), TEXT("defaulted_vat_sample_rate"),
-		TEXT("vat_sample_rate was omitted; Actor VAT authoring selected the generic 30 Hz default. Projects can override it explicitly."),
-		TEXT("vat_sample_rate"));
-	Result->SetStringField(TEXT("source"), TEXT("massbattle_mcp_style_default"));
-	Result->SetNumberField(TEXT("sample_rate"), DefaultVatSampleRate);
-	Result->SetBoolField(TEXT("defaulted"), true);
-	return Result;
-}
-
-static TSharedPtr<FJsonObject> ResolveActorVatLodDefaults(
-	const TSharedPtr<FJsonObject>& ResolvedSpec,
-	TArray<TSharedPtr<FJsonValue>>& Issues)
-{
-	TSharedPtr<FJsonObject> Result = MakeShared<FJsonObject>();
-	const TArray<TSharedPtr<FJsonValue>>* ExplicitLods = nullptr;
-	if (ResolvedSpec.IsValid()
-		&& ResolvedSpec->TryGetArrayField(TEXT("lod_settings"), ExplicitLods)
-		&& ExplicitLods
-		&& !ExplicitLods->IsEmpty())
-	{
-		Result->SetStringField(TEXT("source"), TEXT("spec.lod_settings"));
-		Result->SetNumberField(TEXT("lod_count"), ExplicitLods->Num());
-		Result->SetBoolField(TEXT("defaulted"), false);
-		return Result;
-	}
-
-	TSharedPtr<FJsonObject> LOD0 = MakeShared<FJsonObject>();
-	LOD0->SetNumberField(TEXT("LODIndex"), 0);
-	LOD0->SetNumberField(TEXT("ScreenSize"), 0.0);
-	LOD0->SetNumberField(TEXT("AnimBlendLevel"), 2);
-	LOD0->SetStringField(TEXT("Mode"), TEXT("BoneMode"));
-	TArray<TSharedPtr<FJsonValue>> Lods;
-	Lods.Add(MakeShared<FJsonValueObject>(LOD0));
-	ResolvedSpec->SetArrayField(TEXT("lod_settings"), Lods);
-	AddIssue(Issues, TEXT("warning"), TEXT("defaulted_actor_vat_bone_mode"),
-		TEXT("lod_settings was omitted; Actor VAT authoring selected LOD0 BoneMode with animation blend level 2."),
-		TEXT("lod_settings"));
-	Result->SetStringField(TEXT("source"), TEXT("actor_animation_safe_default"));
-	Result->SetNumberField(TEXT("lod_count"), 1);
-	Result->SetStringField(TEXT("mode"), TEXT("BoneMode"));
-	Result->SetNumberField(TEXT("animation_blend_level"), 2);
-	Result->SetBoolField(TEXT("defaulted"), true);
-	return Result;
-}
-
 static bool ResolveAssemblyOutput(
 	const TSharedPtr<FJsonObject>& Spec,
 	FString& OutPackageName,
@@ -1328,14 +1096,13 @@ static TSharedPtr<FJsonObject> BuildInspectionResult(const TSharedPtr<FJsonObjec
 	return Result;
 }
 
-static TSharedPtr<FJsonObject> MakeResolvedVatSpec(const TSharedPtr<FJsonObject>& Spec, const FString& AssembledMeshPath)
+static TSharedPtr<FJsonObject> MakeResolvedVatOptions(const TSharedPtr<FJsonObject>& Options, const FString& AssembledMeshPath)
 {
 	TSharedPtr<FJsonObject> Resolved = MakeShared<FJsonObject>();
-	Resolved->Values = Spec->Values;
+	Resolved->Values = Options->Values;
 	for (const FString& Field : {
 		TEXT("actor_class"), TEXT("actor"), TEXT("component_overrides"), TEXT("root_component"),
-		TEXT("assembled_skeletal_mesh_name"), TEXT("assembled_skeletal_mesh_path"),
-		TEXT("use_default_soldier_animations") })
+		TEXT("assembled_skeletal_mesh_name"), TEXT("assembled_skeletal_mesh_path") })
 	{
 		Resolved->RemoveField(Field);
 	}
@@ -2973,18 +2740,18 @@ FString UMassBattleUnitEditorMCPApi::MCP_EditorInspectActorAssembly(const FStrin
 	return MassBattleActorUnitEditorMCP::ToJsonString(MassBattleActorUnitEditorMCP::BuildInspectionResult(Spec, Context));
 }
 
-FString UMassBattleUnitEditorMCPApi::MCP_EditorInspectVatAnimation(const FString& SpecJson)
+FString UMassBattleUnitEditorMCPApi::MCP_EditorInspectVatAnimation(const FString& OptionsJson)
 {
-	TSharedPtr<FJsonObject> Spec = MassBattleActorUnitEditorMCP::ParseObject(SpecJson);
-	if (!Spec.IsValid())
+	TSharedPtr<FJsonObject> Options = MassBattleActorUnitEditorMCP::ParseObject(OptionsJson);
+	if (!Options.IsValid())
 	{
-		return MassBattleActorUnitEditorMCP::MakeError(TEXT("SpecJson is not valid JSON."));
+		return MassBattleActorUnitEditorMCP::MakeError(TEXT("OptionsJson is not valid JSON."));
 	}
 
-	FString VatDataPath = MassBattleActorUnitEditorMCP::GetStringField(Spec, TEXT("vat_data_asset"));
+	FString VatDataPath = MassBattleActorUnitEditorMCP::GetStringField(Options, TEXT("vat_data_asset"));
 	if (VatDataPath.IsEmpty())
 	{
-		VatDataPath = MassBattleActorUnitEditorMCP::GetStringField(Spec, TEXT("anim_to_texture_data_asset"));
+		VatDataPath = MassBattleActorUnitEditorMCP::GetStringField(Options, TEXT("anim_to_texture_data_asset"));
 	}
 	UMassBattleATTDataAsset* VatData = MassBattleActorUnitEditorMCP::LoadAsset<UMassBattleATTDataAsset>(VatDataPath);
 	if (!VatData)
@@ -2993,11 +2760,11 @@ FString UMassBattleUnitEditorMCPApi::MCP_EditorInspectVatAnimation(const FString
 			TEXT("vat_data_asset is not a loadable AnimToTextureDataAsset: %s"), *VatDataPath));
 	}
 
-	FString SkeletalMeshPath = MassBattleActorUnitEditorMCP::GetStringField(Spec, TEXT("skeletal_mesh"));
+	FString SkeletalMeshPath = MassBattleActorUnitEditorMCP::GetStringField(Options, TEXT("skeletal_mesh"));
 	USkeletalMesh* SkeletalMesh = SkeletalMeshPath.IsEmpty()
 		? VatData->SkeletalMesh.LoadSynchronous()
 		: MassBattleActorUnitEditorMCP::LoadAsset<USkeletalMesh>(SkeletalMeshPath);
-	FString StaticMeshPath = MassBattleActorUnitEditorMCP::GetStringField(Spec, TEXT("static_mesh"));
+	FString StaticMeshPath = MassBattleActorUnitEditorMCP::GetStringField(Options, TEXT("static_mesh"));
 	UStaticMesh* StaticMesh = StaticMeshPath.IsEmpty()
 		? VatData->StaticMesh.LoadSynchronous()
 		: MassBattleActorUnitEditorMCP::LoadAsset<UStaticMesh>(StaticMeshPath);
@@ -3008,19 +2775,10 @@ FString UMassBattleUnitEditorMCPApi::MCP_EditorInspectVatAnimation(const FString
 	TSharedPtr<FJsonObject> VatMaterials = MassBattleActorUnitEditorMCP::BuildVatMaterialAudit(StaticMesh, SkeletalMesh, VatData);
 	TSharedPtr<FJsonObject> CoordinateOrigin = MassBattleActorUnitEditorMCP::BuildCoordinateOriginAudit(SkeletalMesh, StaticMesh);
 	double GroundTolerance = 3.0;
-	Spec->TryGetNumberField(TEXT("ground_tolerance_uu"), GroundTolerance);
+	Options->TryGetNumberField(TEXT("ground_tolerance_uu"), GroundTolerance);
 	GroundTolerance = FMath::Clamp(GroundTolerance, 0.0, 100.0);
 	TSharedPtr<FJsonObject> AnimationGrounding = MassBattleActorUnitEditorMCP::BuildAnimationGroundingAudit(VatData, SkeletalMesh, GroundTolerance);
 
-	TSet<FString> CanonicalPaths;
-	TSharedPtr<FJsonObject> CanonicalAnimations = MassBattleActorUnitEditorMCP::MakeCanonicalSoldierAnimations();
-	for (const TPair<FString, TSharedPtr<FJsonValue>>& Pair : CanonicalAnimations->Values)
-	{
-		for (const TSharedPtr<FJsonValue>& Value : Pair.Value->AsArray())
-		{
-			CanonicalPaths.Add(MassBattleActorUnitEditorMCP::NormalizeObjectPath(Value->AsString()));
-		}
-	}
 	TSet<FString> BakedPaths;
 	TArray<TSharedPtr<FJsonValue>> BakedAnimations;
 	for (int32 Index = 0; Index < VatData->AnimSequences.Num(); ++Index)
@@ -3037,19 +2795,6 @@ FString UMassBattleUnitEditorMCPApi::MCP_EditorInspectVatAnimation(const FString
 		Animation->SetStringField(TEXT("path"), Path);
 		BakedAnimations.Add(MakeShared<FJsonValueObject>(Animation));
 	}
-	bool bCanonicalProfile = BakedPaths.Num() == CanonicalPaths.Num();
-	if (bCanonicalProfile)
-	{
-		for (const FString& CanonicalPath : CanonicalPaths)
-		{
-			if (!BakedPaths.Contains(CanonicalPath))
-			{
-				bCanonicalProfile = false;
-				break;
-			}
-		}
-	}
-
 	bool bSkinValid = false;
 	bool bHasDeformingWeights = false;
 	SkinWeights->TryGetBoolField(TEXT("valid"), bSkinValid);
@@ -3114,12 +2859,6 @@ FString UMassBattleUnitEditorMCPApi::MCP_EditorInspectVatAnimation(const FString
 			FString::Printf(TEXT("%d standing/crouching idle, shooting, or reload animation(s) contain frames where both feet rise above the configured ground tolerance."), GroundingIssueCount),
 			TEXT("vat_data_asset"));
 	}
-	if (!bCanonicalProfile)
-	{
-		MassBattleActorUnitEditorMCP::AddIssue(Issues, TEXT("warning"), TEXT("noncanonical_soldier_animation_profile"),
-			TEXT("The VAT data asset does not contain exactly the 10 canonical /Game/Unit/Action/Solider animations."), TEXT("vat_data_asset"));
-	}
-
 	const bool bHealthy = !MassBattleActorUnitEditorMCP::HasErrors(Issues);
 	TSharedPtr<FJsonObject> Result = MassBattleActorUnitEditorMCP::MakeResult(true);
 	Result->SetStringField(TEXT("inspection_type"), TEXT("vat_animation_readiness"));
@@ -3131,7 +2870,6 @@ FString UMassBattleUnitEditorMCPApi::MCP_EditorInspectVatAnimation(const FString
 	Result->SetNumberField(TEXT("sample_rate"), VatData->SampleRate);
 	Result->SetNumberField(TEXT("animation_count"), BakedPaths.Num());
 	Result->SetNumberField(TEXT("frame_count"), VatData->NumFrames);
-	Result->SetBoolField(TEXT("uses_canonical_soldier_profile"), bCanonicalProfile);
 	Result->SetArrayField(TEXT("baked_animations"), BakedAnimations);
 	Result->SetObjectField(TEXT("skin_weights"), SkinWeights);
 	Result->SetObjectField(TEXT("vat_motion"), VertexMotion);
@@ -3144,36 +2882,40 @@ FString UMassBattleUnitEditorMCPApi::MCP_EditorInspectVatAnimation(const FString
 	return MassBattleActorUnitEditorMCP::ToJsonString(Result);
 }
 
-FString UMassBattleUnitEditorMCPApi::MCP_EditorPlanCreateVatUnitFromActor(const FString& SpecJson)
+FString UMassBattleUnitEditorMCPApi::MCP_EditorPlanCreateVatUnitFromActor(const FString& OptionsJson)
 {
-	TSharedPtr<FJsonObject> Spec = MassBattleActorUnitEditorMCP::ParseObject(SpecJson);
-	if (!Spec.IsValid())
+	TSharedPtr<FJsonObject> Options = MassBattleActorUnitEditorMCP::ParseObject(OptionsJson);
+	if (!Options.IsValid())
 	{
-		return MassBattleActorUnitEditorMCP::MakeError(TEXT("SpecJson is not valid JSON."));
+		return MassBattleActorUnitEditorMCP::MakeError(TEXT("OptionsJson is not valid JSON."));
 	}
 
 	MassBattleActorUnitEditorMCP::FActorAssemblyContext Context;
-	TSharedPtr<FJsonObject> Inspection = MassBattleActorUnitEditorMCP::BuildInspectionResult(Spec, Context);
+	TSharedPtr<FJsonObject> Inspection = MassBattleActorUnitEditorMCP::BuildInspectionResult(Options, Context);
 	TArray<TSharedPtr<FJsonValue>> Issues = Context.Issues;
-	TSharedPtr<FJsonObject> ResolvedActorSpec = MakeShared<FJsonObject>();
-	ResolvedActorSpec->Values = Spec->Values;
-	TSharedPtr<FJsonObject> AnimationResolution = MassBattleActorUnitEditorMCP::ResolveActorDefaultAnimations(ResolvedActorSpec, Context, Issues);
-	TSharedPtr<FJsonObject> SampleRateResolution = MassBattleActorUnitEditorMCP::ResolveActorVatSampleRate(ResolvedActorSpec, Issues);
-	TSharedPtr<FJsonObject> LodResolution = MassBattleActorUnitEditorMCP::ResolveActorVatLodDefaults(ResolvedActorSpec, Issues);
-	MassBattleActorUnitEditorMCP::AddRequiredVatSpecIssues(ResolvedActorSpec, Issues);
+	const USkeletalMesh* SourceMesh = Context.RootSkeletalComponent
+		? Context.RootSkeletalComponent->GetSkeletalMeshAsset() : nullptr;
+	const bool bResolvedCreationOptions = SourceMesh && !MassBattleActorUnitEditorMCP::HasErrors(Issues)
+		&& ResolveVatCreationOptions(Options, SourceMesh->GetPathName(), Issues);
+	if (bResolvedCreationOptions)
+	{
+		ValidateVatOptions(MassBattleActorUnitEditorMCP::MakeResolvedVatOptions(Options, SourceMesh->GetPathName()), Issues);
+	}
 
 	FString PackageName;
 	FString AssetName;
 	FString ObjectPath;
 	FString PathError;
-	if (!MassBattleActorUnitEditorMCP::ResolveAssemblyOutput(ResolvedActorSpec, PackageName, AssetName, ObjectPath, PathError))
+	const bool bResolvedAssemblyOutput = bResolvedCreationOptions
+		&& MassBattleActorUnitEditorMCP::ResolveAssemblyOutput(Options, PackageName, AssetName, ObjectPath, PathError);
+	if (bResolvedCreationOptions && !bResolvedAssemblyOutput)
 	{
 		MassBattleActorUnitEditorMCP::AddIssue(Issues, TEXT("error"), TEXT("invalid_assembly_output"), PathError, TEXT("assembled_skeletal_mesh_path"));
 	}
 
 	bool bOverwriteExisting = false;
-	ResolvedActorSpec->TryGetBoolField(TEXT("overwrite_existing"), bOverwriteExisting);
-	const bool bAssemblyExists = MassBattleActorUnitEditorMCP::AssetExistsWithoutLoading(ObjectPath);
+	Options->TryGetBoolField(TEXT("overwrite_existing"), bOverwriteExisting);
+	const bool bAssemblyExists = bResolvedAssemblyOutput && MassBattleActorUnitEditorMCP::AssetExistsWithoutLoading(ObjectPath);
 	if (bAssemblyExists && !bOverwriteExisting)
 	{
 		MassBattleActorUnitEditorMCP::AddIssue(Issues, TEXT("error"), TEXT("assembled_skeletal_mesh_exists"),
@@ -3187,31 +2929,30 @@ FString UMassBattleUnitEditorMCPApi::MCP_EditorPlanCreateVatUnitFromActor(const 
 			TEXT("overwrite_existing"));
 	}
 
-	TSharedPtr<FJsonObject> ResolvedVatSpec = MassBattleActorUnitEditorMCP::MakeResolvedVatSpec(ResolvedActorSpec, ObjectPath);
-	const bool bApplicable = !MassBattleActorUnitEditorMCP::HasErrors(Issues);
+	const bool bApplicable = bResolvedAssemblyOutput && !MassBattleActorUnitEditorMCP::HasErrors(Issues);
 	TSharedPtr<FJsonObject> Result = MassBattleActorUnitEditorMCP::MakeResult(true);
 	Result->SetStringField(TEXT("editor_workflow"), TEXT("Actor component assembly -> strict VAT unit authoring plan"));
 	Result->SetBoolField(TEXT("applicable"), bApplicable);
 	Result->SetStringField(TEXT("assembled_skeletal_mesh"), ObjectPath);
-	Result->SetStringField(TEXT("assembly_status"), bAssemblyExists ? (bOverwriteExisting ? TEXT("would_overwrite") : TEXT("blocked_existing")) : TEXT("would_create"));
+	if (bResolvedAssemblyOutput)
+	{
+		Result->SetStringField(TEXT("assembly_status"), bAssemblyExists ? (bOverwriteExisting ? TEXT("would_overwrite") : TEXT("blocked_existing")) : TEXT("would_create"));
+		Result->SetObjectField(TEXT("resolved_options"), MassBattleActorUnitEditorMCP::MakeResolvedVatOptions(Options, ObjectPath));
+	}
 	Result->SetObjectField(TEXT("inspection"), Inspection);
-	Result->SetObjectField(TEXT("animation_resolution"), AnimationResolution);
-	Result->SetObjectField(TEXT("vat_sample_rate_resolution"), SampleRateResolution);
-	Result->SetObjectField(TEXT("vat_lod_resolution"), LodResolution);
-	Result->SetObjectField(TEXT("resolved_vat_spec"), ResolvedVatSpec);
 	Result->SetArrayField(TEXT("issues"), Issues);
 	return MassBattleActorUnitEditorMCP::ToJsonString(Result);
 }
 
-FString UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnitFromActor(const FString& SpecJson, bool bSaveAssets)
+FString UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnitFromActor(const FString& OptionsJson, bool bSaveAssets)
 {
-	TSharedPtr<FJsonObject> Spec = MassBattleActorUnitEditorMCP::ParseObject(SpecJson);
-	if (!Spec.IsValid())
+	TSharedPtr<FJsonObject> Options = MassBattleActorUnitEditorMCP::ParseObject(OptionsJson);
+	if (!Options.IsValid())
 	{
-		return MassBattleActorUnitEditorMCP::MakeError(TEXT("SpecJson is not valid JSON."));
+		return MassBattleActorUnitEditorMCP::MakeError(TEXT("OptionsJson is not valid JSON."));
 	}
 
-	const FString PlanResultString = MCP_EditorPlanCreateVatUnitFromActor(SpecJson);
+	const FString PlanResultString = MCP_EditorPlanCreateVatUnitFromActor(OptionsJson);
 	TSharedPtr<FJsonObject> Plan = MassBattleActorUnitEditorMCP::ParseObject(PlanResultString);
 	bool bApplicable = false;
 	if (!Plan.IsValid() || !Plan->TryGetBoolField(TEXT("applicable"), bApplicable) || !bApplicable)
@@ -3230,14 +2971,22 @@ FString UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnitFromActor(const
 	}
 
 	bool bDryRun = false;
-	Spec->TryGetBoolField(TEXT("dry_run"), bDryRun);
-	Spec->TryGetBoolField(TEXT("preview_only"), bDryRun);
+	Options->TryGetBoolField(TEXT("dry_run"), bDryRun);
+	Options->TryGetBoolField(TEXT("preview_only"), bDryRun);
 	if (bDryRun)
 	{
 		return PlanResultString;
 	}
 
-	TSharedPtr<FJsonObject> AssemblyResult = MassBattleActorUnitEditorMCP::CreateAssembledSkeletalMesh(Spec, bSaveAssets);
+	FString AssembledMeshPath;
+	const TSharedPtr<FJsonObject>* PlannedVatOptions = nullptr;
+	if (!Plan->TryGetStringField(TEXT("assembled_skeletal_mesh"), AssembledMeshPath) || AssembledMeshPath.IsEmpty()
+		|| !Plan->TryGetObjectField(TEXT("resolved_options"), PlannedVatOptions) || !PlannedVatOptions || !PlannedVatOptions->IsValid())
+	{
+		return MassBattleActorUnitEditorMCP::MakeError(TEXT("Actor VAT plan did not resolve the assembly path and VAT options."));
+	}
+	Options->SetStringField(TEXT("assembled_skeletal_mesh_path"), AssembledMeshPath);
+	TSharedPtr<FJsonObject> AssemblyResult = MassBattleActorUnitEditorMCP::CreateAssembledSkeletalMesh(Options, bSaveAssets);
 	if (!AssemblyResult.IsValid() || !AssemblyResult->GetBoolField(TEXT("success")))
 	{
 		TSharedPtr<FJsonObject> Result = MassBattleActorUnitEditorMCP::MakeResult(false);
@@ -3250,20 +2999,7 @@ FString UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnitFromActor(const
 		return MassBattleActorUnitEditorMCP::ToJsonString(Result);
 	}
 
-	FString AssembledMeshPath;
-	AssemblyResult->TryGetStringField(TEXT("assembled_skeletal_mesh"), AssembledMeshPath);
-	TSharedPtr<FJsonObject> ResolvedVatSpec = MakeShared<FJsonObject>();
-	const TSharedPtr<FJsonObject>* PlannedVatSpec = nullptr;
-	if (Plan->TryGetObjectField(TEXT("resolved_vat_spec"), PlannedVatSpec) && PlannedVatSpec && PlannedVatSpec->IsValid())
-	{
-		ResolvedVatSpec->Values = (*PlannedVatSpec)->Values;
-		ResolvedVatSpec->SetStringField(TEXT("skeletal_mesh"), AssembledMeshPath);
-	}
-	else
-	{
-		ResolvedVatSpec = MassBattleActorUnitEditorMCP::MakeResolvedVatSpec(Spec, AssembledMeshPath);
-	}
-	const FString VatResultString = MCP_EditorApplyCreateVatUnit(MassBattleActorUnitEditorMCP::ToJsonString(ResolvedVatSpec), bSaveAssets);
+	const FString VatResultString = MCP_EditorApplyCreateVatUnit(MassBattleActorUnitEditorMCP::ToJsonString(*PlannedVatOptions), bSaveAssets);
 	TSharedPtr<FJsonObject> VatResult = MassBattleActorUnitEditorMCP::ParseObject(VatResultString);
 	const bool bVatSuccess = VatResult.IsValid() && VatResult->GetBoolField(TEXT("success"));
 
@@ -3272,7 +3008,7 @@ FString UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnitFromActor(const
 	Result->SetBoolField(TEXT("save_assets"), bSaveAssets);
 	Result->SetObjectField(TEXT("plan"), Plan);
 	Result->SetObjectField(TEXT("assembly"), AssemblyResult);
-	Result->SetObjectField(TEXT("resolved_vat_spec"), ResolvedVatSpec);
+	Result->SetObjectField(TEXT("resolved_options"), *PlannedVatOptions);
 	if (VatResult.IsValid())
 	{
 		Result->SetObjectField(TEXT("vat_result"), VatResult);

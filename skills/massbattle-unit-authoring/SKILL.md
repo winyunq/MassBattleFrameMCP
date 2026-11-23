@@ -5,7 +5,7 @@ description: Create, inspect, edit, delete, and validate MassBattle unit assets 
 
 # MassBattle Unit Authoring
 
-Use UE editor APIs, commandlets, or the MassBattleEditorMCP tools. Do not edit `.uasset` files directly. Keep names and paths aligned with existing MassBattle source conventions; prefer cloning a nearby official/demo unit template and applying a small union patch.
+Use UE editor APIs, commandlets, or the MassBattleEditorMCP tools for `.uasset` changes. Keep names and paths aligned with existing MassBattle source conventions. For a new unit, select a style or use the default style. For an existing unit, apply a small diff.
 
 ## Project Contract Discovery
 
@@ -46,7 +46,7 @@ Before writing `Attack.SpawnProjectile`, read and validate the referenced `UMass
 
 1. List or locate units with the Unit MCP discovery tools, scoped to style roots such as `/Game/Unit`, `/Game/Toon_Soldiers_WW2`, `/Game/StylizedArmyPackA`, and `/Game/World_Flags`.
 2. Read normal unit data with simple JSON first. Request detailed mode or a specific object only for complex fields such as `Attack`, `Visualize`, `LODShared`, or `AnimShared`.
-3. Apply edits through `MCP_UnitPlanMergeUpdate` then `MCP_UnitApplyPlan`; omitted fields must remain unchanged. Use `MCP_UnitDelete` for planned deletes.
+3. Pass the Actor Source or unit DataAsset path as the target. Apply the explicit diff through `MCP_UnitPlanMergeUpdate` then `MCP_UnitApplyPlan`. Keep the existing values and assets for all omissions. Include `options.export_source=true` in a source edit plan when the request includes regenerating the linked unit. Use `MCP_UnitDelete` for planned deletes.
 4. For array fields such as `Attack.SpawnProjectile`, `Attack.SpawnFx`, and `Attack.PlaySound`, union merge can append missing elements by default. Pass `append_arrays=false` only when append should be rejected.
 
 ## Organize Or Clean Up Assets
@@ -61,31 +61,31 @@ Treat MCP as the asset-registry hand, not as judgement. Build the relationship g
 
 ## Create Unit
 
-Mirror the official `/MassBattle/Core/MassBattleTools` editor widget by using one DoAll-equivalent apply call with the resolved generation specification.
+Build VAT assets with the resolved `options` for the build. Use `editor_list_styles` and `editor_get_style` to inspect creation defaults. Omitting `style_profile` selects the default style.
 
 ### Create From An Actor Blueprint
 
 Use `editor_apply_create_vat_unit_from_actor` when an Actor Blueprint defines the final appearance through modular SkeletalMesh components, StaticMesh weapons, or component-specific material and mesh choices. This wrapper assembles one persistent SkeletalMesh, then delegates to the strict unit workflow.
 
 1. When component names or weapon bindings are unknown, call `editor_inspect_actor_assembly` first. Treat `can_assemble=false` or any error in `issues` as a blocker.
-2. Supply a complete unit spec with `actor_class`, `unit_name`, `target_package_path`, `parent_material`, `source_renderer_class`, and `niagara_system`. Supply `target_unit` when refreshing an existing unit; otherwise also supply `template_unit`, `target_unit_package_path`, and `subtype`.
+2. Supply `actor_class` and the intended output in `options`. For a new unit, supply the inputs that the selected style leaves open. When explicitly rebuilding presentation assets for an existing unit, use its path as `target_unit` and identify the build inputs.
 3. Use `component_overrides` entries keyed by canonical `component`. A SkeletalMesh component can receive `skeletal_mesh`; a StaticMesh component can receive `static_mesh`; mesh components can receive `materials`. Use `visible`, `clear_mesh`, and `bind_bone` only when the Actor defaults are not the intended output.
 4. Set `root_component` only when automatic root selection is ambiguous. All included modular skeletal parts must use compatible skeletons and share the root's model space.
 5. Keep attached StaticMesh vertices in the root skeleton's reference-pose model space. The converter composes `ComponentRelative * SocketLocal * ReferenceBoneToRoot` and rigidly weights the attachment to the resolved bone. Do not add a manual left/right-hand, axis, or evaluated-pose correction unless the source Actor itself is authored incorrectly.
-6. Omit `animations`, `vat_sample_rate`, and `lod_settings` to use the Actor wrapper defaults: the 10 canonical `/Game/Unit/Action/Solider` sequences, 30 Hz resampling, and LOD0 BoneMode with animation blend level 2. Projects can explicitly select another positive rate such as 24 Hz. Pass explicit compatible animations when the Actor uses another skeleton or animation set.
+6. For a new unit, use the style to fill omitted build values. Supply compatible animations and a positive `vat_sample_rate` if the chosen style leaves them open.
 7. Call `editor_apply_create_vat_unit_from_actor` directly. Use `editor_plan_create_vat_unit_from_actor` only for an explicit dry run or after an apply reports a planning error. Pass `overwrite_existing=true` when replacing an existing assembled mesh or generated output.
-8. Require top-level `success=true`, then inspect `assembly`, `resolved_vat_spec`, and `vat_result`. Read the generated AgentConfig with `unit_get`; use `editor_inspect_vat_animation` when animation, skin-weight, lookup-UV, or VAT-material correctness is in question.
+8. Require top-level `success=true`, then inspect `assembly`, `resolved_options`, and `vat_result`. Read the generated AgentConfig with `unit_get`. Use `editor_inspect_vat_animation` when animation, skin weights, lookup UVs, or VAT material configuration needs verification.
 
 ### Create From Selection Or A Skeletal Mesh
 
-1. Call `editor_plan_create_vat_unit_from_selection` when generation starts from selected assets. Review the selection, warnings and `resolved_spec`, especially the target unit. Pass `resolved_spec` as `spec` to `editor_apply_create_vat_unit` to generate the unit.
-2. For a supplied skeletal mesh, call `editor_apply_create_vat_unit` with a complete canonical spec.
+1. Call `editor_plan_create_vat_unit_from_selection` when generation starts from selected assets. Review the selection, warnings and `resolved_options`, especially the target unit. Pass `resolved_options` as `options` to `editor_apply_create_vat_unit`.
+2. For a supplied skeletal mesh, pass its path and the requested output options to `editor_apply_create_vat_unit`.
 3. Use `MCP_EditorPlanCreateVatUnit` or `MCP_EditorValidateCreateVatUnit` for separate diagnostics or when the user requests a dry-run plan.
-4. Inspect `validation.issues` and `execution_steps` from the apply result. Any `error` means no assets were modified.
-5. Always pass an explicit `animations` category map when using the non-selection entry. Nonstandard names are not guessed in strict create.
+4. Inspect `validation.issues` and `execution_steps` from the apply result. Use completed steps to identify any assets already modified when execution stops.
+5. Pass an explicit `animations` category map when the required animation mapping is unavailable from the selected inputs and style.
 6. Read back the generated unit with `MCP_UnitGet` and verify asset existence, renderer class, material slot, attack enabled state, projectile/effect arrays, range, damage, and subtype.
 7. For VAT materials, expect filename discovery first and source-material texture inheritance as a fallback. Treat `defaulted_original_textures_from_source_material` warnings as review items: verify the resulting material depends on the intended BaseColor/Normal/ARM textures with `MCP_EffectAssetReadSummary`.
-8. VAT create specs use `unit_name`, `target_package_path`, and `target_unit_package_path` as the canonical output naming fields. Do not use older field names for these concepts.
+8. Use `unit_name`, `target_package_path`, and `target_unit_package_path` for output names and paths.
 
 Official DoAll correspondence:
 
@@ -101,9 +101,9 @@ Official DoAll correspondence:
 
 The editor MCP must reject incomplete VAT unit creation instead of generating partial assets.
 
-- Required canonical fields for non-selection create: `skeletal_mesh`, `unit_name`, `target_package_path`, `parent_material`, `source_renderer_class`, `niagara_system`, `vat_sample_rate`, and `animations`.
-- To patch an existing unit, pass `target_unit`; the tool reads `target_unit.SubType.Index` unless an explicit `subtype` is supplied.
-- To create a new unit, pass `template_unit`, `target_unit_package_path`, and `subtype`.
+- Before a VAT build, review the resolved mesh, unit name, output paths, material, renderer, Niagara, sample rate, and animations.
+- For an ordinary edit to an existing unit, use the unit diff tools. For an explicit VAT rebuild, pass `target_unit` with the required build inputs.
+- For new units, supply a destination and any required creation inputs that the style leaves open.
 - Use `overwrite_existing=true` and `refresh_materials=true` when refreshing generated assets. Existing generated StaticMeshes block strict create when overwrite is false.
 - Do not pass old aliases such as `unit_path`, `existing_unit`, `mesh`, `source_mesh`, `sub_type`, `renderer_template_class`, `template_renderer_class`, `niagara`, `sample_rate`, or `VATSampleRate`.
 - Do not pass fallback switches such as `allow_static_fallback`, `allow_missing_anims`, `allow_no_vat`, or `allow_missing_renderer`.
@@ -112,7 +112,7 @@ The editor MCP must reject incomplete VAT unit creation instead of generating pa
 
 ## Defaults
 
-After resolving the project contract, use style defaults only for boilerplate that the project leaves unspecified, such as renderer/LOD defaults and common projectile/effect/sound bindings. Never let a style profile override project package roots, semantic naming, scale, or balance. Keep per-unit specs small:
+After resolving the project contract, use style to fill open values on new units, such as renderer or LOD defaults and common projectile, effect, and sound bindings. Explicit project values for package roots, names, scale, and balance take precedence. Keep per-unit options small:
 
 - `material_overrides` for skins or flag/country variants.
 - `source_renderer_class` and `niagara_system` for renderer binding.

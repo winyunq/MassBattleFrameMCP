@@ -24,6 +24,12 @@ def update(source):
     return result(source.get_editor_property('last_report'))
 
 
+def apply_changes(path, changes):
+    plan = result(API.mcp_unit_plan_merge_update(path, json.dumps(changes)))
+    assert plan['applicable'], plan
+    return result(API.mcp_unit_apply_plan(plan['plan_id'], True))
+
+
 if not unreal.EditorAssetLibrary.does_asset_exist(SOURCE):
     result(API.mcp_unit_create(json.dumps({
         'asset_type': 'source_actor', 'asset_name': 'BP_Source', 'package_path': ROOT,
@@ -34,15 +40,20 @@ if not unreal.EditorAssetLibrary.does_asset_exist(SOURCE):
     assert source.get_editor_property('exported_unit') is None
     assert update(source)['created']
     assert read(OUTPUT)['Current'] == 100
-    result(API.mcp_unit_merge_update(OUTPUT, '{"Health":{"Current":200}}', True))
+    apply_changes(OUTPUT, {'Health': {'Current': 200}})
     assert not update(source)['applied_diff']
     assert read(OUTPUT)['Current'] == 200
-    result(API.mcp_unit_merge_update(SOURCE, '{"Health":{"Maximum":350}}', True))
+    apply_changes(SOURCE, {'Health': {'Maximum': 350}})
+    assert read(SOURCE)['Maximum'] == 350
+    assert read(OUTPUT)['Maximum'] == 300
+    apply_changes(SOURCE, {'options': {'export_source': True}})
     assert read(OUTPUT)['Current'] == 200
     assert read(OUTPUT)['Maximum'] == 350
-    result(API.mcp_unit_merge_update(SOURCE, json.dumps({'export_path': MOVED}), True))
+    apply_changes(SOURCE, {'export_path': MOVED, 'options': {'export_source': True}})
     assert source.get_editor_property('exported_unit').get_path_name() == MOVED + '.DA_Unit'
     assert read(MOVED)['Current'] == 200
+    apply_changes(SOURCE, {'export_path': '', 'options': {'export_source': True}})
+    assert source.get_editor_property('exported_unit').get_path_name() == MOVED + '.DA_Unit'
     listing = result(API.mcp_unit_list(json.dumps({'roots': [ROOT], 'load_fields': False})))
     paths = [row['ObjectPath'] for row in listing['units']]
     assert SOURCE + '.BP_Source' in paths and MOVED + '.DA_Unit' in paths, paths
@@ -56,7 +67,7 @@ else:
     dependencies = unreal.AssetRegistryHelpers.get_asset_registry().get_dependencies(
         MOVED, unreal.AssetRegistryDependencyOptions(include_hard_package_references=True))
     assert SOURCE not in [str(path) for path in dependencies], dependencies
-    result(API.mcp_unit_merge_update(SOURCE, '{"Health":{"Current":120}}', True))
+    apply_changes(SOURCE, {'Health': {'Current': 120}, 'options': {'export_source': True}})
     assert read(MOVED)['Current'] == 120
     # External ownership must block destruction of the pair.
     guard_path = ROOT + '/BP_Guard'

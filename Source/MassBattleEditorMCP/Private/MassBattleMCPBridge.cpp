@@ -271,7 +271,7 @@ FString UMassBattleMCPBridge::InternalExecuteCommand(const FString& CommandType,
 	if (CommandType == TEXT("MCP_UnitPlanMergeUpdate")) { return UMassBattleUnitMCPApi::MCP_UnitPlanMergeUpdate(StringParam(Params, TEXT("UnitPath")), JsonParam(Params, TEXT("UnitDataJson"))); }
 	if (CommandType == TEXT("MCP_UnitPreviewDiff")) { return UMassBattleUnitMCPApi::MCP_UnitPreviewDiff(StringParam(Params, TEXT("PlanId"))); }
 	if (CommandType == TEXT("MCP_UnitApplyPlan")) { return UMassBattleUnitMCPApi::MCP_UnitApplyPlan(StringParam(Params, TEXT("PlanId")), BoolParam(Params, TEXT("bSaveAssets"), true)); }
-	if (CommandType == TEXT("MCP_UnitCreate")) { return UMassBattleUnitMCPApi::MCP_UnitCreate(JsonParam(Params, TEXT("CreateSpecJson")), BoolParam(Params, TEXT("bSaveAssets"), true)); }
+	if (CommandType == TEXT("MCP_UnitCreate")) { return UMassBattleUnitMCPApi::MCP_UnitCreate(JsonParam(Params, TEXT("OptionsJson"), JsonParam(Params, TEXT("CreateSpecJson"))), BoolParam(Params, TEXT("bSaveAssets"), true)); }
 	if (CommandType == TEXT("MCP_UnitFindAssets")) { return UMassBattleUnitMCPApi::MCP_UnitFindAssets(JsonParam(Params, TEXT("QueryJson"))); }
 	if (CommandType == TEXT("MCP_UnitDeleteSoft")) { return UMassBattleUnitMCPApi::MCP_UnitDeleteSoft(StringParam(Params, TEXT("UnitPath")), JsonParam(Params, TEXT("OptionsJson"))); }
 	if (CommandType == TEXT("MCP_UnitDelete")) { return UMassBattleUnitMCPApi::MCP_UnitDelete(StringParam(Params, TEXT("UnitPath")), JsonParam(Params, TEXT("OptionsJson"))); }
@@ -286,18 +286,18 @@ FString UMassBattleMCPBridge::InternalExecuteCommand(const FString& CommandType,
 	if (CommandType == TEXT("MCP_ProjectileDelete")) { return UMassBattleProjectileMCPApi::MCP_ProjectileDelete(StringParam(Params, TEXT("ProjectilePath")), JsonParam(Params, TEXT("OptionsJson"))); }
 
 	if (CommandType == TEXT("MCP_EditorGetStatus")) { return UMassBattleUnitEditorMCPApi::MCP_EditorGetStatus(); }
-	if (CommandType == TEXT("MCP_EditorListProfiles")) { return UMassBattleUnitEditorMCPApi::MCP_EditorListProfiles(JsonParam(Params, TEXT("OptionsJson"))); }
-	if (CommandType == TEXT("MCP_EditorGetProfile")) { return UMassBattleUnitEditorMCPApi::MCP_EditorGetProfile(StringParam(Params, TEXT("ProfileType")), StringParam(Params, TEXT("ProfileId"))); }
-	if (CommandType == TEXT("MCP_EditorPlanCreateVatUnit")) { return UMassBattleUnitEditorMCPApi::MCP_EditorPlanCreateVatUnit(JsonParam(Params, TEXT("SpecJson"))); }
-	if (CommandType == TEXT("MCP_EditorValidateCreateVatUnit")) { return UMassBattleUnitEditorMCPApi::MCP_EditorValidateCreateVatUnit(JsonParam(Params, TEXT("SpecJson"))); }
-	if (CommandType == TEXT("MCP_EditorApplyCreateVatUnit")) { return UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnit(JsonParam(Params, TEXT("SpecJson")), BoolParam(Params, TEXT("bSaveAssets"))); }
+	if (CommandType == TEXT("MCP_EditorListStyles")) { return UMassBattleUnitEditorMCPApi::MCP_EditorListStyles(JsonParam(Params, TEXT("OptionsJson"))); }
+	if (CommandType == TEXT("MCP_EditorGetStyle")) { return UMassBattleUnitEditorMCPApi::MCP_EditorGetStyle(StringParam(Params, TEXT("StyleId"))); }
+	if (CommandType == TEXT("MCP_EditorPlanCreateVatUnit")) { return UMassBattleUnitEditorMCPApi::MCP_EditorPlanCreateVatUnit(JsonParam(Params, TEXT("OptionsJson"), JsonParam(Params, TEXT("SpecJson")))); }
+	if (CommandType == TEXT("MCP_EditorValidateCreateVatUnit")) { return UMassBattleUnitEditorMCPApi::MCP_EditorValidateCreateVatUnit(JsonParam(Params, TEXT("OptionsJson"), JsonParam(Params, TEXT("SpecJson")))); }
+	if (CommandType == TEXT("MCP_EditorApplyCreateVatUnit")) { return UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnit(JsonParam(Params, TEXT("OptionsJson"), JsonParam(Params, TEXT("SpecJson"))), BoolParam(Params, TEXT("bSaveAssets"))); }
 	if (CommandType == TEXT("MCP_EditorPlanCreateVatUnitFromSelection")) { return UMassBattleUnitEditorMCPApi::MCP_EditorPlanCreateVatUnitFromSelection(JsonParam(Params, TEXT("OptionsJson"))); }
 	if (CommandType == TEXT("MCP_EditorInspectActorAssembly")) { return UMassBattleUnitEditorMCPApi::MCP_EditorInspectActorAssembly(StringParam(Params, TEXT("ActorPath")), JsonParam(Params, TEXT("OptionsJson"))); }
-	if (CommandType == TEXT("MCP_EditorInspectVatAnimation")) { return UMassBattleUnitEditorMCPApi::MCP_EditorInspectVatAnimation(JsonParam(Params, TEXT("SpecJson"))); }
-	if (CommandType == TEXT("MCP_EditorPlanCreateVatUnitFromActor")) { return UMassBattleUnitEditorMCPApi::MCP_EditorPlanCreateVatUnitFromActor(JsonParam(Params, TEXT("SpecJson"))); }
-	if (CommandType == TEXT("MCP_EditorApplyCreateVatUnitFromActor")) { return UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnitFromActor(JsonParam(Params, TEXT("SpecJson")), BoolParam(Params, TEXT("bSaveAssets"), true)); }
-	if (CommandType == TEXT("MCP_EditorPlanAddAnimationsToUnit")) { return UMassBattleUnitEditorMCPApi::MCP_EditorPlanAddAnimationsToUnit(StringParam(Params, TEXT("UnitPath")), JsonParam(Params, TEXT("SpecJson"))); }
-	if (CommandType == TEXT("MCP_EditorValidateAddAnimationsToUnit")) { return UMassBattleUnitEditorMCPApi::MCP_EditorValidateAddAnimationsToUnit(StringParam(Params, TEXT("UnitPath")), JsonParam(Params, TEXT("SpecJson"))); }
+	if (CommandType == TEXT("MCP_EditorInspectVatAnimation")) { return UMassBattleUnitEditorMCPApi::MCP_EditorInspectVatAnimation(JsonParam(Params, TEXT("OptionsJson"), JsonParam(Params, TEXT("SpecJson")))); }
+	if (CommandType == TEXT("MCP_EditorPlanCreateVatUnitFromActor")) { return UMassBattleUnitEditorMCPApi::MCP_EditorPlanCreateVatUnitFromActor(JsonParam(Params, TEXT("OptionsJson"), JsonParam(Params, TEXT("SpecJson")))); }
+	if (CommandType == TEXT("MCP_EditorApplyCreateVatUnitFromActor")) { return UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnitFromActor(JsonParam(Params, TEXT("OptionsJson"), JsonParam(Params, TEXT("SpecJson"))), BoolParam(Params, TEXT("bSaveAssets"), true)); }
+	if (CommandType == TEXT("MCP_EditorPlanAddAnimationsToUnit")) { return UMassBattleUnitEditorMCPApi::MCP_EditorPlanAddAnimationsToUnit(StringParam(Params, TEXT("UnitPath")), JsonParam(Params, TEXT("OptionsJson"), JsonParam(Params, TEXT("SpecJson")))); }
+	if (CommandType == TEXT("MCP_EditorValidateAddAnimationsToUnit")) { return UMassBattleUnitEditorMCPApi::MCP_EditorValidateAddAnimationsToUnit(StringParam(Params, TEXT("UnitPath")), JsonParam(Params, TEXT("OptionsJson"), JsonParam(Params, TEXT("SpecJson")))); }
 	if (CommandType == TEXT("MCP_EditorApplyOrganizeUnitAssets")) { return UMassBattleUnitEditorMCPApi::MCP_EditorApplyOrganizeUnitAssets(StringParam(Params, TEXT("UnitPath")), JsonParam(Params, TEXT("OptionsJson")), BoolParam(Params, TEXT("bSaveAssets"), true)); }
 
 	if (CommandType == TEXT("MCP_EffectAssetGetApiStatus")) { return UMassBattleEffectAssetMCPApi::MCP_EffectAssetGetApiStatus(); }

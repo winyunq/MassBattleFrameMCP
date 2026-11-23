@@ -44,42 +44,42 @@ class ActorUnitAuthoringTests(unittest.IsolatedAsyncioTestCase):
             {"component_overrides": [{"component": "Weapon_R"}]},
         )
 
-    async def test_plan_serializes_actor_recipe(self):
-        spec = {
+    async def test_plan_serializes_actor_options(self):
+        options = {
             "actor_class": "/Game/Actors/BP_Infantry",
             "unit_name": "Infantry_Rifle",
         }
-        await server.editor_plan_create_vat_unit_from_actor(spec)
+        await server.editor_plan_create_vat_unit_from_actor(options)
 
         command, params = self.fake.calls[-1]
         self.assertEqual(command, "MCP_EditorPlanCreateVatUnitFromActor")
-        self.assertEqual(json.loads(params["SpecJson"]), spec)
+        self.assertEqual(json.loads(params["OptionsJson"]), options)
 
-    async def test_vat_animation_inspection_serializes_diagnostic_spec(self):
-        spec = {
+    async def test_vat_animation_inspection_serializes_options(self):
+        options = {
             "vat_data_asset": "/Game/Units/Gen/VAT_Infantry",
             "skeletal_mesh": "/Game/Units/Gen/SKM_Infantry",
         }
-        await server.editor_inspect_vat_animation(spec)
+        await server.editor_inspect_vat_animation(options)
 
         command, params = self.fake.calls[-1]
         self.assertEqual(command, "MCP_EditorInspectVatAnimation")
-        self.assertEqual(json.loads(params["SpecJson"]), spec)
+        self.assertEqual(json.loads(params["OptionsJson"]), options)
 
     async def test_apply_adds_compact_default_without_mutating_input(self):
-        spec = {"actor_class": "/Game/Actors/BP_Infantry"}
+        options = {"actor_class": "/Game/Actors/BP_Infantry"}
         await server.editor_apply_create_vat_unit_from_actor(
-            spec, save_assets=False, compact_response=False
+            options, save_assets=False, compact_response=False
         )
 
         command, params = self.fake.calls[-1]
         self.assertEqual(command, "MCP_EditorApplyCreateVatUnitFromActor")
         self.assertFalse(params["bSaveAssets"])
         self.assertEqual(
-            json.loads(params["SpecJson"]),
+            json.loads(params["OptionsJson"]),
             {"actor_class": "/Game/Actors/BP_Infantry", "compact_response": False},
         )
-        self.assertNotIn("compact_response", spec)
+        self.assertNotIn("compact_response", options)
 
 
 if __name__ == "__main__":

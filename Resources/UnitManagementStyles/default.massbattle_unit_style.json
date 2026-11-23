@@ -174,7 +174,6 @@
     }
   },
   "authoring_defaults": {
-    "recipe_id": "vat_skeletal_unit",
     "default_unit_template": "/Game/Unit/Shared/Defaults/AgentConfig_CombatDefault_Infantry.AgentConfig_CombatDefault_Infantry",
     "default_unit_templates": {
       "default": "/Game/Unit/Shared/Defaults/AgentConfig_CombatDefault_Infantry.AgentConfig_CombatDefault_Infantry",
@@ -188,6 +187,101 @@
     "default_source_renderer_class": "/MassBattle/Core/AgentRenderer/BP_AgentRenderer_Template.BP_AgentRenderer_Template_C",
     "default_niagara_system": "/MassBattle/Core/AgentRenderer/NS_AgentRenderer_Template.NS_AgentRenderer_Template",
     "default_vat_sample_rate": 30,
+    "default_unit_patch": {
+      "Data": {
+        "PhysicsShared": {
+          "ColliderMult": 0.85
+        },
+        "Debuff": {
+          "LaunchParams": {
+            "bCanLaunch": false
+          }
+        },
+        "Defence": {
+          "LaunchImmuneAlive": 1
+        },
+        "Move": {
+          "XY": {
+            "MoveSpeed": 1000,
+            "MoveAcceleration": 24000,
+            "MoveDeceleration": 24000,
+            "MinInitSpeed": 0,
+            "AcceptanceRadius": 256,
+            "MoveSpeedRangeMapByAngle": {
+              "X": 0,
+              "Y": 1,
+              "Z": 5,
+              "W": 0.001
+            },
+            "MoveSpeedRangeMapByDist": {
+              "X": 0,
+              "Y": 1,
+              "Z": 2000,
+              "W": 1
+            }
+          },
+          "Yaw": {
+            "bEnable": true,
+            "TurnSpeed": 1080,
+            "TurnAcceleration": 6480,
+            "TurnSpeedRangeMapByMoveSpeed": {
+              "X": 0,
+              "Y": 1,
+              "Z": 2000,
+              "W": 1
+            },
+            "MinInitSpeed": 0,
+            "TurnMode": "OrientToPath",
+            "ReverseSpeedRatio": 0.9,
+            "MaxSteeringAngle": 0,
+            "SteeringRate": 180,
+            "AlignHysteresis": 0.1,
+            "OrbitGuardMult": 0.5,
+            "OrbitMinSpeedMult": 0,
+            "RotationalResistanceScale": 0
+          }
+        },
+        "Visualize": {
+          "Transform": {
+            "Scale3D": {
+              "X": 1,
+              "Y": 1,
+              "Z": 1
+            }
+          }
+        }
+      }
+    },
+    "default_unit_patch_derivations": [
+      {
+        "source": "Data.Move.XY.MoveSpeed",
+        "targets": [
+          "Data.Move.XY.MoveAcceleration",
+          "Data.Move.XY.MoveDeceleration"
+        ],
+        "multiplier": 24,
+        "unless_explicit": true
+      }
+    ],
+    "collider_mult_presets": {
+      "default": "slight_15_percent",
+      "slight_15_percent": 0.85,
+      "noticeable_30_percent": 0.7
+    },
+    "default_actor_lod_settings": [
+      {
+        "LODIndex": 0,
+        "ScreenSize": 0,
+        "AnimBlendLevel": 2,
+        "Mode": "BoneMode"
+      }
+    ],
+    "engagement_defaults": {
+      "chase_acceptance_range_ratio": 0.85,
+      "hit_tolerance_range_ratio": 1.15,
+      "trace_perception_range_ratio": 1.3,
+      "unarmed_moving_trace_radius": 1024
+    },
     "source_folder_name": "Source_{unit_name}",
     "generated_folder_name": "Gen_{unit_name}",
     "unit_asset_prefix": "",
@@ -1135,6 +1229,12 @@
         }
       ]
     },
+    "embedded_projectile_fields": [
+      {
+        "struct_path": "/Script/MassBattleSingleTurretRuntime.MBSTMobileFireShared",
+        "property": "ProjectileConfig"
+      }
+    ],
     "projectile_visual_variants": {
       "/Game/ArmyVFX/WinyunqRelease/ProjectileCombat/Projectiles/ProjectileConfig_ArmyVFX_ArtilleryShell.ProjectileConfig_ArmyVFX_ArtilleryShell": "/Game/Unit/Shared/FX/Optimized/Combat/Projectiles/PC_Combat_ArmyVFX_ArtilleryShell.PC_Combat_ArmyVFX_ArtilleryShell",
       "/Game/ArmyVFX/WinyunqRelease/ProjectileCombat/Projectiles/ProjectileConfig_ArmyVFX_Bullet.ProjectileConfig_ArmyVFX_Bullet": "/Game/Unit/Shared/FX/Optimized/Combat/Projectiles/PC_Combat_ArmyVFX_Bullet.PC_Combat_ArmyVFX_Bullet",

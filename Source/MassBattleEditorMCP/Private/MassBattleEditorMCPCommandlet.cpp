@@ -142,15 +142,15 @@ FString CommandletDispatchInvocation(const TSharedPtr<FJsonObject>& Invocation)
 	}
 	if (Command == TEXT("MCP_EditorPlanCreateVatUnit") || Command == TEXT("editor_plan_create_vat_unit"))
 	{
-		return UMassBattleUnitEditorMCPApi::MCP_EditorPlanCreateVatUnit(CommandletJsonFieldByNamesAsString(Params, { TEXT("SpecJson"), TEXT("spec") }));
+		return UMassBattleUnitEditorMCPApi::MCP_EditorPlanCreateVatUnit(CommandletJsonFieldByNamesAsString(Params, { TEXT("OptionsJson"), TEXT("options"), TEXT("SpecJson"), TEXT("spec") }));
 	}
 	if (Command == TEXT("MCP_EditorValidateCreateVatUnit") || Command == TEXT("editor_validate_create_vat_unit"))
 	{
-		return UMassBattleUnitEditorMCPApi::MCP_EditorValidateCreateVatUnit(CommandletJsonFieldByNamesAsString(Params, { TEXT("SpecJson"), TEXT("spec") }));
+		return UMassBattleUnitEditorMCPApi::MCP_EditorValidateCreateVatUnit(CommandletJsonFieldByNamesAsString(Params, { TEXT("OptionsJson"), TEXT("options"), TEXT("SpecJson"), TEXT("spec") }));
 	}
 	if (Command == TEXT("MCP_EditorApplyCreateVatUnit") || Command == TEXT("editor_apply_create_vat_unit"))
 	{
-		return UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnit(CommandletJsonFieldByNamesAsString(Params, { TEXT("SpecJson"), TEXT("spec") }), bSaveAssets);
+		return UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnit(CommandletJsonFieldByNamesAsString(Params, { TEXT("OptionsJson"), TEXT("options"), TEXT("SpecJson"), TEXT("spec") }), bSaveAssets);
 	}
 	if (Command == TEXT("MCP_EditorPlanCreateVatUnitFromSelection") || Command == TEXT("editor_plan_create_vat_unit_from_selection"))
 	{
@@ -165,19 +165,19 @@ FString CommandletDispatchInvocation(const TSharedPtr<FJsonObject>& Invocation)
 	}
 	if (Command == TEXT("MCP_EditorInspectVatAnimation") || Command == TEXT("editor_inspect_vat_animation"))
 	{
-		return UMassBattleUnitEditorMCPApi::MCP_EditorInspectVatAnimation(CommandletJsonFieldByNamesAsString(Params, { TEXT("SpecJson"), TEXT("spec") }));
+		return UMassBattleUnitEditorMCPApi::MCP_EditorInspectVatAnimation(CommandletJsonFieldByNamesAsString(Params, { TEXT("OptionsJson"), TEXT("options"), TEXT("SpecJson"), TEXT("spec") }));
 	}
 	if (Command == TEXT("MCP_EditorPlanCreateVatUnitFromActor") || Command == TEXT("editor_plan_create_vat_unit_from_actor"))
 	{
-		return UMassBattleUnitEditorMCPApi::MCP_EditorPlanCreateVatUnitFromActor(CommandletJsonFieldByNamesAsString(Params, { TEXT("SpecJson"), TEXT("spec") }));
+		return UMassBattleUnitEditorMCPApi::MCP_EditorPlanCreateVatUnitFromActor(CommandletJsonFieldByNamesAsString(Params, { TEXT("OptionsJson"), TEXT("options"), TEXT("SpecJson"), TEXT("spec") }));
 	}
 	if (Command == TEXT("MCP_EditorApplyCreateVatUnitFromActor") || Command == TEXT("editor_apply_create_vat_unit_from_actor"))
 	{
-		return UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnitFromActor(CommandletJsonFieldByNamesAsString(Params, { TEXT("SpecJson"), TEXT("spec") }), bSaveAssets);
+		return UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnitFromActor(CommandletJsonFieldByNamesAsString(Params, { TEXT("OptionsJson"), TEXT("options"), TEXT("SpecJson"), TEXT("spec") }), bSaveAssets);
 	}
 	if (Command == TEXT("MCP_UnitCreate") || Command == TEXT("unit_create"))
 	{
-		return UMassBattleUnitMCPApi::MCP_UnitCreate(CommandletJsonFieldByNamesAsString(Params, { TEXT("CreateSpecJson"), TEXT("create_spec") }), bSaveAssets);
+		return UMassBattleUnitMCPApi::MCP_UnitCreate(CommandletJsonFieldByNamesAsString(Params, { TEXT("OptionsJson"), TEXT("options"), TEXT("CreateSpecJson"), TEXT("create_spec") }), bSaveAssets);
 	}
 	if (Command == TEXT("MCP_UnitGet") || Command == TEXT("unit_get"))
 	{

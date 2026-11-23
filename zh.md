@@ -102,7 +102,9 @@ MassBattleEditorMCP 的 Codex 入口由两层组成：
 安装后需要重启 Codex 或新开会话；UE 编辑器也需要加载本插件，bridge 才会开始监听。
 安装成功后应能看到 `massbattle-editor-mcp`，并可调用 `unit_get`、`unit_plan_write`、`unit_apply_plan`、`projectile_list`、`editor_apply_create_vat_unit`、`effect_asset_read_summary` 和 `niagara_set_module_pin` 等工具。
 
-`editor_apply_create_vat_unit` 对应官方 `/MassBattle/Core/MassBattleTools` 的 DoAll 流程，用完整 spec 创建或刷新网格、材质、VAT 纹理、渲染器和单位配置。从选中资产开始时，先用 `editor_plan_create_vat_unit_from_selection`，核对警告和 `resolved_spec`，然后把该 spec 传给生成入口。
+单位制作的工具调用顺序由 skill 说明。`editor_apply_create_vat_unit` 构建网格、材质、VAT 纹理、渲染器和单位配置。从选中资产开始时，先用 `editor_plan_create_vat_unit_from_selection`，核对警告和 `resolved_options`，再将这些参数作为 `options` 传给生成入口。
+
+编辑已有单位使用 diff，只改明确列出的资产和字段，遗漏项保留原值。新建单位时由 style 补齐缺省项，省略 `style_profile` 使用默认 style。
 
 注意：`FFxConfig.AgentBehaviorState` 使用的是 `EAgentBehaviorState`，可写值包括 `None`、`Appearing`、`Sleeping`、`Patrolling`、`Attacking`、`Hit`、`Dying`。受击 FX 应写 `Hit`，不要把运行时 flag 名 `BeingHit` 写进这个字段。
 
@@ -120,7 +122,7 @@ MassBattleEditorMCP 的 Codex 入口由两层组成：
 | Unit MCP | `unit_get_schema` | 可用 | 读取单位可编辑字段、类型、角色和 tooltip。 |
 | Unit MCP | `unit_export` | 可用 | 导出紧凑单位数值表，支持给平衡分析或批量复核使用。 |
 | Unit MCP | `unit_find_assets` | 可用 | 按单位制作场景查找 SkeletalMesh、Renderer、Niagara 等候选资产。 |
-| Unit MCP | `unit_create` | 可用 | 创建新单位；未指定模板时使用默认单位模板，可带初始单位数据。 |
+| Unit MCP | `unit_create` | 可用 | 创建新单位，缺省项由所选 style 补齐。 |
 | Unit MCP | `unit_plan_write` | 可用 | 规划单位或源码 Actor 的局部变更，返回可审核的差异和计划 ID。 |
 | Unit MCP | `unit_preview_plan` | 可用 | 按 ID 读取已保存的变更计划及完整差异。 |
 | Unit MCP | `unit_apply_plan` | 可用 | 应用已审核的变更计划，可保存单位或导出源码 Actor。 |
@@ -133,14 +135,14 @@ MassBattleEditorMCP 的 Codex 入口由两层组成：
 | Projectile MCP | `projectile_validate` | 可用 | 验证运动、伤害归属、触发条件、生命周期 FX、关联单位与重复爆炸。 |
 | Projectile MCP | `projectile_delete` | 可用 | 规划或执行受保护的软/硬删除；默认 dry-run。 |
 | Unit Editor MCP | `editor_get_status` | 可用 | 读取单位编辑工作流能力。 |
-| Unit Editor MCP | `editor_list_profiles` | 可用 | 列出风格 profile 和 authoring recipe。 |
-| Unit Editor MCP | `editor_get_profile` | 可用 | 读取指定 profile 或 recipe。 |
+| Unit Editor MCP | `editor_list_styles` | 可用 | 列出可用于新建单位的 style。 |
+| Unit Editor MCP | `editor_get_style` | 可用 | 读取指定 style 的缺省值和规则。 |
 | Unit Editor MCP | `editor_plan_create_vat_unit` | 诊断 | 预览 DoAll 等价 VAT 单位计划；严格执行仍要求完整 canonical 输入。 |
-| Unit Editor MCP | `editor_apply_create_vat_unit` | 可用 | 验证完整 spec，然后生成网格、材质、VAT、渲染器和单位配置。 |
-| Unit Editor MCP | `editor_plan_create_vat_unit_from_selection` | 可用 | 根据当前编辑器选择或 `selected_assets` 解析可供生成的 spec，供执行前核对。 |
+| Unit Editor MCP | `editor_apply_create_vat_unit` | 可用 | 验证参数并构建网格、材质、VAT、渲染器和单位配置。 |
+| Unit Editor MCP | `editor_plan_create_vat_unit_from_selection` | 可用 | 根据当前编辑器选择或 `selected_assets` 解析生成参数，供执行前核对。 |
 | Unit Editor MCP | `editor_inspect_actor_assembly` | 可用 | 无写入检查 Actor 的模块化骨骼/静态组件、有效材质、Socket 变换和武器绑定骨骼。 |
-| Unit Editor MCP | `editor_inspect_vat_animation` | 可用 | 检查蒙皮权重、顶点/骨骼运动、VAT 查询 UV、材质开关与贴图，以及标准士兵动画配置。 |
-| Unit Editor MCP | `editor_plan_create_vat_unit_from_actor` | 诊断 | 验证 Actor 组件/武器覆盖配方，预览持久化组合 SkeletalMesh 与严格 VAT 单位计划。 |
+| Unit Editor MCP | `editor_inspect_vat_animation` | 可用 | 检查蒙皮权重、烘焙运动、VAT 查询 UV、材质开关和贴图。 |
+| Unit Editor MCP | `editor_plan_create_vat_unit_from_actor` | 诊断 | 验证 Actor 组件和武器覆盖，预览组合 SkeletalMesh 和 VAT 构建。 |
 | Unit Editor MCP | `editor_apply_create_vat_unit_from_actor` | 可用 | 把 Actor 与刚性绑定的静态武器组合为可动画的持久化 SkeletalMesh，再执行严格的 DoAll 等价 VAT 工作流。 |
 | Unit Editor MCP | `editor_apply_organize_unit_assets` | 可用 | 默认以 dry-run 返回关联资产整理计划，也可执行已审核的搬迁。 |
 | Effect Asset MCP | `effect_asset_query` | 可用 | 按 `query/root/classes/limit` 查找 Niagara、Cascade、Blueprint、Material、Texture、Sound 等视觉相关资产。 |
@@ -179,16 +181,16 @@ uv run --project Resources/Python Resources/Python/TranslateNiagaraManifest.py m
 
 1. [`Resources/Python/MassBattleMcpServer.py`](Resources/Python/MassBattleMcpServer.py) 向 MCP 客户端公开 `editor_apply_create_vat_unit_from_actor`。
 2. [`MassBattleMCPBridge.cpp`](Source/MassBattleEditorMCP/Private/MassBattleMCPBridge.cpp) 或 [`MassBattleEditorMCPCommandlet.cpp`](Source/MassBattleEditorMCP/Private/MassBattleEditorMCPCommandlet.cpp) 在 Unreal Editor 内分发请求。
-3. [`MassBattleActorUnitEditorMCPApi.cpp`](Source/MassBattleEditorMCP/Private/MassBattleActorUnitEditorMCPApi.cpp) 生成并检查蓝图实例、应用组件 override、保存持久化组合 SkeletalMesh，并补齐 Actor 制作默认值。
+3. [`MassBattleActorUnitEditorMCPApi.cpp`](Source/MassBattleEditorMCP/Private/MassBattleActorUnitEditorMCPApi.cpp) 生成并检查蓝图实例、应用组件覆盖，并保存组合后的 SkeletalMesh。
 4. [`MassBattleUnitEditorMCPApi.cpp`](Source/MassBattleEditorMCP/Private/MassBattleUnitEditorMCPApi.cpp) 执行严格的单位制作流程，创建或刷新 StaticMesh、材质实例、VAT 数据与纹理、Renderer 蓝图和 AgentConfig。
 
 VAT 单位创建会先使用发现到的原始贴图；如果基于文件名的贴图发现漏掉源材质贴图，Editor MCP 可以在创建 VAT 材质实例前从源 SkeletalMesh 材质继承常见贴图参数和 used textures。`defaulted_original_textures_from_source_material` warning 是复核项，需要检查生成材质依赖是否指向预期贴图。
 
 模块化 SkeletalMesh 组件通过持久化编辑器 `MeshDescription` 合并。武器等可见 StaticMesh 附件会复制到根骨架的**参考姿势模型空间**，并刚性绑定到 Socket 解析出的骨骼。附件变换为 `ComponentRelative * SocketLocal * ReferenceBoneToRoot`。不能把动画求值姿势下的 Socket 变换烘进源顶点，否则后续骨骼蒙皮还会再次应用同一段骨骼动画。`editor_inspect_actor_assembly` 提供表示生成姿势的 `relative_to_root`，以及实际用于组合的 `reference_pose_relative_to_root`。源材质槽保持不变，其纹理表达式与包依赖用于填充生成的 VAT 材质输入。
 
-Actor 制作未传 `animations` 时，默认使用 `/Game/Unit/Action/Solider` 下的 10 个标准动画：Idle、Move、Appear、Attack、Hit 和 Death A-E。默认模式为可配置的 30 Hz BoneMode、四骨骼影响和动画混合等级 2；Winyunq 等项目可以显式改用 24 Hz，而不改变插件默认值。源动画关键帧会先重采样到配置的 VAT 采样率，再交给官方 AnimToTexture 烘焙；生成的材质实例同时保存全局层和 VAT 层的静态开关，包括 `UseVAT`、`BoneMode`、VAT UV 通道、骨骼影响数量和混合开关。
+新建单位时，可用 `style_profile` 选择缺省规则，省略时使用默认 style。核对解析出的动画映射，并补齐缺少的骨架兼容动画。源动画关键帧会先按 `vat_sample_rate` 重采样，再交给 AnimToTexture 烘焙。生成的材质实例保存 VAT 静态开关、UV 通道和混合设置。
 
-严格的非 selection VAT create 需要这些 canonical 字段：`skeletal_mesh`、`unit_name`、`target_package_path`、`parent_material`、`source_renderer_class`、`niagara_system`、`vat_sample_rate`、`animations`。Actor wrapper 会在进入严格流程前补齐文档约定的动画、采样率和 LOD 默认值。刷新已有单位使用 `target_unit`；新建单位还必须提供 `template_unit`、`target_unit_package_path`、`subtype`。刷新已生成资产时应传 `overwrite_existing=true` 和 `refresh_materials=true`，否则旧 StaticMesh 会阻止执行，避免静默复用白材质或无动画资产。
+VAT 构建会先验证解析后的参数。指定来源网格或 Actor，补齐 style 留空的必填项。`target_unit` 表示已有的操作对象。普通字段编辑走 `unit_plan_write` 和 `unit_apply_plan`，需要修改表现资产时再显式调用 VAT 构建。用 `overwrite_existing=true` 授权替换已有网格产物。
 
 VAT 单位的 MassBattleTools DoAll 对应关系：
 
@@ -198,19 +200,17 @@ VAT 单位的 MassBattleTools DoAll 对应关系：
 4. `CreateDataAsset` 把 `Visualize`、`LODShared`、`AnimShared` 和运行时采样率默认值写入单位配置。
 5. `CreateRenderer` 复制或更新 renderer 蓝图默认值。
 
-apply 调用会先执行 validate，失败时不写资产。plan/validate 调用只是把这些步骤暴露出来供复核；普通 AI 命令应一次性提供完整 spec。
+应用前可用规划和验证接口核对构建参数及步骤。操作已有单位时，核对将替换的资产和将写入的单位字段。
 
 ## 默认风格与可选模板工作流
 
-默认风格 profile 位于 `Resources/UnitManagementStyles/default.massbattle_unit_style.json`。
-它不是运行时功能，而是给 AI 和 MCP 工具使用的制作上下文：扫描根目录、单位组织规则、单位 authoring 默认值，以及批处理 FX 模板。
-`unit_create` 未传 `template_unit` 时，会读取 `authoring_defaults.default_unit_template` 作为默认单位模板；项目应在使用前配置这个路径。
+默认 style 位于 `Resources/UnitManagementStyles/default.massbattle_unit_style.json`。style 为新建单位补齐缺省项，调用中显式传入的值优先。已有资产按 diff 编辑，保留遗漏项。相应工具也可以读取 style 中保存的扫描目录、资产整理设置和批处理特效模板。
 
 模板流程只用于全新特效或明确要求的优化复刻。若任务是忠于 Marketplace/客户源资产的转译，必须复制原 Niagara 并保留其 emitter、renderer、材质、曲线、事件和时序，模板不能替代源资产。
 
 可选模板流程是：
 
-1. 用 `editor_get_profile` 读取 `style/default`。
+1. 用 `editor_get_style(style_id="default")` 读取默认 style。
 2. 从 `batch_fx_templates` 选择最接近目标的模板，例如 `mesh_burst_hit`、`sprite_explosion_burst`、`projectile_muzzle_burst`。
 3. 用 `effect_duplicate_asset` 复制模板 Niagara 和 renderer Blueprint。
 4. 用 `niagara_set_emitter_enabled` / `niagara_delete` 关闭不需要的 emitter。

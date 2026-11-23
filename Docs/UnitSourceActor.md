@@ -12,7 +12,7 @@
 
 例如源码 HP=100，导出后手动把产物 HP 改为200：源码未改 HP，Update 保留200；源码改成120再 Update，则产物变为120。其他字段变更不会顺带重写 HP。读取、差异预览、应用和审计复用现有单位 MCP 实现。
 
-`ExportPath` 是完整 UE 包名，例如 `/Game/Units/DA_Tank`。修改后 Update 使用 UE AssetTools 移动原单位资产，保留正常重定向与引用修复；不会复制出第二份单位。目标已被其他资产占用则失败。空路径使用项目设置中的默认目录和源码资产名。模型、材质等被引用的共享资产不随单位配置移动或删除。
+`ExportPath` 是完整 UE 包名，例如 `/Game/Units/DA_Tank`。设置新路径后，Update 使用 UE AssetTools 移动原单位资产，保留重定向和引用修复。目标已被其他资产占用时返回失败。路径为空时，首次导出使用项目默认目录和源码资产名，已有产物继续使用自己的路径。模型、材质等共享引用保存在原位置。
 
 Destroy 按钮只销毁导出的 Unit，保留源码 Actor。执行前询问：“销毁此单位，之后再生成，可能使得某些数据丢失。确定要销毁单位吗？（删除本资产也可以触发此询问）”。拒绝则不做修改；确认后通过原 MCP 引用检查和删除入口处理，成功后清空导出引用。再次 Update 从保留的源码生成单位，因此产物中未写回源码的手工修改会丢失。
 
@@ -26,7 +26,9 @@ MCP 删除源码路径默认仅删除源码，保留原 dry_run、soft/hard 行�
 
 大部分单位操作同时支持两类资产。`MCP_UnitList` 可以查到源码 Actor 和单位 DataAsset，读取、变更规划、写入和删除根据 `UnitPath` 选择目标，表格导出也可以读取两类资产。
 
-**日常维护优先改源码 Actor。** 传源码蓝图路径修改 `UnitData`，保存时通过 Update 导出，再读取导出单位核对结果。传 DataAsset 路径可以直接读取或修改产物，直接修改产物时源码仍保存原有配置。
+**日常维护优先改源码 Actor。** 传源码蓝图路径修改 `UnitData`，普通保存只写源码。要更新导出单位，在编辑器执行 Update，或在 MCP 变更计划中显式请求导出，再读取产物核对。直接传 DataAsset 路径时，操作目标是产物。
+
+已有单位按 diff 编辑。目标是本次操作的源码 Actor 或单位 DataAsset，变更只作用于 diff 中列出的资产和字段。应用计划时传 `plan_id`，计划已记录目标。新建单位时由 style 补齐缺省项，省略 `style_profile` 使用默认 style。
 
 创建一个只保存源码、尚未导出单位的资产：
 
@@ -40,12 +42,13 @@ MCP 删除源码路径默认仅删除源码，保留原 dry_run、soft/hard 行�
 }
 ```
 
-将上面的 JSON 传给 `MCP_UnitCreate`，也可提供 `template_unit`。省略 `asset_type` 时保留原单位创建流程。
+将上面的 JSON 传给 `MCP_UnitCreate`。可用 `style_profile` 选择缺省规则，用 `template_unit` 指定基础单位。传 `asset_type` 为 `source_actor` 时创建源码 Actor。
 
-将源码蓝图路径与下面的局部 JSON 传给 `unit_plan_write`。用 `unit_preview_plan` 检查变更字段和计划中的 `export_path`。确认 `success` 和 `applicable` 均为 `true` 后，将 `plan_id` 传给 `unit_apply_plan`。保存时 Update 会把导出单位移到新路径。`save_assets=false` 只修改源码内存。
+将源码蓝图路径与下面的局部 JSON 传给 `unit_plan_write`。用 `unit_preview_plan` 检查变更字段、路径及导出意图。确认 `success` 和 `applicable` 均为 `true` 后，将 `plan_id` 传给 `unit_apply_plan`。`options.export_source=true` 在保存时执行 Update，把导出单位移到新路径。只需要保存源码时可省略此项。`save_assets=false` 只修改源码内存。
 
 ```json
 {
+  "options": { "export_source": true },
   "export_path": "/Game/Units/Tanks/DA_Tank",
   "Data": { "Health": { "Maximum": 350 } }
 }

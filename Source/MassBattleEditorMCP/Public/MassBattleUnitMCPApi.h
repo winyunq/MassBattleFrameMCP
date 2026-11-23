@@ -7,6 +7,10 @@
 
 DECLARE_LOG_CATEGORY_EXTERN(LogMassBattleUnitMCPApi, Log, All);
 
+class FJsonObject;
+class FJsonValue;
+class UMassBattleAgentConfigDataAsset;
+
 /**
  * @brief Query, create and patch unit configuration assets and Unit Source Actors.
  * @details This API is intentionally independent from UMGMCP. It exposes stable JSON
@@ -21,6 +25,12 @@ public:
 	/** Shared implementation for the source Actor's Update action; no new MCP command. */
 	static FString UpdateSource(class AMassBattleUnitSource* Source, bool bSaveAssets);
 	static FString DestroySourceUnit(class AMassBattleUnitSource* Source);
+	/// @brief 解析单位资产或源码 Actor 的实际单位配置。
+	static UMassBattleAgentConfigDataAsset* ResolveUnit(const FString& UnitPath, FString& OutError);
+	/// @brief 合并新建单位的 Style 缺省值和显式数据，保留显式字段。
+	static bool ResolveCreationPatch(const TSharedPtr<FJsonObject>& AuthoringDefaults,
+		const TSharedPtr<FJsonObject>& ExplicitPatch, TSharedPtr<FJsonObject>& OutUnitPatch,
+		TArray<TSharedPtr<FJsonValue>>& OutDerivations, FString& OutError);
 
 	/**
 	 * @ProductDocument
@@ -71,7 +81,7 @@ public:
 	 * @brief Review field changes before writing a partial unit update.
 	 * @details Stores a partial update plan for the selected Unit Source Actor or unit DataAsset. Target the source Actor for routine maintenance so edits are retained in UnitData. Omitted fields are retained. The plan reports whether the proposed update can be applied.
 	 * @param[in] UnitPath Unreal object path of the existing MassBattle unit config or supported Unit Source Actor Blueprint.
-	 * @param[in] UnitDataJson Partial unit JSON using source property names. Include the fields to change; a Unit Source Actor patch may also contain export_path.
+	 * @param[in] UnitDataJson Partial unit JSON using source property names. Include the fields to change. A Unit Source Actor patch can set export_path and request an export with options.export_source=true.
 	 * @return A stored update plan: plan_id identifies it for later review or application, diff describes field changes, and applicable with merge_errors explains whether it can run.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "MassBattleEditorMCP|Unit")
@@ -79,14 +89,14 @@ public:
 
 	/**
 	 * @ProductDocument
-	 * @brief Use a template to create unit data or a Unit Source Actor.
-	 * @details Creates a unit from the default or explicit template and optionally merges initial authored data. asset_type=source_actor creates a Unit Source Actor Blueprint; the ordinary branch creates the unit config. Target names must resolve to an unoccupied Unreal asset path.
-	 * @param[in] CreateSpecJson JSON with either unit_path/new_unit_path or both asset_name and package_path. template_unit selects a template; unit_data supplies initial authored values. asset_type=source_actor enables the source Blueprint branch and export_path configures its output.
+	 * @brief Create a unit DataAsset or a Unit Source Actor.
+	 * @details Fills omitted creation values from the selected style, preserving explicitly supplied values. asset_type=source_actor creates a Unit Source Actor Blueprint. The destination must be unoccupied.
+	 * @param[in] OptionsJson JSON with unit_path or both asset_name and package_path. style_profile is optional and defaults to default. template_unit selects a template and unit_data supplies initial authored values. asset_type=source_actor selects the source Blueprint branch and export_path configures its output.
 	 * @param[in] bSaveAssets Whether to save the assets modified or created by this operation to disk.
 	 * @return The created asset's identity and persistence result; failures explain destination conflicts or initial-data merge problems.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "MassBattleEditorMCP|Unit")
-	static FString MCP_UnitCreate(const FString& CreateSpecJson, bool bSaveAssets);
+	static FString MCP_UnitCreate(const FString& OptionsJson, bool bSaveAssets);
 
 	/**
 	 * @ProductDocument
@@ -102,7 +112,7 @@ public:
 	/**
 	 * @ProductDocument
 	 * @brief Write the changes recorded in a reviewed unit plan.
-	 * @details Loads the stored plan, rejects a plan marked inapplicable, and executes its supported mutation type. With bSaveAssets=true, applying a source Actor update runs Update to export the unit at its configured ExportPath. A plan targeting a DataAsset writes directly to that asset.
+	 * @details Loads and applies the stored plan to its target. A source Actor plan runs Update when the plan requests export_source and bSaveAssets=true. A plan targeting a DataAsset writes directly to that asset.
 	 * @param[in] PlanId Identifier of the reviewed stored unit mutation plan.
 	 * @param[in] bSaveAssets Whether to save the assets modified or created by this operation to disk.
 	 * @return The executed plan's ID, applied_diff and saved state; rejected plans, failed mutations and save errors report their failure.
@@ -148,7 +158,4 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "MassBattleEditorMCP|Unit")
 	static FString MCP_UnitGetApiStatus();
 
-private:
-	/// @brief Apply initial authored data when creating a unit source.
-	static FString ApplyInitialSourceUnitData(const FString& UnitPath, const FString& UnitDataJson);
 };

@@ -1512,8 +1512,8 @@ FString UMassBattleEditorMCPApi::MCP_GetApiStatus()
 		TEXT("unit.write"));
 
 	AddTool(TEXT("MCP_UnitCreate"),
-		TEXT("创建新单位；未指定模板时使用默认单位模板，可带初始单位数据"),
-		TEXT("CreateSpecJson, bSaveAssets"),
+		TEXT("创建单位或源码 Actor，按 style 补全未填写的创建参数"),
+		TEXT("OptionsJson, bSaveAssets"),
 		TEXT("unit.create"));
 
 	AddTool(TEXT("MCP_UnitDeleteSoft"),
@@ -1641,34 +1641,34 @@ FString UMassBattleEditorMCPApi::MCP_GetApiStatus()
 		TEXT("TargetClassPath, NiagaraSystemPath, NdcBurstFxPath, SubType, RenderBatchSize, PoolingCooldown, bSaveAssets"),
 		TEXT("batch_fx.write"));
 
-	AddTool(TEXT("MCP_EditorListProfiles"),
-		TEXT("列出 MCP 单位编辑器使用的 style profile 与 authoring recipe"),
+	AddTool(TEXT("MCP_EditorListStyles"),
+		TEXT("列出提供新单位缺省值的 style"),
 		TEXT("OptionsJson"),
-		TEXT("unit_editor.profile"));
+		TEXT("unit_editor.style"));
 
-	AddTool(TEXT("MCP_EditorGetProfile"),
-		TEXT("读取一个单位管理 style 或单位创作/编辑 recipe"),
-		TEXT("ProfileType, ProfileId"),
-		TEXT("unit_editor.profile"));
+	AddTool(TEXT("MCP_EditorGetStyle"),
+		TEXT("读取指定 style 的创建缺省设置"),
+		TEXT("StyleId"),
+		TEXT("unit_editor.style"));
 
 	AddTool(TEXT("MCP_EditorPlanUnitAuthoringWorkflow"),
 		TEXT("把购买素材准备、动画更新、VAT 创建/刷新和关联资产整理串成一个可审查工作流计划"),
-		TEXT("SpecJson"),
+		TEXT("OptionsJson"),
 		TEXT("unit_editor.workflow"));
 
 	AddTool(TEXT("MCP_EditorApplyUnitAuthoringWorkflow"),
-		TEXT("应用已审查的单位创作工作流；SpecJson 默认 dry_run=true"),
-		TEXT("SpecJson, bSaveAssets"),
+		TEXT("应用已审查的单位创作工作流；OptionsJson 默认 dry_run=true"),
+		TEXT("OptionsJson, bSaveAssets"),
 		TEXT("unit_editor.workflow"));
 
 	AddTool(TEXT("MCP_EditorPlanPreparePurchasedAsset"),
 		TEXT("为新购买的 SkeletalMesh 素材包生成发现、官方命名和源资产归档计划"),
-		TEXT("SpecJson"),
+		TEXT("OptionsJson"),
 		TEXT("unit_editor.prepare"));
 
 	AddTool(TEXT("MCP_EditorApplyPreparePurchasedAsset"),
-		TEXT("应用已审查的购买素材准备计划；SpecJson 默认 dry_run=true"),
-		TEXT("SpecJson, bSaveAssets"),
+		TEXT("应用已审查的购买素材准备计划；OptionsJson 默认 dry_run=true"),
+		TEXT("OptionsJson, bSaveAssets"),
 		TEXT("unit_editor.prepare"));
 
 	AddTool(TEXT("MCP_EditorDiscoverCompatibleAnimations"),
@@ -1678,31 +1678,31 @@ FString UMassBattleEditorMCPApi::MCP_GetApiStatus()
 
 	AddTool(TEXT("MCP_EditorPlanAddAnimationsToUnit"),
 		TEXT("调用 MassBattleEditor 动画检索与 AnimData 转换函数，为已有单位生成 AnimShared 并集写计划"),
-		TEXT("UnitPath, SpecJson"),
+		TEXT("UnitPath, OptionsJson"),
 		TEXT("unit_editor.animation"));
 
 	AddTool(TEXT("MCP_EditorValidateAddAnimationsToUnit"),
 		TEXT("验证已有单位动画组编辑是否能生成可应用的并集写计划"),
-		TEXT("UnitPath, SpecJson"),
+		TEXT("UnitPath, OptionsJson"),
 		TEXT("unit_editor.animation"));
 
 	AddTool(TEXT("MCP_EditorPlanCreateVatUnit"),
 		TEXT("诊断入口：预览与 MassBattleTools DoAll 等价的 VAT 单位生成计划；严格执行仍要求完整 canonical 输入"),
-		TEXT("SpecJson"),
+		TEXT("OptionsJson"),
 		TEXT("unit_editor.create.diagnostic"));
 
 	AddTool(TEXT("MCP_EditorValidateCreateVatUnit"),
 		TEXT("诊断入口：验证 DoAll 等价 VAT 单位生成输入，不写资产"),
-		TEXT("SpecJson"),
+		TEXT("OptionsJson"),
 		TEXT("unit_editor.create.diagnostic"));
 
 	AddTool(TEXT("MCP_EditorApplyCreateVatUnit"),
-		TEXT("主入口：执行非 selection 的 MassBattleTools DoAll 等价 VAT 单位生成；要求完整 canonical 输入并在写资产前验证"),
-		TEXT("SpecJson, bSaveAssets"),
+		TEXT("执行 VAT 生成或显式重建；新建单位按 style 补缺省，写资产前验证"),
+		TEXT("OptionsJson, bSaveAssets"),
 		TEXT("unit_editor.create"));
 
 	AddTool(TEXT("MCP_EditorPlanCreateVatUnitFromSelection"),
-		TEXT("诊断入口：从当前编辑器选择或 selected_assets 推导 DoAll spec 并返回可审查计划"),
+		TEXT("诊断入口：从当前编辑器选择或 selected_assets 解析 VAT 生成参数 并返回可审查计划"),
 		TEXT("OptionsJson"),
 		TEXT("unit_editor.create.diagnostic"));
 
@@ -1713,17 +1713,17 @@ FString UMassBattleEditorMCPApi::MCP_GetApiStatus()
 
 	AddTool(TEXT("MCP_EditorInspectVatAnimation"),
 		TEXT("检查组装骨骼权重、VAT 逐帧顶点位移、查找 UV 与实际烘焙动画全集"),
-		TEXT("SpecJson"),
+		TEXT("OptionsJson"),
 		TEXT("unit_editor.actor"));
 
 	AddTool(TEXT("MCP_EditorPlanCreateVatUnitFromActor"),
 		TEXT("规划 Actor 组件组装及后续严格 VAT 单位生成"),
-		TEXT("SpecJson"),
+		TEXT("OptionsJson"),
 		TEXT("unit_editor.actor"));
 
 	AddTool(TEXT("MCP_EditorApplyCreateVatUnitFromActor"),
 		TEXT("把 Actor 身体、模块化部件和武器组装成可动画 SkeletalMesh，再生成 VAT 单位"),
-		TEXT("SpecJson, bSaveAssets"),
+		TEXT("OptionsJson, bSaveAssets"),
 		TEXT("unit_editor.actor"));
 
 	AddTool(TEXT("MCP_EditorApplyOrganizeUnitAssets"),
