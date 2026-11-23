@@ -1,6 +1,10 @@
-# 源码 Actor
+# 源码 Actor（Actor Source）
 
-维护：Winyunq。`AMassBattleUnitSource` 是编辑器中的单位源格式。创建它的 Actor 蓝图资产，在 Class Defaults 中编辑 `UnitData` 和 `ExportPath`，Details 提供 Update、Destroy。放入关卡的实例可预览；Update 会把该实例的单位配置写回对应源码蓝图。源码 Actor 不进入游戏运行时。
+**Actor Source 是用来制作 Mass Unit 的可编辑 Actor。** UE5 用 Actor 组织组件和配置。要让这个对象成为 Mass ECS 中的单位，就在编辑器里运行一套转换代码，读取 Actor 的组件和配置，生成或更新 Mass Unit。Actor 是源文件，转换代码是可重复执行的构建步骤，Mass Unit 是供运行时使用的产物。修改源 Actor 后，可以对同一份源再次执行转换。
+
+项目可以用自己的规则导出 Actor Source。比如为炮塔转轴和炮口约定组件标签，再写编辑器转换代码读取这些标记，决定哪些组件参与导出，以及如何生成单位需要的数据。源 Actor 保留这些制作信息，方便预览、调整和重新导出。
+
+维护：Winyunq。`AMassBattleUnitSource` 是编辑器提供的一种源码 Actor 类型。创建它的 Actor 蓝图资产，在 Class Defaults 中编辑 `UnitData` 和 `ExportPath`，Details 提供 Update、Destroy。放入关卡的实例可预览。Update 从 `UnitData` 生成或更新独立的单位配置资产，从实例执行时也会将该实例的单位配置写回对应源码蓝图。源码 Actor 只在编辑器中使用。
 
 可复制插件内的空白模板 `/MassBattleEditorMCP/ActorToMassBattleUnitEditor/BP_UnitSource` 到项目内容目录开始配置。该模板尚未生成导出单位；在内容浏览器开启“显示插件内容”即可找到。
 
@@ -18,9 +22,11 @@ MCP 删除源码路径默认仅删除源码，保留原 dry_run、soft/hard 行�
 
 自动化测试 `MassBattle.MCP.SourceDestroy` 已在 UE 5.8 通过：拒绝直接销毁保留 Unit、确认后仅删除 Unit、源码可重新生成，以及资产删除事件按回答决定是否加入 Unit。测试只使用 `/Game/__MCPDestroyTest`，结束时清理该测试资产。
 
-## 原 MCP 命令
+## 读写与维护
 
-命令名称及 `UnitPath` 参数不变，可以传单位 DataAsset 路径或源码 Actor 蓝图路径。`MCP_UnitList` 使用 UE 资产注册表查询两种资产；`MCP_UnitGet`、差异规划、应用、表格导出和删除都通过同一目标解析。
+大部分单位操作同时支持两类资产。`MCP_UnitList` 可以查到源码 Actor 和单位 DataAsset，读取、变更规划、写入和删除根据 `UnitPath` 选择目标，表格导出也可以读取两类资产。
+
+**日常维护优先改源码 Actor。** 传源码蓝图路径修改 `UnitData`，保存时通过 Update 导出，再读取导出单位核对结果。传 DataAsset 路径可以直接读取或修改产物，直接修改产物时源码仍保存原有配置。
 
 创建一个只保存源码、尚未导出单位的资产：
 

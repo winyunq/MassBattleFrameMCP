@@ -143,7 +143,7 @@ async def unit_list(options: Any = None) -> Dict[str, Any]:
 @mcp.tool()
 async def unit_get(unit_path: str, options: Any = None) -> Dict[str, Any]:
     """Inspect authored unit data and source Actor export information.
-    Loads the requested unit or Unit Source Actor and returns source-aligned authored Data. The default simple view omits runtime, system and deprecated fields; a source Actor response also identifies export_path, exported_unit and last_report.
+    Reads the Unit Source Actor's UnitData or the unit DataAsset selected by UnitPath. Read the source to review authored settings and the exported unit to verify the result. Source responses include export_path, exported_unit and last_report. The default simple view omits runtime, system and deprecated fields.
     UnitPath: Unreal object path of the existing MassBattle unit config or supported Unit Source Actor Blueprint.
     OptionsJson: JSON object; pass {} to use the defaults. Select the requested detail/object view and field inclusion policy; the response reports detail and default_ignore_policy.
     Returns: The unit's identity and authored configuration in Data, with detail identifying the selected field view."""
@@ -174,7 +174,7 @@ async def unit_export(options: Any = None) -> Dict[str, Any]:
 @mcp.tool()
 async def unit_write(unit_path: str, unit_data: Any, save_assets: bool = True) -> Dict[str, Any]:
     """Change selected unit fields while retaining unspecified data.
-    Plans a union-merge, checks success and applicable, then applies the returned plan automatically. It retains omitted fields and returns the planning result when validation blocks application.
+    Plans and applies a partial update to the Unit Source Actor or unit DataAsset selected by UnitPath. For routine maintenance, target the source Actor so the edit is retained in UnitData. With bSaveAssets=true, a source write runs Update to export the unit. A DataAsset path edits that asset directly. Omitted fields are retained. Validation failures return the plan.
     UnitPath: Unreal object path of the existing MassBattle unit config or supported Unit Source Actor Blueprint.
     UnitDataJson: Partial source-aligned authored unit data. Obtain exact editable field names from the unit schema.
     bSaveAssets: Whether to save the assets modified or created by this operation to disk.

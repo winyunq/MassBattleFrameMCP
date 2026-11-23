@@ -23,7 +23,15 @@ public:
 	FString ExportRoot = TEXT("/Game/Units");
 };
 
-/** Blueprint asset containing source configuration; never a runtime Mass unit. */
+/**
+ * @class     AMassBattleUnitSource
+ * @brief     用 Actor 保存 Mass Unit 的可编辑源定义。
+ * @extends   public AActor
+ *  @details  Actor Source 是单位制作的源文件。编辑器转换代码以它的组件和配置为输入，
+ * 可在修改源 Actor 后再次执行，生成或更新供 Mass ECS 使用的 Mass Unit。
+ * 本类是编辑器专用的 Actor Source 类型，Update 将 UnitData 导出为独立的单位配置资产。
+ * 日常在源 Actor 上维护单位。项目可用自己的转换代码读取组件和标记，按项目规则导出。
+ **/
 UCLASS(Blueprintable)
 class MASSBATTLEEDITORMCP_API AMassBattleUnitSource : public AActor
 {

@@ -1739,14 +1739,14 @@
   },
   {
     "id": "44d8610c3495cb324c333576:details",
-    "translation": "先规划合并写入并检查 success、applicable，再自动应用返回的规划。未指定字段保留；校验阻止应用时直接返回规划结果。",
-    "translated_source_hash": "4ab06d418b663978be6d56ad5155402bb976c929966e7be3de939ae1aef34e0a",
+    "translation": "为 UnitPath 指定的源码 Actor 或单位 DataAsset 规划并应用部分更新。日常维护优先修改源码 Actor，使变更保存在 UnitData 中。bSaveAssets=true 时，写入源码会执行 Update 来导出单位。传 DataAsset 路径则直接修改该资产。未指定字段予以保留。校验失败时返回计划。",
+    "translated_source_hash": "7ff04c3ad915eabe10f233fabd38a46466aa26f6e39b5caf6819d1093d47df5c",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
     "name": "UMassBattleUnitMCPApi::MCP_UnitMergeUpdate",
     "field": "details",
-    "source_text": "Plans a union-merge, checks success and applicable, then applies the returned plan automatically. It retains omitted fields and returns the planning result when validation blocks application.",
-    "source_hash": "4ab06d418b663978be6d56ad5155402bb976c929966e7be3de939ae1aef34e0a"
+    "source_text": "Plans and applies a partial update to the Unit Source Actor or unit DataAsset selected by UnitPath. For routine maintenance, target the source Actor so the edit is retained in UnitData. With bSaveAssets=true, a source write runs Update to export the unit. A DataAsset path edits that asset directly. Omitted fields are retained. Validation failures return the plan.",
+    "source_hash": "7ff04c3ad915eabe10f233fabd38a46466aa26f6e39b5caf6819d1093d47df5c"
   },
   {
     "id": "44d8610c3495cb324c333576:param/UnitDataJson",
@@ -2608,14 +2608,14 @@
   },
   {
     "id": "70cb383a77dbbd99fc641365:details",
-    "translation": "加载单位或 Unit Source Actor，返回与源码字段对应的创作 Data。默认简单视图省略运行时、系统和已弃用字段；来源 Actor 还报告 export_path、exported_unit 和 last_report。",
-    "translated_source_hash": "8019b332efa9f2f5e0793876b8165a16fda56b39aef423e09207eda85b60730e",
+    "translation": "读取 UnitPath 指定的源码 Actor 的 UnitData 或单位 DataAsset。读取源码可查看制作配置，读取导出单位可核对产物。源码响应包含 export_path、exported_unit 和 last_report。默认简单视图省略运行时、系统和已弃用字段。",
+    "translated_source_hash": "2456d31ca2fb3852e4e73372ca6d6b27aaa91963a5c49bfd157e864545b337cd",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
     "name": "UMassBattleUnitMCPApi::MCP_UnitGet",
     "field": "details",
-    "source_text": "Loads the requested unit or Unit Source Actor and returns source-aligned authored Data. The default simple view omits runtime, system and deprecated fields; a source Actor response also identifies export_path, exported_unit and last_report.",
-    "source_hash": "8019b332efa9f2f5e0793876b8165a16fda56b39aef423e09207eda85b60730e"
+    "source_text": "Reads the Unit Source Actor's UnitData or the unit DataAsset selected by UnitPath. Read the source to review authored settings and the exported unit to verify the result. Source responses include export_path, exported_unit and last_report. The default simple view omits runtime, system and deprecated fields.",
+    "source_hash": "2456d31ca2fb3852e4e73372ca6d6b27aaa91963a5c49bfd157e864545b337cd"
   },
   {
     "id": "70cb383a77dbbd99fc641365:param/OptionsJson",
