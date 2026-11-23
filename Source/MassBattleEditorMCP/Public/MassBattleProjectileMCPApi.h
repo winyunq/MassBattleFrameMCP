@@ -40,16 +40,6 @@ public:
 
 	/**
 	 * @ProductDocument
-	 * @brief Locate projectile configuration assets by name or path.
-	 * @details Uses the projectile listing query path to find configurations by path or name. It returns the same stable summaries and scan metadata as the projectile list entry.
-	 * @param[in] QueryJson JSON object; pass {} to use the defaults. Uses the projectile-list query and scope options.
-	 * @return Projectile search results in the same format as projectile_list, including matching assets, counts and searched roots.
-	 */
-	UFUNCTION(BlueprintCallable, Category = "MassBattleEditorMCP|Projectile")
-	static FString MCP_ProjectileQuery(const FString& QueryJson);
-
-	/**
-	 * @ProductDocument
 	 * @brief Inspect active projectile data with optional validation and references.
 	 * @details Loads one projectile DataAsset and returns source-aligned authored data. The active view selects fields relevant to the configured movement and damage modes; the full view can include inactive fields. Validation and referencing assets can be included in the same read.
 	 * @param[in] ProjectilePath Unreal object path of the projectile configuration DataAsset.

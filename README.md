@@ -78,7 +78,7 @@ Copy-Item -Recurse -Force .\skills\massbattle-projectile-authoring $env:USERPROF
 ```
 
 If `CODEX_HOME` is set, copy them to `$env:CODEX_HOME\skills\`.
-MCP is the editor tool interface. For unit authoring, the default AI-facing path mirrors the official `/MassBattle/Core/MassBattleTools` DoAll button: one apply call creates or refreshes the mesh, materials, VAT textures, renderer, and unit config while returning warnings for inferred fields. Plan/validate tools remain available as diagnostics, but they are not the normal creation workflow.
+MCP is the editor tool interface. `editor_apply_create_vat_unit` mirrors the official `/MassBattle/Core/MassBattleTools` DoAll button and creates or refreshes the mesh, materials, VAT textures, renderer, and unit config. To generate from selected assets, call `editor_plan_create_vat_unit_from_selection`, review its warnings and `resolved_spec`, then pass that spec to `editor_apply_create_vat_unit`.
 
 ### Codex MCP Server Installation
 
@@ -100,7 +100,7 @@ Quickly check the installation and UE bridge:
 ```
 
 After installation, restart Codex or start a new session. The UE editor must also load this plugin before the bridge starts listening.
-After successful installation, you should see `massbattle-editor-mcp` and be able to call primitive tools such as `unit_get`, `unit_create`, `projectile_get`, `projectile_write`, `projectile_validate`, `editor_apply_create_vat_unit_from_selection`, `effect_asset_read_summary`, `niagara_set_module_pin`, `batch_fx_read_renderer_defaults`, and `batch_fx_set_renderer_defaults`.
+After successful installation, you should see `massbattle-editor-mcp` and be able to call tools such as `unit_get`, `unit_plan_write`, `unit_apply_plan`, `projectile_list`, `editor_apply_create_vat_unit`, `effect_asset_read_summary`, and `niagara_set_module_pin`.
 
 Note: `FFxConfig.AgentBehaviorState` uses `EAgentBehaviorState`. Writable values include `None`, `Appearing`, `Sleeping`, `Patrolling`, `Attacking`, `Hit`, and `Dying`. Hit FX should use `Hit`; do not write the runtime flag name `BeingHit` into this field.
 
@@ -122,31 +122,25 @@ Note: `FFxConfig.AgentBehaviorState` uses `EAgentBehaviorState`. Writable values
 | Unit MCP | `unit_plan_write` | Available | Plan a union-write and return a reviewable diff without mutating the unit. |
 | Unit MCP | `unit_preview_plan` | Available | Read a saved unit mutation plan and its complete diff. |
 | Unit MCP | `unit_apply_plan` | Available | Apply a reviewed unit mutation plan and optionally save the unit. |
-| Unit MCP | `unit_write` | Available | Union-write partial source-aligned JSON to an existing unit; omitted fields stay unchanged. |
 | Unit MCP | `unit_delete` | Available | Explicitly delete or soft-delete a unit; dry-run by default. |
-| Projectile MCP | `projectile_list` | Available | List `MassBattleProjectileConfigDataAsset` assets under selected roots. |
-| Projectile MCP | `projectile_query` | Available | Query projectile configs by path or name. |
+| Projectile MCP | `projectile_list` | Available | List projectile configs under selected roots and filter by name or path with `options.query`. |
 | Projectile MCP | `projectile_get` | Available | Read one projectile in active-only or complete source-aligned form. |
 | Projectile MCP | `projectile_get_schema` | Available | Read projectile fields, enum values, edit conditions, and write rules. |
 | Projectile MCP | `projectile_create` | Available | Create a projectile from class defaults or an existing template after transient validation. |
 | Projectile MCP | `projectile_write` | Available | Union-write a partial projectile patch; array append/replace must be explicit and validation runs before mutation. |
 | Projectile MCP | `projectile_validate` | Available | Validate movement, damage ownership, triggers, lifecycle FX, linked units, and duplicate explosions. |
 | Projectile MCP | `projectile_delete` | Available | Plan or execute guarded soft/hard deletion; dry-run by default. |
-| Style MCP | `style_summarize_units` | Available | Summarize unit assets by style, family, and path category. |
-| Style MCP | `style_plan_organize_units` | Available | Plan style-based unit folder organization without moving assets. |
 | Unit Editor MCP | `editor_get_status` | Available | Read unit editor workflow capabilities. |
 | Unit Editor MCP | `editor_list_profiles` | Available | List style profiles and authoring recipes. |
 | Unit Editor MCP | `editor_get_profile` | Available | Read one profile or recipe. |
 | Unit Editor MCP | `editor_plan_create_vat_unit` | Diagnostic | Preview the DoAll-equivalent VAT unit plan; strict apply still requires complete canonical inputs. |
-| Unit Editor MCP | `editor_apply_create_vat_unit` | Available | Primary non-selection DoAll-equivalent generation entry; validates complete canonical inputs before mesh conversion, VAT material creation, VAT bake, renderer duplication, and unit config writes. |
-| Unit Editor MCP | `editor_plan_create_vat_unit_from_selection` | Diagnostic | Infer a DoAll spec from current editor selection or `selected_assets`, then return a reviewable plan. |
-| Unit Editor MCP | `editor_apply_create_vat_unit_from_selection` | Available | Primary one-click "current selection -> generate" entry point for AI-driven unit creation. |
+| Unit Editor MCP | `editor_apply_create_vat_unit` | Available | Validate a complete spec and generate the mesh, materials, VAT, renderer, and unit config. |
+| Unit Editor MCP | `editor_plan_create_vat_unit_from_selection` | Available | Resolve a generation spec from editor selection or `selected_assets` and review it before apply. |
 | Unit Editor MCP | `editor_inspect_actor_assembly` | Available | Inspect an Actor's modular skeletal/static components, effective materials, socket transforms, and resolved weapon bind bones without writing assets. |
 | Unit Editor MCP | `editor_inspect_vat_animation` | Available | Audit skin weights, baked vertex/bone motion, VAT lookup UVs, material switches/textures/scalars, and the canonical soldier animation profile. |
 | Unit Editor MCP | `editor_plan_create_vat_unit_from_actor` | Diagnostic | Validate an Actor component/weapon override recipe and preview its persistent assembled SkeletalMesh plus strict VAT unit plan. |
 | Unit Editor MCP | `editor_apply_create_vat_unit_from_actor` | Available | Assemble an Actor and rigidly bound static weapon into an animation-compatible persistent SkeletalMesh, then run the strict DoAll-equivalent VAT workflow. |
-| Unit Editor MCP | `editor_plan_organize_unit_assets` | Available | Plan moving one unit and linked generated assets into the style layout. |
-| Unit Editor MCP | `editor_apply_organize_unit_assets` | Available | Apply a reviewed unit asset organization plan; dry-run by default. |
+| Unit Editor MCP | `editor_apply_organize_unit_assets` | Available | Return a linked-asset organization plan in dry-run mode or execute the reviewed moves. |
 | Effect Asset MCP | `effect_asset_query` | Available | Query visual assets such as Niagara, Cascade, Blueprint, Material, Texture, and Sound by `query/root/classes/limit`. |
 | Effect Asset MCP | `effect_asset_read_summary` | Available | Read summaries for unknown effect asset types; returns dependency, referencer, and missing project dependency details. |
 | Effect Asset MCP | `effect_asset_export_text` | Available | Export deterministic text for close AI reading and review. |
@@ -163,7 +157,6 @@ Note: `FFxConfig.AgentBehaviorState` uses `EAgentBehaviorState`. Writable values
 | Niagara MCP | `niagara_merge_write` | Available | Union-write Niagara properties; does not handle deletion. |
 | Niagara MCP | `niagara_set_module_pin` | Available | Write one Niagara FunctionCall module input pin default; linked pins are rejected by default. |
 | Niagara MCP | `niagara_apply_graph_edit` | Available | Apply ordered user-DI, module insertion, stack-input, connect/disconnect, and lossless rewire operations; compile once and save only after preservation validation passes. |
-| Niagara MCP | `niagara_batch_translate` | Available | Preflight or execute an explicit source-first translation manifest; defaults to read-only preflight and never guesses visual edits. |
 | Niagara MCP | `niagara_set_emitter_enabled` | Available | Explicitly enable or disable one Niagara emitter handle. |
 | Niagara MCP | `niagara_delete` | Available | Explicitly delete renderers, user parameters, disable emitters, etc. |
 | Niagara MCP | `niagara_add_sprite_renderer` | Available | Add one configured sprite renderer to an existing emitter. |
@@ -213,7 +206,13 @@ Use `niagara_read_graph` before any graph mutation. A selector can narrow by `sc
 
 `niagara_apply_graph_edit` executes an ordered `operations` array, compiles CPU and GPU scripts once, and returns per-script diagnostics plus before/after preservation fingerprints. Saving is blocked unless the system has no compile errors, is ready to run, and retains source emitters, renderers/materials, timing and determinism, CPU/GPU targets, events, user defaults, Rapid Iteration values, module identity/enabled state, graph-node identity, and original graph-pin defaults. Removed source edges are rejected unless each edge is explicitly listed in `validation.allowed_removed_edges`. Changing a stack input from a local value to a linked parameter legitimately removes that input's Rapid Iteration constant; the caller must list every exact parameter name in `validation.allowed_removed_rapid_iteration_parameters`, while the removed edge remains independently required in `allowed_removed_edges`. A failed later operation can leave an unsaved in-memory partial mutation, reported as `partial_mutation=true`, so perform this workflow only on a duplicate.
 
-`niagara_batch_translate` accepts `massbattle.niagara.translation_manifest.v1`. Each item declares its source, duplicate target, exact graph-edit plan, and comparison policy. The default `apply=false` performs source/target preflight only. With `apply=true`, each item runs duplicate -> exact comparison -> unsaved edit/compile -> translation comparison -> gated save. A failed item is reported, never counted as converted, and its MCP-created unsaved duplicate is discarded on a best-effort basis; a persisted package can never be removed by that rollback path.
+Run the manifest script from the plugin directory with the UE bridge running.
+
+```powershell
+uv run --project Resources/Python Resources/Python/TranslateNiagaraManifest.py manifest.json
+```
+
+The script accepts `massbattle.niagara.translation_manifest.v1`. Each item declares its source, duplicate target, graph edits, and comparison policy. The default runs source and target preflight. Add `--apply` to duplicate, check exact equivalence, edit and compile the unsaved copy, check translation preservation, and save. Add `--no-save` with `--apply` to keep successful copies unsaved. Failed items include their cleanup results when an unsaved duplicate exists.
 
 Example shape (replace paths, graph selector, GUIDs, and pin names with values returned by the read tools):
 
@@ -299,6 +298,6 @@ Recommended template flow:
 5. Write renderer, emitter data, bounds, and other UObject properties with `niagara_merge_write`.
 6. Fine-tune module input pins such as Lifetime, Scale, Spawn Count, or random ranges with `niagara_set_module_pin`.
 7. Write renderer CDO Niagara, NDC, SubType, and batch size with `batch_fx_set_renderer_defaults`.
-8. Use `unit_write` to point unit `FFxConfig` entries to the corresponding `SubType`.
+8. Use `unit_plan_write` and `unit_apply_plan` to point unit `FFxConfig` entries to the corresponding `SubType`.
 
 This pattern is similar to a code diff: templates carry most of the structure, and MCP performs small reviewable edits.

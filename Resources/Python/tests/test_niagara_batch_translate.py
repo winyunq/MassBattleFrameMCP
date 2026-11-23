@@ -8,7 +8,7 @@ PYTHON_ROOT = Path(__file__).resolve().parents[1]
 if str(PYTHON_ROOT) not in sys.path:
     sys.path.insert(0, str(PYTHON_ROOT))
 
-import MassBattleMcpServer as server
+from TranslateNiagaraManifest import translate_manifest
 
 
 SOURCE = "/Game/ArmyVFX/Niagara/Projectiles/NS_StartFlash_1.NS_StartFlash_1"
@@ -71,16 +71,11 @@ def valid_manifest():
 
 
 class NiagaraBatchTranslateTests(unittest.IsolatedAsyncioTestCase):
-    async def asyncSetUp(self):
-        self.previous_connection = server._unreal_connection
+    def setUp(self):
         self.fake = FakeConnection()
-        server._unreal_connection = self.fake
-
-    async def asyncTearDown(self):
-        server._unreal_connection = self.previous_connection
 
     async def test_dry_run_only_reads_source_and_target(self):
-        result = await server.niagara_batch_translate(valid_manifest(), apply=False)
+        result = await translate_manifest(self.fake, valid_manifest(), apply=False)
 
         self.assertTrue(result["success"])
         self.assertFalse(result["mutated"])
@@ -90,8 +85,8 @@ class NiagaraBatchTranslateTests(unittest.IsolatedAsyncioTestCase):
         )
 
     async def test_apply_uses_exact_gate_compile_barrier_and_validated_save(self):
-        result = await server.niagara_batch_translate(
-            valid_manifest(), apply=True, save_assets=True
+        result = await translate_manifest(
+            self.fake, valid_manifest(), apply=True, save_assets=True
         )
 
         self.assertTrue(result["success"])
@@ -119,7 +114,7 @@ class NiagaraBatchTranslateTests(unittest.IsolatedAsyncioTestCase):
         manifest = valid_manifest()
         manifest["items"][0]["package_path"] = "/Engine/Unsafe"
 
-        result = await server.niagara_batch_translate(manifest, apply=True)
+        result = await translate_manifest(self.fake, manifest, apply=True)
 
         self.assertFalse(result["success"])
         self.assertFalse(result["mutated"])
@@ -127,10 +122,9 @@ class NiagaraBatchTranslateTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_failed_translation_discards_only_the_unsaved_duplicate(self):
         self.fake = TranslationFailureConnection()
-        server._unreal_connection = self.fake
 
-        result = await server.niagara_batch_translate(
-            valid_manifest(), apply=True, save_assets=True
+        result = await translate_manifest(
+            self.fake, valid_manifest(), apply=True, save_assets=True
         )
 
         self.assertFalse(result["success"])

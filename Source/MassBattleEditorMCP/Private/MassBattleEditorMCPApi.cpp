@@ -1496,9 +1496,19 @@ FString UMassBattleEditorMCPApi::MCP_GetApiStatus()
 		TEXT("OptionsJson"),
 		TEXT("unit.export"));
 
-	AddTool(TEXT("MCP_UnitMergeUpdate"),
-		TEXT("对已有单位并集写入局部 JSON，可选择保存资产"),
-		TEXT("UnitPath, UnitDataJson, bSaveAssets"),
+	AddTool(TEXT("MCP_UnitPlanMergeUpdate"),
+		TEXT("规划单位或源码 Actor 的局部更新并返回计划 ID"),
+		TEXT("UnitPath, UnitDataJson"),
+		TEXT("unit.plan"));
+
+	AddTool(TEXT("MCP_UnitPreviewDiff"),
+		TEXT("读取已保存的单位变更计划及完整差异"),
+		TEXT("PlanId"),
+		TEXT("unit.plan"));
+
+	AddTool(TEXT("MCP_UnitApplyPlan"),
+		TEXT("应用已审核的单位变更计划，可保存单位或导出源码 Actor"),
+		TEXT("PlanId, bSaveAssets"),
 		TEXT("unit.write"));
 
 	AddTool(TEXT("MCP_UnitCreate"),
@@ -1529,11 +1539,6 @@ FString UMassBattleEditorMCPApi::MCP_GetApiStatus()
 	AddTool(TEXT("MCP_ProjectileList"),
 		TEXT("列出 UMassBattleProjectileConfigDataAsset 抛体配置"),
 		TEXT("OptionsJson"),
-		TEXT("projectile.query"));
-
-	AddTool(TEXT("MCP_ProjectileQuery"),
-		TEXT("按路径或名称查询 UMassBattleProjectileConfigDataAsset 抛体配置"),
-		TEXT("QueryJson"),
 		TEXT("projectile.query"));
 
 	AddTool(TEXT("MCP_ProjectileGet"),
@@ -1636,16 +1641,6 @@ FString UMassBattleEditorMCPApi::MCP_GetApiStatus()
 		TEXT("TargetClassPath, NiagaraSystemPath, NdcBurstFxPath, SubType, RenderBatchSize, PoolingCooldown, bSaveAssets"),
 		TEXT("batch_fx.write"));
 
-	AddTool(TEXT("MCP_StyleSummarizeUnits"),
-		TEXT("按 StyleType、路径类别和推断风格族汇总单位"),
-		TEXT("OptionsJson"),
-		TEXT("style.organization"));
-
-	AddTool(TEXT("MCP_StylePlanOrganizeUnits"),
-		TEXT("生成按风格组织单位资产的移动计划，不直接移动资产"),
-		TEXT("OptionsJson"),
-		TEXT("style.organization"));
-
 	AddTool(TEXT("MCP_EditorListProfiles"),
 		TEXT("列出 MCP 单位编辑器使用的 style profile 与 authoring recipe"),
 		TEXT("OptionsJson"),
@@ -1691,11 +1686,6 @@ FString UMassBattleEditorMCPApi::MCP_GetApiStatus()
 		TEXT("UnitPath, SpecJson"),
 		TEXT("unit_editor.animation"));
 
-	AddTool(TEXT("MCP_EditorApplyAddAnimationsToUnit"),
-		TEXT("生成并在可应用时执行已有单位 AnimShared 编辑计划"),
-		TEXT("UnitPath, SpecJson, bSaveAssets"),
-		TEXT("unit_editor.animation"));
-
 	AddTool(TEXT("MCP_EditorPlanCreateVatUnit"),
 		TEXT("诊断入口：预览与 MassBattleTools DoAll 等价的 VAT 单位生成计划；严格执行仍要求完整 canonical 输入"),
 		TEXT("SpecJson"),
@@ -1716,11 +1706,6 @@ FString UMassBattleEditorMCPApi::MCP_GetApiStatus()
 		TEXT("OptionsJson"),
 		TEXT("unit_editor.create.diagnostic"));
 
-	AddTool(TEXT("MCP_EditorApplyCreateVatUnitFromSelection"),
-		TEXT("主入口：从当前编辑器选择或 selected_assets 一键执行 MassBattleTools DoAll 等价生成流程"),
-		TEXT("OptionsJson, bSaveAssets"),
-		TEXT("unit_editor.create"));
-
 	AddTool(TEXT("MCP_EditorInspectActorAssembly"),
 		TEXT("检查 Actor 的模块化骨骼、静态武器、材质与绑定骨骼，不写资产"),
 		TEXT("ActorPath, OptionsJson"),
@@ -1740,11 +1725,6 @@ FString UMassBattleEditorMCPApi::MCP_GetApiStatus()
 		TEXT("把 Actor 身体、模块化部件和武器组装成可动画 SkeletalMesh，再生成 VAT 单位"),
 		TEXT("SpecJson, bSaveAssets"),
 		TEXT("unit_editor.actor"));
-
-	AddTool(TEXT("MCP_EditorPlanOrganizeUnitAssets"),
-		TEXT("按单位管理 style 规划移动单位及其编辑器生成的关联资产"),
-		TEXT("UnitPath, OptionsJson"),
-		TEXT("unit_editor.organize"));
 
 	AddTool(TEXT("MCP_EditorApplyOrganizeUnitAssets"),
 		TEXT("应用已审查的单位关联资产整理计划；OptionsJson 默认 dry_run=true"),

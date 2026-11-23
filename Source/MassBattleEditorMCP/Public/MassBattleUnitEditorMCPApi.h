@@ -97,10 +97,6 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "MassBattleEditorMCP|UnitEditor")
 	static FString MCP_EditorValidateAddAnimationsToUnit(const FString& UnitPath, const FString& SpecJson);
 
-	/** Convenience wrapper: plan animation-set edit and apply it when applicable. */
-	UFUNCTION(BlueprintCallable, Category = "MassBattleEditorMCP|UnitEditor")
-	static FString MCP_EditorApplyAddAnimationsToUnit(const FString& UnitPath, const FString& SpecJson, bool bSaveAssets);
-
 	/**
 	 * @ProductDocument
 	 * @brief Inspect source assets and output layout before VAT generation.
@@ -137,23 +133,12 @@ public:
 	/**
 	 * @ProductDocument
 	 * @brief Inspect the VAT specification resolved from selected assets.
-	 * @details The editor selection or selected_assets is resolved into a source mesh and animation set, then passed as a specification to @ref UMassBattleUnitEditorMCPApi::MCP_EditorPlanCreateVatUnit.
-	 * @param[in] OptionsJson JSON object; pass {} to use the defaults. selected_assets supplies an explicit selection. Additional generation options feed the selection resolver and returned resolved_spec.
+	 * @details Review the selected assets and generation plan, then pass resolved_spec to @ref UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnit to generate the unit.
+	 * @param[in] OptionsJson JSON object. Pass {} to use the defaults. selected_assets supplies asset paths for selection resolution. Additional generation options are included in resolved_spec.
 	 * @return The resolved selection, VAT specification and generation plan; ready_to_apply identifies whether the resolved request is ready for execution.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "MassBattleEditorMCP|UnitEditor")
 	static FString MCP_EditorPlanCreateVatUnitFromSelection(const FString& OptionsJson);
-
-	/**
-	 * @ProductDocument
-	 * @brief Resolve selected source assets into a specification and generate a VAT unit.
-	 * @details Selection resolution produces the mesh, animation and output settings used by @ref UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnit. The resolved selection and specification are included with the generation result.
-	 * @param[in] OptionsJson JSON options for selection resolution and VAT generation. selected_assets overrides the current selection. compact_response controls response detail; its MCP wrapper default is true and an explicit JSON value takes precedence.
-	 * @param[in] bSaveAssets Whether to save the assets modified or created by this operation to disk.
-	 * @return The resolved selection and specification together with apply_result or apply_summary; failures identify selection resolution or generation problems.
-	 */
-	UFUNCTION(BlueprintCallable, Category = "MassBattleEditorMCP|UnitEditor")
-	static FString MCP_EditorApplyCreateVatUnitFromSelection(const FString& OptionsJson, bool bSaveAssets);
 
 	/**
 	 * @ProductDocument
@@ -200,23 +185,12 @@ public:
 
 	/**
 	 * @ProductDocument
-	 * @brief Inspect destination folders for a unit and its linked assets.
-	 * @details Resolves the style layout and discovers the unit and linked generated/source assets selected by the organization policy. It calculates source/destination moves and collision status without moving or saving assets.
+	 * @brief Preview or move a unit and its linked source and generated assets into a style layout.
+	 * @details With dry_run=true it returns the proposed moves and collision checks in plan. With dry_run=false it executes the eligible AssetTools moves and reports each performed move and actual failure.
 	 * @param[in] UnitPath Unreal object path of the existing MassBattle unit config or supported Unit Source Actor Blueprint.
-	 * @param[in] OptionsJson JSON object; pass {} to use the defaults. style_profile chooses defaults; target_root or target_package_path selects the destination. unit_name, use_family_folder, generated_folder_name/target_folder_name and managed_roots customize the existing layout policy.
-	 * @return A move list giving source paths, destination paths and checks for each asset, together with the resolved style layout.
-	 */
-	UFUNCTION(BlueprintCallable, Category = "MassBattleEditorMCP|UnitEditor")
-	static FString MCP_EditorPlanOrganizeUnitAssets(const FString& UnitPath, const FString& OptionsJson);
-
-	/**
-	 * @ProductDocument
-	 * @brief Move a unit and its linked source and generated assets into a style layout.
-	 * @details Rebuilds the same organization plan and returns it by default because dry_run=true. With dry_run=false it executes the eligible AssetTools moves and reports each performed move and actual failure.
-	 * @param[in] UnitPath Unreal object path of the existing MassBattle unit config or supported Unit Source Actor Blueprint.
-	 * @param[in] OptionsJson JSON object; pass {} to use the defaults. Uses the same layout options as the organization planner. dry_run defaults to true; preview_only is also accepted.
+	 * @param[in] OptionsJson JSON object. dry_run defaults to true, and preview_only takes precedence when supplied. style_profile chooses defaults, and target_root or target_package_path selects the destination. unit_name, use_family_folder, generated_folder_name/target_folder_name and managed_roots customize the layout.
 	 * @param[in] bSaveAssets Whether to save the assets modified or created by this operation to disk.
-	 * @return The move plan for a preview, or per-step results and the actual moved count after execution; failure reports retain the performed move results.
+	 * @return With dry_run=true, plan contains the proposed moves and the resolved style layout. After execution, the response includes per-step results and the actual moved count.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "MassBattleEditorMCP|UnitEditor")
 	static FString MCP_EditorApplyOrganizeUnitAssets(const FString& UnitPath, const FString& OptionsJson, bool bSaveAssets);
@@ -229,4 +203,10 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "MassBattleEditorMCP|UnitEditor")
 	static FString MCP_EditorGetStatus();
+
+private:
+	/// @brief 应用单位制作工作流中的动画配置变更。
+	static FString ApplyAddAnimationsToUnit(const FString& UnitPath, const FString& SpecJson, bool bSaveAssets);
+	/// @brief 生成关联资产的整理预览，供工作流规划与执行入口使用。
+	static FString PlanOrganizeUnitAssets(const FString& UnitPath, const FString& OptionsJson);
 };

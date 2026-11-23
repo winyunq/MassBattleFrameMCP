@@ -100,9 +100,9 @@ MassBattleEditorMCP 的 Codex 入口由两层组成：
 ```
 
 安装后需要重启 Codex 或新开会话；UE 编辑器也需要加载本插件，bridge 才会开始监听。
-安装成功后应能看到 `massbattle-editor-mcp`，并可调用 `unit_get`、`unit_create`、`projectile_get`、`projectile_write`、`projectile_validate`、`editor_apply_create_vat_unit_from_selection`、`effect_asset_read_summary`、`niagara_set_module_pin`、`batch_fx_read_renderer_defaults`、`batch_fx_set_renderer_defaults` 等原语工具。
+安装成功后应能看到 `massbattle-editor-mcp`，并可调用 `unit_get`、`unit_plan_write`、`unit_apply_plan`、`projectile_list`、`editor_apply_create_vat_unit`、`effect_asset_read_summary` 和 `niagara_set_module_pin` 等工具。
 
-单位制作的默认 AI 入口应对应官方 `/MassBattle/Core/MassBattleTools` 的 DoAll 按钮：一次 apply 调用完成 mesh、material、VAT texture、renderer、unit config 的创建或刷新。非 selection 入口要求完整 canonical 输入，并会在写任何资产前先 validate；缺字段、旧别名、静态兜底或未覆盖旧生成 mesh 都直接失败。plan/validate 工具保留给诊断和 dry-run，不是正常制作流程的必经步骤。
+`editor_apply_create_vat_unit` 对应官方 `/MassBattle/Core/MassBattleTools` 的 DoAll 流程，用完整 spec 创建或刷新网格、材质、VAT 纹理、渲染器和单位配置。从选中资产开始时，先用 `editor_plan_create_vat_unit_from_selection`，核对警告和 `resolved_spec`，然后把该 spec 传给生成入口。
 
 注意：`FFxConfig.AgentBehaviorState` 使用的是 `EAgentBehaviorState`，可写值包括 `None`、`Appearing`、`Sleeping`、`Patrolling`、`Attacking`、`Hit`、`Dying`。受击 FX 应写 `Hit`，不要把运行时 flag 名 `BeingHit` 写进这个字段。
 
@@ -121,31 +121,28 @@ MassBattleEditorMCP 的 Codex 入口由两层组成：
 | Unit MCP | `unit_export` | 可用 | 导出紧凑单位数值表，支持给平衡分析或批量复核使用。 |
 | Unit MCP | `unit_find_assets` | 可用 | 按单位制作场景查找 SkeletalMesh、Renderer、Niagara 等候选资产。 |
 | Unit MCP | `unit_create` | 可用 | 创建新单位；未指定模板时使用默认单位模板，可带初始单位数据。 |
-| Unit MCP | `unit_write` | 可用 | 对已有单位按源码字段名并集写入局部 JSON，省略字段保持不变。 |
+| Unit MCP | `unit_plan_write` | 可用 | 规划单位或源码 Actor 的局部变更，返回可审核的差异和计划 ID。 |
+| Unit MCP | `unit_preview_plan` | 可用 | 按 ID 读取已保存的变更计划及完整差异。 |
+| Unit MCP | `unit_apply_plan` | 可用 | 应用已审核的变更计划，可保存单位或导出源码 Actor。 |
 | Unit MCP | `unit_delete` | 可用 | 显式删除或软删除单位；默认 dry-run。 |
-| Projectile MCP | `projectile_list` | 可用 | 在指定根目录列出 `MassBattleProjectileConfigDataAsset`。 |
-| Projectile MCP | `projectile_query` | 可用 | 按路径或名称查询抛体配置。 |
+| Projectile MCP | `projectile_list` | 可用 | 在指定根目录列出抛体配置，可用 `options.query` 按名称或路径筛选。 |
 | Projectile MCP | `projectile_get` | 可用 | 以 active-only 或完整源码对齐视图读取一个抛体。 |
 | Projectile MCP | `projectile_get_schema` | 可用 | 读取抛体字段、枚举、编辑条件和写入规则。 |
 | Projectile MCP | `projectile_create` | 可用 | 从类默认值或已有模板创建抛体；创建前先在瞬态副本上验证。 |
 | Projectile MCP | `projectile_write` | 可用 | 对抛体并集写入局部补丁；数组追加/替换必须显式声明，写前验证。 |
 | Projectile MCP | `projectile_validate` | 可用 | 验证运动、伤害归属、触发条件、生命周期 FX、关联单位与重复爆炸。 |
 | Projectile MCP | `projectile_delete` | 可用 | 规划或执行受保护的软/硬删除；默认 dry-run。 |
-| Style MCP | `style_summarize_units` | 可用 | 按风格、单位族、路径类别汇总单位资产。 |
-| Style MCP | `style_plan_organize_units` | 可用 | 生成按默认风格整理单位目录的计划，不直接移动资产。 |
 | Unit Editor MCP | `editor_get_status` | 可用 | 读取单位编辑工作流能力。 |
 | Unit Editor MCP | `editor_list_profiles` | 可用 | 列出风格 profile 和 authoring recipe。 |
 | Unit Editor MCP | `editor_get_profile` | 可用 | 读取指定 profile 或 recipe。 |
 | Unit Editor MCP | `editor_plan_create_vat_unit` | 诊断 | 预览 DoAll 等价 VAT 单位计划；严格执行仍要求完整 canonical 输入。 |
-| Unit Editor MCP | `editor_apply_create_vat_unit` | 可用 | 非 selection 的主生成入口，等价 DoAll；先验证完整 canonical 输入，再执行网格转换、VAT 材质创建、VAT 烘焙、Renderer 复制、单位配置创建或合并。 |
-| Unit Editor MCP | `editor_plan_create_vat_unit_from_selection` | 诊断 | 从当前编辑器选择或 `selected_assets` 推导 DoAll spec，并返回可审查计划。 |
-| Unit Editor MCP | `editor_apply_create_vat_unit_from_selection` | 可用 | AI 使用的“获取当前，生成”一键主入口。 |
+| Unit Editor MCP | `editor_apply_create_vat_unit` | 可用 | 验证完整 spec，然后生成网格、材质、VAT、渲染器和单位配置。 |
+| Unit Editor MCP | `editor_plan_create_vat_unit_from_selection` | 可用 | 根据当前编辑器选择或 `selected_assets` 解析可供生成的 spec，供执行前核对。 |
 | Unit Editor MCP | `editor_inspect_actor_assembly` | 可用 | 无写入检查 Actor 的模块化骨骼/静态组件、有效材质、Socket 变换和武器绑定骨骼。 |
 | Unit Editor MCP | `editor_inspect_vat_animation` | 可用 | 检查蒙皮权重、顶点/骨骼运动、VAT 查询 UV、材质开关与贴图，以及标准士兵动画配置。 |
 | Unit Editor MCP | `editor_plan_create_vat_unit_from_actor` | 诊断 | 验证 Actor 组件/武器覆盖配方，预览持久化组合 SkeletalMesh 与严格 VAT 单位计划。 |
 | Unit Editor MCP | `editor_apply_create_vat_unit_from_actor` | 可用 | 把 Actor 与刚性绑定的静态武器组合为可动画的持久化 SkeletalMesh，再执行严格的 DoAll 等价 VAT 工作流。 |
-| Unit Editor MCP | `editor_plan_organize_unit_assets` | 可用 | 计划把一个单位和关联生成资产移动到风格化目录。 |
-| Unit Editor MCP | `editor_apply_organize_unit_assets` | 可用 | 应用已审核的单位资产整理计划；默认可 dry-run。 |
+| Unit Editor MCP | `editor_apply_organize_unit_assets` | 可用 | 默认以 dry-run 返回关联资产整理计划，也可执行已审核的搬迁。 |
 | Effect Asset MCP | `effect_asset_query` | 可用 | 按 `query/root/classes/limit` 查找 Niagara、Cascade、Blueprint、Material、Texture、Sound 等视觉相关资产。 |
 | Effect Asset MCP | `effect_asset_read_summary` | 可用 | 读取未知类型特效资产摘要；返回依赖、引用和缺失项目依赖信息。 |
 | Effect Asset MCP | `effect_asset_export_text` | 可用 | 导出确定性文本，供 AI 精读和复核。 |
@@ -163,6 +160,14 @@ MassBattleEditorMCP 的 Codex 入口由两层组成：
 | Batch FX MCP | `batch_fx_set_renderer_defaults` | 可用 | 设置 `AMassBattleFxRenderer` 蓝图默认值，包括 `NiagaraSystemAsset`、`NDC_BurstFx`、`SubType`、batch size 和 pooling cooldown。 |
 
 忠于源特效的批处理闭环是：精读源资产，复制原 Niagara，以 `niagara_compare_systems(mode=exact)` 证明复制体与源一致，只增加 MassBattleFrame 输入适配，再以 `mode=translation` 验证保真和可运行性。模板近似只能作为单独的可选优化版本，不能算作原特效转译完成。转译后要验证 Renderer 蓝图默认值，并使用当前可用的关卡编辑工具把 Renderer Actor 放进测试关卡，再通过 Unit MCP 或 Projectile MCP 接入真实触发链；工具能完成的关卡工作不能再交还给用户手动处理。
+
+UE 桥接运行后，可在插件目录用清单脚本批量处理特效。
+
+```powershell
+uv run --project Resources/Python Resources/Python/TranslateNiagaraManifest.py manifest.json
+```
+
+默认只预检来源和目标。加 `--apply` 后执行复制、精确比对、图编辑、保真校验和保存。加 `--no-save` 可保留成功的未保存副本。失败时会报告未保存副本的清理结果。
 
 直接攻击与抛体攻击不能同时拥有同一份伤害。常规抛体攻击应关闭 Agent 的命中时刻伤害，由 Projectile DataAsset 负责飞行、碰撞、伤害和生命周期。`projectile_validate` 还会拒绝完全相同且已启用的 `OnHit.SpawnFx` 与 `OnRemoval.SpawnFx`，因为两者可能在同一个模拟 Tick 执行并生成两次完整爆炸。
 
@@ -212,6 +217,6 @@ apply 调用会先执行 validate，失败时不写资产。plan/validate 调用
 5. 用 `niagara_merge_write` 写 renderer、emitter data、bounds 等 UObject 属性。
 6. 用 `niagara_set_module_pin` 微调模块输入 pin，例如 Lifetime、Scale、Spawn Count 或随机范围。
 7. 用 `batch_fx_set_renderer_defaults` 写 renderer CDO 的 Niagara、NDC、SubType 和 batch size。
-8. 用 `unit_write` 把单位 `FFxConfig` 指向对应 `SubType`。
+8. 用 `unit_plan_write` 规划更新，再用 `unit_apply_plan` 把单位 `FFxConfig` 指向对应 `SubType`。
 
 这个模式的产物应明确标记为“优化复刻/近似版本”，不能在保真转译验收数量中计数。

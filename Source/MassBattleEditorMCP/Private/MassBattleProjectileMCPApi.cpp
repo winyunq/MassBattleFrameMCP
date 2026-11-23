@@ -1066,7 +1066,6 @@ FString UMassBattleProjectileMCPApi::MCP_ProjectileGetApiStatus()
 
 	TArray<TSharedPtr<FJsonValue>> Tools;
 	Tools.Add(Tool(TEXT("MCP_ProjectileList"), TEXT("projectile.query"), TEXT("List projectile DataAssets."), TEXT("OptionsJson")));
-	Tools.Add(Tool(TEXT("MCP_ProjectileQuery"), TEXT("projectile.query"), TEXT("Query projectile DataAssets by path/name text."), TEXT("QueryJson")));
 	Tools.Add(Tool(TEXT("MCP_ProjectileGet"), TEXT("projectile.read"), TEXT("Read simple active-only or full source-aligned projectile data."), TEXT("ProjectilePath, OptionsJson")));
 	Tools.Add(Tool(TEXT("MCP_ProjectileGetSchema"), TEXT("projectile.schema"), TEXT("Read editable fields, enums, tooltips, and conditional roles."), TEXT("OptionsJson")));
 	Tools.Add(Tool(TEXT("MCP_ProjectileCreate"), TEXT("projectile.create"), TEXT("Create a projectile DataAsset from a template or class default and optional source-aligned data."), TEXT("CreateSpecJson, bSaveAssets")));
@@ -1117,12 +1116,6 @@ FString UMassBattleProjectileMCPApi::MCP_ProjectileList(const FString& OptionsJs
 	Root->SetArrayField(TEXT("roots"), RootNamesToJson(Options));
 	Root->SetArrayField(TEXT("projectiles"), Assets);
 	return ToJsonString(Root);
-}
-
-FString UMassBattleProjectileMCPApi::MCP_ProjectileQuery(const FString& QueryJson)
-{
-	using namespace MassBattleProjectileMCP;
-	return MCP_ProjectileList(QueryJson);
 }
 
 FString UMassBattleProjectileMCPApi::MCP_ProjectileGet(const FString& ProjectilePath, const FString& OptionsJson)

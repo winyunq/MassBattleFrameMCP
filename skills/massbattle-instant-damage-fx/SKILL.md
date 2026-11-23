@@ -142,7 +142,7 @@ Read [one-shot conversion workflow](references/one-shot-conversion-workflow.md) 
 6. Add the Burst NDC adapter with Niagara graph primitives. If graph insertion/rewiring or the runtime ABI is insufficient, report the precise blocker.
 7. Configure and read back the renderer Blueprint defaults.
 8. Build a partial source-aligned unit patch for `Attack`, `Damage`, `Debuff`, and `Attack.SpawnFx` as required.
-9. Use `unit_write` / the advertised Unit MCP write flow, then read the unit back.
+9. Pass the patch to `unit_plan_write`. When both `success` and `applicable` are true, pass its `plan_id` to `unit_apply_plan`, then read the unit back.
 10. Place the corresponding renderer actor and validate source/translation timing and visuals in a test map.
 
 Do not invent a high-level “convert” MCP call. Combine primitive tools and report every capability gap.

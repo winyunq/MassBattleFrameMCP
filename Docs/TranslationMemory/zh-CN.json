@@ -12,25 +12,25 @@
   },
   {
     "id": "00888c985e70f798d418dac3:details",
-    "translation": "将编辑器选区或 selected_assets 解析为源网格和动画集合，再组成制作规格交给 @ref UMassBattleUnitEditorMCPApi::MCP_EditorPlanCreateVatUnit。",
-    "translated_source_hash": "5562198fd5236e1043bbeea88a48648dfb16f68d47bb6ff35182e07b3bde9bd6",
+    "translation": "核对选中的资产和生成计划，再将 resolved_spec 传给 @ref UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnit 生成单位。",
+    "translated_source_hash": "218eba91871f89f7c3e6839cdc633eb697eb4ddbefbff3f8e655ba0eac5f023d",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
     "name": "UMassBattleUnitEditorMCPApi::MCP_EditorPlanCreateVatUnitFromSelection",
     "field": "details",
-    "source_text": "The editor selection or selected_assets is resolved into a source mesh and animation set, then passed as a specification to @ref UMassBattleUnitEditorMCPApi::MCP_EditorPlanCreateVatUnit.",
-    "source_hash": "5562198fd5236e1043bbeea88a48648dfb16f68d47bb6ff35182e07b3bde9bd6"
+    "source_text": "Review the selected assets and generation plan, then pass resolved_spec to @ref UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnit to generate the unit.",
+    "source_hash": "218eba91871f89f7c3e6839cdc633eb697eb4ddbefbff3f8e655ba0eac5f023d"
   },
   {
     "id": "00888c985e70f798d418dac3:param/OptionsJson",
-    "translation": "JSON 对象；{} 使用默认选项。selected_assets 提供显式选区；其他生成选项参与选区解析，并体现在 resolved_spec 中。",
-    "translated_source_hash": "c3d944ac9b973fc407b4e086d53a5f2123b4ae022a15003fd085517af38688bd",
+    "translation": "JSON 对象。传 {} 使用默认值。selected_assets 提供待解析的资产路径。额外的生成选项会包含在 resolved_spec 中。",
+    "translated_source_hash": "cb90c07adf56ec3d08ba497e13a5abc133e029a017bf39814b9d5ba24f0c43b9",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
     "name": "UMassBattleUnitEditorMCPApi::MCP_EditorPlanCreateVatUnitFromSelection",
     "field": "param/OptionsJson",
-    "source_text": "JSON object; pass {} to use the defaults. selected_assets supplies an explicit selection. Additional generation options feed the selection resolver and returned resolved_spec.",
-    "source_hash": "c3d944ac9b973fc407b4e086d53a5f2123b4ae022a15003fd085517af38688bd"
+    "source_text": "JSON object. Pass {} to use the defaults. selected_assets supplies asset paths for selection resolution. Additional generation options are included in resolved_spec.",
+    "source_hash": "cb90c07adf56ec3d08ba497e13a5abc133e029a017bf39814b9d5ba24f0c43b9"
   },
   {
     "id": "00888c985e70f798d418dac3:returns",
@@ -606,14 +606,14 @@
   },
   {
     "id": "1352dc5db4096033a86c953b:details",
-    "translation": "根据局部源码对应 JSON 生成并存储合并规划，保留未指定的单位字段。本入口不修改资产；applicable、merge_errors 说明变更能否应用。",
-    "translated_source_hash": "53cfe6f49b074cce81ba3477075180cc6b5bd5ee553e2fcd290faa20483c6fef",
+    "translation": "为指定的源码 Actor 或单位 DataAsset 生成并保存局部更新计划。日常维护优先选源码 Actor，使变更保存在 UnitData 中。保留未指定的字段。计划会说明拟议的更新能否执行。",
+    "translated_source_hash": "a3deb0fb335d3aa088673ede3119cc900b5d7b59eaee1b8bdbfb7f844a61d5a8",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
     "name": "UMassBattleUnitMCPApi::MCP_UnitPlanMergeUpdate",
     "field": "details",
-    "source_text": "Builds and stores a union-merge plan from a partial source-aligned unit object. Omitted unit fields are retained. The asset is not modified; applicable and merge_errors describe whether the planned field changes can be applied.",
-    "source_hash": "53cfe6f49b074cce81ba3477075180cc6b5bd5ee553e2fcd290faa20483c6fef"
+    "source_text": "Stores a partial update plan for the selected Unit Source Actor or unit DataAsset. Target the source Actor for routine maintenance so edits are retained in UnitData. Omitted fields are retained. The plan reports whether the proposed update can be applied.",
+    "source_hash": "a3deb0fb335d3aa088673ede3119cc900b5d7b59eaee1b8bdbfb7f844a61d5a8"
   },
   {
     "id": "1352dc5db4096033a86c953b:param/UnitDataJson",
@@ -1100,72 +1100,6 @@
     "source_hash": "e15aaed9b631948a3c94b0c66c2feaa617b3929cfeaf7174d511b9dec709a5cd"
   },
   {
-    "id": "1fc6baed18807098dc1585e2:brief",
-    "translation": "通过名称或路径定位投射物配置资产。",
-    "translated_source_hash": "2bc79ad64887c630269bce0a279c222891f35efa0a40cd6c51e95d72bbfb5c01",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleProjectileMCPApi.h",
-    "name": "UMassBattleProjectileMCPApi::MCP_ProjectileQuery",
-    "field": "brief",
-    "source_text": "Locate projectile configuration assets by name or path.",
-    "source_hash": "2bc79ad64887c630269bce0a279c222891f35efa0a40cd6c51e95d72bbfb5c01"
-  },
-  {
-    "id": "1fc6baed18807098dc1585e2:details",
-    "translation": "复用投射物列表查询入口，按路径或名称查找配置，返回相同的稳定摘要和扫描元数据。",
-    "translated_source_hash": "95e5d9bc5b2dee004c9fc0d52eb79fadfb9d40e887322f6c2e1e97e614d166ba",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleProjectileMCPApi.h",
-    "name": "UMassBattleProjectileMCPApi::MCP_ProjectileQuery",
-    "field": "details",
-    "source_text": "Uses the projectile listing query path to find configurations by path or name. It returns the same stable summaries and scan metadata as the projectile list entry.",
-    "source_hash": "95e5d9bc5b2dee004c9fc0d52eb79fadfb9d40e887322f6c2e1e97e614d166ba"
-  },
-  {
-    "id": "1fc6baed18807098dc1585e2:param/QueryJson",
-    "translation": "JSON 对象；{} 使用默认选项。采用投射物列表的查询和范围选项。",
-    "translated_source_hash": "d8bc0b1eed9f519da047525f17862e79677200ca87c1178e0a5a0f2a735d8902",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleProjectileMCPApi.h",
-    "name": "UMassBattleProjectileMCPApi::MCP_ProjectileQuery",
-    "field": "param/QueryJson",
-    "source_text": "JSON object; pass {} to use the defaults. Uses the projectile-list query and scope options.",
-    "source_hash": "d8bc0b1eed9f519da047525f17862e79677200ca87c1178e0a5a0f2a735d8902"
-  },
-  {
-    "id": "1fc6baed18807098dc1585e2:returns",
-    "translation": "与 projectile_list 同格式的搜索结果，包含匹配资产、返回与扫描数量及搜索目录。",
-    "translated_source_hash": "c45734aeb702889aa41b1a92ec22dc7c393a2a646038c942006885110605a389",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleProjectileMCPApi.h",
-    "name": "UMassBattleProjectileMCPApi::MCP_ProjectileQuery",
-    "field": "returns",
-    "source_text": "Projectile search results in the same format as projectile_list, including matching assets, counts and searched roots.",
-    "source_hash": "c45734aeb702889aa41b1a92ec22dc7c393a2a646038c942006885110605a389"
-  },
-  {
-    "id": "1fc6baed18807098dc1585e2:term/QueryJson",
-    "translation": "查询 JSON",
-    "translated_source_hash": "76a8b6c4031ae82da1872bb774866c77fdbc20acd43883c865c8891c16a8ac55",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleProjectileMCPApi.h",
-    "name": "UMassBattleProjectileMCPApi::MCP_ProjectileQuery",
-    "field": "term/QueryJson",
-    "source_text": "QueryJson",
-    "source_hash": "76a8b6c4031ae82da1872bb774866c77fdbc20acd43883c865c8891c16a8ac55"
-  },
-  {
-    "id": "1fc6baed18807098dc1585e2:title/user",
-    "translation": "查询投射物配置",
-    "translated_source_hash": "6aea12ef095557bbafae31a055c8e2f247a0d0cb78d4f0b4f56bf65516f7acb1",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleProjectileMCPApi.h",
-    "name": "UMassBattleProjectileMCPApi::MCP_ProjectileQuery",
-    "field": "title/user",
-    "source_text": "MCP Projectile Query",
-    "source_hash": "6aea12ef095557bbafae31a055c8e2f247a0d0cb78d4f0b4f56bf65516f7acb1"
-  },
-  {
     "id": "29984bf4b93358d500caf83c:brief",
     "translation": "取得图节点、引脚和连线标识，供精确编辑使用。",
     "translated_source_hash": "642dca6c0467595710c78799f5dc7f97e6f14464ecb20652e75ade8764e7ff89",
@@ -1529,182 +1463,6 @@
     "source_hash": "7bc1d21499603ec68b505ec1fa4828a4c7732c314ba5437316e8a25ce6ed089c"
   },
   {
-    "id": "3ba0d564f389daa7675f5454:brief",
-    "translation": "查看单位及其关联资产将被移动到哪些目录。",
-    "translated_source_hash": "388c30c00efd65f6c5d1f30d8a84de0a643b97548534957125d3eec6d8fcf2bd",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
-    "name": "UMassBattleUnitEditorMCPApi::MCP_EditorPlanOrganizeUnitAssets",
-    "field": "brief",
-    "source_text": "Inspect destination folders for a unit and its linked assets.",
-    "source_hash": "388c30c00efd65f6c5d1f30d8a84de0a643b97548534957125d3eec6d8fcf2bd"
-  },
-  {
-    "id": "3ba0d564f389daa7675f5454:details",
-    "translation": "解析风格布局，按整理策略发现单位及关联生成、源资产，计算源路径、目标路径和冲突状态；本入口不移动或保存资产。",
-    "translated_source_hash": "e59f1ab1a8175f189959da31af77149d9fcc32168fc6bf8c206a7802cd2d4a94",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
-    "name": "UMassBattleUnitEditorMCPApi::MCP_EditorPlanOrganizeUnitAssets",
-    "field": "details",
-    "source_text": "Resolves the style layout and discovers the unit and linked generated/source assets selected by the organization policy. It calculates source/destination moves and collision status without moving or saving assets.",
-    "source_hash": "e59f1ab1a8175f189959da31af77149d9fcc32168fc6bf8c206a7802cd2d4a94"
-  },
-  {
-    "id": "3ba0d564f389daa7675f5454:param/OptionsJson",
-    "translation": "JSON 对象；{} 使用默认选项。style_profile 选择默认布局，target_root 或 target_package_path 指定目标；unit_name、use_family_folder、generated_folder_name/target_folder_name、managed_roots 定制已有布局策略。",
-    "translated_source_hash": "3b857486dba21d8a00eee0760f01054551429fae23641c3a5ec30dd091eec3f4",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
-    "name": "UMassBattleUnitEditorMCPApi::MCP_EditorPlanOrganizeUnitAssets",
-    "field": "param/OptionsJson",
-    "source_text": "JSON object; pass {} to use the defaults. style_profile chooses defaults; target_root or target_package_path selects the destination. unit_name, use_family_folder, generated_folder_name/target_folder_name and managed_roots customize the existing layout policy.",
-    "source_hash": "3b857486dba21d8a00eee0760f01054551429fae23641c3a5ec30dd091eec3f4"
-  },
-  {
-    "id": "3ba0d564f389daa7675f5454:param/UnitPath",
-    "translation": "现有 MassBattle 单位配置或受支持 Unit Source Actor 蓝图的 Unreal 对象路径。",
-    "translated_source_hash": "aa864c2f5df0d27965098c8920e077deb0767d26081bb0ea2707a830423841d2",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
-    "name": "UMassBattleUnitEditorMCPApi::MCP_EditorPlanOrganizeUnitAssets",
-    "field": "param/UnitPath",
-    "source_text": "Unreal object path of the existing MassBattle unit config or supported Unit Source Actor Blueprint.",
-    "source_hash": "aa864c2f5df0d27965098c8920e077deb0767d26081bb0ea2707a830423841d2"
-  },
-  {
-    "id": "3ba0d564f389daa7675f5454:returns",
-    "translation": "资产移动清单，逐项给出源路径、目标路径和检查状态，并附解析后的风格目录布局。",
-    "translated_source_hash": "631d6fcaf9942fc4cadb21bf80e4ab4ed402d1dfe66120679998e62a71fb880f",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
-    "name": "UMassBattleUnitEditorMCPApi::MCP_EditorPlanOrganizeUnitAssets",
-    "field": "returns",
-    "source_text": "A move list giving source paths, destination paths and checks for each asset, together with the resolved style layout.",
-    "source_hash": "631d6fcaf9942fc4cadb21bf80e4ab4ed402d1dfe66120679998e62a71fb880f"
-  },
-  {
-    "id": "3ba0d564f389daa7675f5454:term/OptionsJson",
-    "translation": "选项 JSON",
-    "translated_source_hash": "a0f14957c58f02a60e9117fccc518532f585fb2162c355fddc249812432496d8",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
-    "name": "UMassBattleUnitEditorMCPApi::MCP_EditorPlanOrganizeUnitAssets",
-    "field": "term/OptionsJson",
-    "source_text": "OptionsJson",
-    "source_hash": "a0f14957c58f02a60e9117fccc518532f585fb2162c355fddc249812432496d8"
-  },
-  {
-    "id": "3ba0d564f389daa7675f5454:term/UnitPath",
-    "translation": "单位路径",
-    "translated_source_hash": "3ae1b0beedb14bb68abf12e7080a31269b38e25ba6006e22f58a0b03c1ca1421",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
-    "name": "UMassBattleUnitEditorMCPApi::MCP_EditorPlanOrganizeUnitAssets",
-    "field": "term/UnitPath",
-    "source_text": "UnitPath",
-    "source_hash": "3ae1b0beedb14bb68abf12e7080a31269b38e25ba6006e22f58a0b03c1ca1421"
-  },
-  {
-    "id": "3ba0d564f389daa7675f5454:title/user",
-    "translation": "规划单位关联资产整理",
-    "translated_source_hash": "c5cbe956be740ba5943a9d62ca2b4eeebdb2a73b5ead4628b69111d17c205c97",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
-    "name": "UMassBattleUnitEditorMCPApi::MCP_EditorPlanOrganizeUnitAssets",
-    "field": "title/user",
-    "source_text": "MCP Editor Plan Organize Unit Assets",
-    "source_hash": "c5cbe956be740ba5943a9d62ca2b4eeebdb2a73b5ead4628b69111d17c205c97"
-  },
-  {
-    "id": "3d755114d18d68aa76bcae42:brief",
-    "translation": "自动从选中资产解析参数并生成 VAT 单位。",
-    "translated_source_hash": "1af57e35fb7f71206dff2fcf13d82ec31f7d92a2d2832f41ccdce09e744d5476",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
-    "name": "UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnitFromSelection",
-    "field": "brief",
-    "source_text": "Resolve selected source assets into a specification and generate a VAT unit.",
-    "source_hash": "1af57e35fb7f71206dff2fcf13d82ec31f7d92a2d2832f41ccdce09e744d5476"
-  },
-  {
-    "id": "3d755114d18d68aa76bcae42:details",
-    "translation": "从选区解析网格、动画和输出设置，交给 @ref UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnit 制作；结果同时保留实际采用的选区和制作参数。",
-    "translated_source_hash": "4980613552b8058b7a568106885a5c81ca59c8f0ca8f04c8e0b4341d7d6b218d",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
-    "name": "UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnitFromSelection",
-    "field": "details",
-    "source_text": "Selection resolution produces the mesh, animation and output settings used by @ref UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnit. The resolved selection and specification are included with the generation result.",
-    "source_hash": "4980613552b8058b7a568106885a5c81ca59c8f0ca8f04c8e0b4341d7d6b218d"
-  },
-  {
-    "id": "3d755114d18d68aa76bcae42:param/OptionsJson",
-    "translation": "选区解析和 VAT 制作选项。selected_assets 可覆盖当前选区；compact_response 控制结果详略，MCP 封装默认为 true，JSON 中显式值优先。",
-    "translated_source_hash": "7c293ae64d8d75511ddee9c7b9a41b70e9c2696bd9c8a6d2091481c78ccd9bfd",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
-    "name": "UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnitFromSelection",
-    "field": "param/OptionsJson",
-    "source_text": "JSON options for selection resolution and VAT generation. selected_assets overrides the current selection. compact_response controls response detail; its MCP wrapper default is true and an explicit JSON value takes precedence.",
-    "source_hash": "7c293ae64d8d75511ddee9c7b9a41b70e9c2696bd9c8a6d2091481c78ccd9bfd"
-  },
-  {
-    "id": "3d755114d18d68aa76bcae42:param/bSaveAssets",
-    "translation": "是否将本次修改或创建的资产保存到磁盘。",
-    "translated_source_hash": "46acb1f6c5d7d09bbd1e8025856eaca691d8236d15a643216a12160c0fbe6a66",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
-    "name": "UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnitFromSelection",
-    "field": "param/bSaveAssets",
-    "source_text": "Whether to save the assets modified or created by this operation to disk.",
-    "source_hash": "46acb1f6c5d7d09bbd1e8025856eaca691d8236d15a643216a12160c0fbe6a66"
-  },
-  {
-    "id": "3d755114d18d68aa76bcae42:returns",
-    "translation": "实际采用的选区和生成参数，以及 apply_result 或 apply_summary 中的制作结果；失败时指出选区解析或生成问题。",
-    "translated_source_hash": "933d52ec2a8b46280adbbb2080db546df098bbfb106a25c2fa02c767c411d5b0",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
-    "name": "UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnitFromSelection",
-    "field": "returns",
-    "source_text": "The resolved selection and specification together with apply_result or apply_summary; failures identify selection resolution or generation problems.",
-    "source_hash": "933d52ec2a8b46280adbbb2080db546df098bbfb106a25c2fa02c767c411d5b0"
-  },
-  {
-    "id": "3d755114d18d68aa76bcae42:term/OptionsJson",
-    "translation": "选项 JSON",
-    "translated_source_hash": "a0f14957c58f02a60e9117fccc518532f585fb2162c355fddc249812432496d8",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
-    "name": "UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnitFromSelection",
-    "field": "term/OptionsJson",
-    "source_text": "OptionsJson",
-    "source_hash": "a0f14957c58f02a60e9117fccc518532f585fb2162c355fddc249812432496d8"
-  },
-  {
-    "id": "3d755114d18d68aa76bcae42:term/bSaveAssets",
-    "translation": "保存资产",
-    "translated_source_hash": "4629c309c923a90e4d95af6cdf005400ed07f7706ccc73170d1590334a467ed3",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
-    "name": "UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnitFromSelection",
-    "field": "term/bSaveAssets",
-    "source_text": "bSaveAssets",
-    "source_hash": "4629c309c923a90e4d95af6cdf005400ed07f7706ccc73170d1590334a467ed3"
-  },
-  {
-    "id": "3d755114d18d68aa76bcae42:title/user",
-    "translation": "从选区生成 VAT 单位",
-    "translated_source_hash": "7f2ca6803ec85775c98aee5297f6d8a13042e58570bf98a4acafe9cf33dea46b",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
-    "name": "UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnitFromSelection",
-    "field": "title/user",
-    "source_text": "MCP Editor Apply Create Vat Unit From Selection",
-    "source_hash": "7f2ca6803ec85775c98aee5297f6d8a13042e58570bf98a4acafe9cf33dea46b"
-  },
-  {
     "id": "42563a962229e9245764506d:brief",
     "translation": "按单位风格统计资产分布并生成目录整理方案。",
     "translated_source_hash": "eaccc16cf49ce84c9229ed5a69e875338418820cf122c62ffa3da4cebb3d9dba",
@@ -1727,158 +1485,37 @@
     "source_hash": "918ec60b1aea475dcf166cdb793a4760871c7a15a43e26f27ddd6e1d50ea8bd9"
   },
   {
-    "id": "44d8610c3495cb324c333576:brief",
-    "translation": "局部修改单位并保留未提交的字段。",
-    "translated_source_hash": "60ad162a231a699956619ab3e0e3dcdfa55751a3fda1024610efe53b54c44e88",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
-    "name": "UMassBattleUnitMCPApi::MCP_UnitMergeUpdate",
-    "field": "brief",
-    "source_text": "Change selected unit fields while retaining unspecified data.",
-    "source_hash": "60ad162a231a699956619ab3e0e3dcdfa55751a3fda1024610efe53b54c44e88"
-  },
-  {
-    "id": "44d8610c3495cb324c333576:details",
-    "translation": "为 UnitPath 指定的源码 Actor 或单位 DataAsset 规划并应用部分更新。日常维护优先修改源码 Actor，使变更保存在 UnitData 中。bSaveAssets=true 时，写入源码会执行 Update 来导出单位。传 DataAsset 路径则直接修改该资产。未指定字段予以保留。校验失败时返回计划。",
-    "translated_source_hash": "7ff04c3ad915eabe10f233fabd38a46466aa26f6e39b5caf6819d1093d47df5c",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
-    "name": "UMassBattleUnitMCPApi::MCP_UnitMergeUpdate",
-    "field": "details",
-    "source_text": "Plans and applies a partial update to the Unit Source Actor or unit DataAsset selected by UnitPath. For routine maintenance, target the source Actor so the edit is retained in UnitData. With bSaveAssets=true, a source write runs Update to export the unit. A DataAsset path edits that asset directly. Omitted fields are retained. Validation failures return the plan.",
-    "source_hash": "7ff04c3ad915eabe10f233fabd38a46466aa26f6e39b5caf6819d1093d47df5c"
-  },
-  {
-    "id": "44d8610c3495cb324c333576:param/UnitDataJson",
-    "translation": "与源码字段对应的局部单位创作数据。精确可编辑字段名从单位字段结构取得。",
-    "translated_source_hash": "3920ba87ebbbe286a06ad33afbdbf704c52629c8734000c9134d40f5da2335cc",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
-    "name": "UMassBattleUnitMCPApi::MCP_UnitMergeUpdate",
-    "field": "param/UnitDataJson",
-    "source_text": "Partial source-aligned authored unit data. Obtain exact editable field names from the unit schema.",
-    "source_hash": "3920ba87ebbbe286a06ad33afbdbf704c52629c8734000c9134d40f5da2335cc"
-  },
-  {
-    "id": "44d8610c3495cb324c333576:param/UnitPath",
-    "translation": "现有 MassBattle 单位配置或受支持 Unit Source Actor 蓝图的 Unreal 对象路径。",
-    "translated_source_hash": "aa864c2f5df0d27965098c8920e077deb0767d26081bb0ea2707a830423841d2",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
-    "name": "UMassBattleUnitMCPApi::MCP_UnitMergeUpdate",
-    "field": "param/UnitPath",
-    "source_text": "Unreal object path of the existing MassBattle unit config or supported Unit Source Actor Blueprint.",
-    "source_hash": "aa864c2f5df0d27965098c8920e077deb0767d26081bb0ea2707a830423841d2"
-  },
-  {
-    "id": "44d8610c3495cb324c333576:param/bSaveAssets",
-    "translation": "是否将本次修改或创建的资产保存到磁盘。",
-    "translated_source_hash": "46acb1f6c5d7d09bbd1e8025856eaca691d8236d15a643216a12160c0fbe6a66",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
-    "name": "UMassBattleUnitMCPApi::MCP_UnitMergeUpdate",
-    "field": "param/bSaveAssets",
-    "source_text": "Whether to save the assets modified or created by this operation to disk.",
-    "source_hash": "46acb1f6c5d7d09bbd1e8025856eaca691d8236d15a643216a12160c0fbe6a66"
-  },
-  {
-    "id": "44d8610c3495cb324c333576:returns",
-    "translation": "实际应用的字段改动及保存结果；修改方案不可执行时返回规划结果和问题。",
-    "translated_source_hash": "068409f4bc566d5f1fbb9bae316919adab237790c4604c7b2e8b2ddd3d08722c",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
-    "name": "UMassBattleUnitMCPApi::MCP_UnitMergeUpdate",
-    "field": "returns",
-    "source_text": "The applied field changes and persistence result, or the planning result when the proposed update cannot be applied.",
-    "source_hash": "068409f4bc566d5f1fbb9bae316919adab237790c4604c7b2e8b2ddd3d08722c"
-  },
-  {
-    "id": "44d8610c3495cb324c333576:see/0",
-    "translation": "可编辑字段见 @ref UMassBattleUnitMCPApi::MCP_UnitGetSchema。",
-    "translated_source_hash": "e6527272bd204e2e117e2e4a8a5a485104d85d145842190a05ebcd1d72580fbb",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
-    "name": "UMassBattleUnitMCPApi::MCP_UnitMergeUpdate",
-    "field": "see/0",
-    "source_text": "@ref UMassBattleUnitMCPApi::MCP_UnitGetSchema for editable fields.",
-    "source_hash": "e6527272bd204e2e117e2e4a8a5a485104d85d145842190a05ebcd1d72580fbb"
-  },
-  {
-    "id": "44d8610c3495cb324c333576:term/UnitDataJson",
-    "translation": "单位数据 JSON",
-    "translated_source_hash": "710a83a457c5a481980ece4b705da42f60f8f4661ed52bc8c7c854f7b20a6be0",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
-    "name": "UMassBattleUnitMCPApi::MCP_UnitMergeUpdate",
-    "field": "term/UnitDataJson",
-    "source_text": "UnitDataJson",
-    "source_hash": "710a83a457c5a481980ece4b705da42f60f8f4661ed52bc8c7c854f7b20a6be0"
-  },
-  {
-    "id": "44d8610c3495cb324c333576:term/UnitPath",
-    "translation": "单位路径",
-    "translated_source_hash": "3ae1b0beedb14bb68abf12e7080a31269b38e25ba6006e22f58a0b03c1ca1421",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
-    "name": "UMassBattleUnitMCPApi::MCP_UnitMergeUpdate",
-    "field": "term/UnitPath",
-    "source_text": "UnitPath",
-    "source_hash": "3ae1b0beedb14bb68abf12e7080a31269b38e25ba6006e22f58a0b03c1ca1421"
-  },
-  {
-    "id": "44d8610c3495cb324c333576:term/bSaveAssets",
-    "translation": "保存资产",
-    "translated_source_hash": "4629c309c923a90e4d95af6cdf005400ed07f7706ccc73170d1590334a467ed3",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
-    "name": "UMassBattleUnitMCPApi::MCP_UnitMergeUpdate",
-    "field": "term/bSaveAssets",
-    "source_text": "bSaveAssets",
-    "source_hash": "4629c309c923a90e4d95af6cdf005400ed07f7706ccc73170d1590334a467ed3"
-  },
-  {
-    "id": "44d8610c3495cb324c333576:title/user",
-    "translation": "合并写入单位配置",
-    "translated_source_hash": "a45f1bda12f6f1679e8281233f3713a279b325f95d75cd84bb49af04b4536964",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
-    "name": "UMassBattleUnitMCPApi::MCP_UnitMergeUpdate",
-    "field": "title/user",
-    "source_text": "MCP Unit Merge Update",
-    "source_hash": "a45f1bda12f6f1679e8281233f3713a279b325f95d75cd84bb49af04b4536964"
-  },
-  {
     "id": "4828e74da48c7b37e13d5234:brief",
-    "translation": "按风格布局移动单位及其关联的源资产和生成资产。",
-    "translated_source_hash": "d67206a9a4264ca8cbb3ed80262850f9fc5eed3eefe1f2842ac7a92ad9255fe5",
+    "translation": "预览或执行单位及其关联源码和生成资产的目录整理。",
+    "translated_source_hash": "69842d660f98bc446eb5c6d0c5a802bc15d7d0e17b938ae67804502976fd14c2",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
     "name": "UMassBattleUnitEditorMCPApi::MCP_EditorApplyOrganizeUnitAssets",
     "field": "brief",
-    "source_text": "Move a unit and its linked source and generated assets into a style layout.",
-    "source_hash": "d67206a9a4264ca8cbb3ed80262850f9fc5eed3eefe1f2842ac7a92ad9255fe5"
+    "source_text": "Preview or move a unit and its linked source and generated assets into a style layout.",
+    "source_hash": "69842d660f98bc446eb5c6d0c5a802bc15d7d0e17b938ae67804502976fd14c2"
   },
   {
     "id": "4828e74da48c7b37e13d5234:details",
-    "translation": "重新生成同一整理规划，默认因 dry_run=true 而只返回规划。dry_run=false 时执行符合条件的 AssetTools 移动，报告每项实际移动及失败。",
-    "translated_source_hash": "d7b3408066e4cee0746dd6546e1a62e3b49a4821d154a67a3af6e5c818303f58",
+    "translation": "dry_run=true 时，在 plan 中返回拟议的移动和冲突检查。dry_run=false 时，通过 AssetTools 执行符合条件的移动，逐项报告执行结果和失败。",
+    "translated_source_hash": "227f7db29631575838ccfbc2d08a1eaf176b98870300fa3a4c44fe7d4b2ce006",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
     "name": "UMassBattleUnitEditorMCPApi::MCP_EditorApplyOrganizeUnitAssets",
     "field": "details",
-    "source_text": "Rebuilds the same organization plan and returns it by default because dry_run=true. With dry_run=false it executes the eligible AssetTools moves and reports each performed move and actual failure.",
-    "source_hash": "d7b3408066e4cee0746dd6546e1a62e3b49a4821d154a67a3af6e5c818303f58"
+    "source_text": "With dry_run=true it returns the proposed moves and collision checks in plan. With dry_run=false it executes the eligible AssetTools moves and reports each performed move and actual failure.",
+    "source_hash": "227f7db29631575838ccfbc2d08a1eaf176b98870300fa3a4c44fe7d4b2ce006"
   },
   {
     "id": "4828e74da48c7b37e13d5234:param/OptionsJson",
-    "translation": "JSON 对象；{} 使用默认选项。布局选项与整理规划入口相同；dry_run 默认为 true，也接受 preview_only。",
-    "translated_source_hash": "c1ea7949f6bb473d55ecfbecd2b64a6790b15beeabbfd1b405b861b5bf72685e",
+    "translation": "JSON 对象。dry_run 默认为 true，指定 preview_only 时以该值为准。style_profile 选择默认规则，target_root 或 target_package_path 指定目标位置。unit_name、use_family_folder、generated_folder_name/target_folder_name 和 managed_roots 可调整布局。",
+    "translated_source_hash": "6f92663aeae7b8cdfebde09a9b7df5fd7394dd0abb6bbccde4fb1532ce11d0e2",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
     "name": "UMassBattleUnitEditorMCPApi::MCP_EditorApplyOrganizeUnitAssets",
     "field": "param/OptionsJson",
-    "source_text": "JSON object; pass {} to use the defaults. Uses the same layout options as the organization planner. dry_run defaults to true; preview_only is also accepted.",
-    "source_hash": "c1ea7949f6bb473d55ecfbecd2b64a6790b15beeabbfd1b405b861b5bf72685e"
+    "source_text": "JSON object. dry_run defaults to true, and preview_only takes precedence when supplied. style_profile chooses defaults, and target_root or target_package_path selects the destination. unit_name, use_family_folder, generated_folder_name/target_folder_name and managed_roots customize the layout.",
+    "source_hash": "6f92663aeae7b8cdfebde09a9b7df5fd7394dd0abb6bbccde4fb1532ce11d0e2"
   },
   {
     "id": "4828e74da48c7b37e13d5234:param/UnitPath",
@@ -1904,14 +1541,14 @@
   },
   {
     "id": "4828e74da48c7b37e13d5234:returns",
-    "translation": "预览时返回移动方案；执行时返回逐项结果及实际移动数量，失败报告仍保留已执行的移动情况。",
-    "translated_source_hash": "f48716f79d20bdef939bc08a859522adc3e42307a0394c8e9df8d5b4e31bbaaf",
+    "translation": "dry_run=true 时，plan 包含拟议的移动和解析后的目录布局。执行后返回逐项结果及实际移动数量。",
+    "translated_source_hash": "34d0c97f7e3121d7b5fc05cc34690ef2f8b83d7a825febf00e648b6d932e7fce",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitEditorMCPApi.h",
     "name": "UMassBattleUnitEditorMCPApi::MCP_EditorApplyOrganizeUnitAssets",
     "field": "returns",
-    "source_text": "The move plan for a preview, or per-step results and the actual moved count after execution; failure reports retain the performed move results.",
-    "source_hash": "f48716f79d20bdef939bc08a859522adc3e42307a0394c8e9df8d5b4e31bbaaf"
+    "source_text": "With dry_run=true, plan contains the proposed moves and the resolved style layout. After execution, the response includes per-step results and the actual moved count.",
+    "source_hash": "34d0c97f7e3121d7b5fc05cc34690ef2f8b83d7a825febf00e648b6d932e7fce"
   },
   {
     "id": "4828e74da48c7b37e13d5234:term/OptionsJson",
@@ -2530,72 +2167,6 @@
     "source_hash": "088d31ded3af6da3828a5071ee8ac7af45408fc33f3cf42dd4ec2790013910d8"
   },
   {
-    "id": "6e532f452a683bce1d9d0456:brief",
-    "translation": "统计风格系列、风格索引和目录类别的单位分布。",
-    "translated_source_hash": "d4316fae86cce8b9034b4e713d67df446dfeb71dbe3842c766058e57d9b07938",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
-    "name": "UMassBattleStyleMCPApi::MCP_StyleSummarizeUnits",
-    "field": "brief",
-    "source_text": "Count units by style family, style index and path category.",
-    "source_hash": "d4316fae86cce8b9034b4e713d67df446dfeb71dbe3842c766058e57d9b07938"
-  },
-  {
-    "id": "6e532f452a683bce1d9d0456:details",
-    "translation": "扫描选定单位，汇总创作风格索引、推断的风格系列和路径类别；返回组织数量，保留资产位置。",
-    "translated_source_hash": "96dc7cebf09f81a7dd7a0002192b503c18ca0d7cd7609818c6f83b71504e6561",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
-    "name": "UMassBattleStyleMCPApi::MCP_StyleSummarizeUnits",
-    "field": "details",
-    "source_text": "Scans the selected unit assets and aggregates their authored style indices, inferred style families and path categories. It reports organization counts without moving assets.",
-    "source_hash": "96dc7cebf09f81a7dd7a0002192b503c18ca0d7cd7609818c6f83b71504e6561"
-  },
-  {
-    "id": "6e532f452a683bce1d9d0456:param/OptionsJson",
-    "translation": "JSON 对象；{} 使用默认选项。使用单位扫描选项确定汇总范围。",
-    "translated_source_hash": "b3f5d68157c2ccd56051edf4cecc7522db5d8397908c53c72aa1df6f2de508cc",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
-    "name": "UMassBattleStyleMCPApi::MCP_StyleSummarizeUnits",
-    "field": "param/OptionsJson",
-    "source_text": "JSON object; pass {} to use the defaults. Use the unit scan options to choose the assets included in the summary.",
-    "source_hash": "b3f5d68157c2ccd56051edf4cecc7522db5d8397908c53c72aa1df6f2de508cc"
-  },
-  {
-    "id": "6e532f452a683bce1d9d0456:returns",
-    "translation": "单位总数，以及按风格系列、目录类别和风格索引统计的分布。",
-    "translated_source_hash": "8b9eb91394d2042b75e1419117515189a1373cbec302b0822b928b7ae03bcf15",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
-    "name": "UMassBattleStyleMCPApi::MCP_StyleSummarizeUnits",
-    "field": "returns",
-    "source_text": "The unit count and distributions across style families, path categories and style indices.",
-    "source_hash": "8b9eb91394d2042b75e1419117515189a1373cbec302b0822b928b7ae03bcf15"
-  },
-  {
-    "id": "6e532f452a683bce1d9d0456:term/OptionsJson",
-    "translation": "选项 JSON",
-    "translated_source_hash": "a0f14957c58f02a60e9117fccc518532f585fb2162c355fddc249812432496d8",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
-    "name": "UMassBattleStyleMCPApi::MCP_StyleSummarizeUnits",
-    "field": "term/OptionsJson",
-    "source_text": "OptionsJson",
-    "source_hash": "a0f14957c58f02a60e9117fccc518532f585fb2162c355fddc249812432496d8"
-  },
-  {
-    "id": "6e532f452a683bce1d9d0456:title/user",
-    "translation": "汇总单位风格组织",
-    "translated_source_hash": "1d830712ef11eb3d6876768552ee2c0eb00241885e17bd326da62827ff0eda3c",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
-    "name": "UMassBattleStyleMCPApi::MCP_StyleSummarizeUnits",
-    "field": "title/user",
-    "source_text": "MCP Style Summarize Units",
-    "source_hash": "1d830712ef11eb3d6876768552ee2c0eb00241885e17bd326da62827ff0eda3c"
-  },
-  {
     "id": "70cb383a77dbbd99fc641365:brief",
     "translation": "查看单位配置及源 Actor 的导出信息。",
     "translated_source_hash": "6684a953e6d809f52afcf3b3ddfb906945d9e9db815993edc9d7adbc97bb9d38",
@@ -2916,14 +2487,14 @@
   },
   {
     "id": "7b779567d9d6cabf5c6056f9:details",
-    "translation": "加载已存储规划，拒绝不可应用的规划，再执行受支持的变更类型。结果记录实际应用的变化和所选保存行为。",
-    "translated_source_hash": "9db6baa1089fc0bc084c57c9bd91caf85f76ea6d6d7c34d2b43dfa8ffe11a0ad",
+    "translation": "加载已保存的计划，拒绝标为不可执行的计划，并执行支持的变更。保存源码 Actor 的更新时触发 Update 导出。结果包含已应用的变更及请求的保存状态。",
+    "translated_source_hash": "c66846507b246d9f73c2d30e67cc8492599a134d53dfabb3608adf32e89dbc2e",
     "reviewed": true,
     "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
     "name": "UMassBattleUnitMCPApi::MCP_UnitApplyPlan",
     "field": "details",
-    "source_text": "Loads the stored plan, rejects a plan marked inapplicable, and executes its supported mutation type. The result records applied changes and the requested persistence behavior.",
-    "source_hash": "9db6baa1089fc0bc084c57c9bd91caf85f76ea6d6d7c34d2b43dfa8ffe11a0ad"
+    "source_text": "Loads the stored plan, rejects a plan marked inapplicable, and executes its supported mutation type. With bSaveAssets=true, applying a source Actor update runs Update to export the unit at its configured ExportPath. A plan targeting a DataAsset writes directly to that asset.",
+    "source_hash": "c66846507b246d9f73c2d30e67cc8492599a134d53dfabb3608adf32e89dbc2e"
   },
   {
     "id": "7b779567d9d6cabf5c6056f9:param/PlanId",
@@ -4607,72 +4178,6 @@
     "field": "title/user",
     "source_text": "MCP Editor Apply Create Vat Unit",
     "source_hash": "8559bd94377fe0c67a7bb7bc44d0d8486d851a7707b5ee04a268e19c99831ac8"
-  },
-  {
-    "id": "d4646de84643b992c382d68b:brief",
-    "translation": "按风格计算单位资产的目标目录和移动清单。",
-    "translated_source_hash": "a8ceff5a948cda3e5e6bf3e9ec0f74a1bf525ba5ce9171c0c8269b9b06e604c6",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
-    "name": "UMassBattleStyleMCPApi::MCP_StylePlanOrganizeUnits",
-    "field": "brief",
-    "source_text": "Calculate destination folders and a move list from unit styles.",
-    "source_hash": "a8ceff5a948cda3e5e6bf3e9ec0f74a1bf525ba5ce9171c0c8269b9b06e604c6"
-  },
-  {
-    "id": "d4646de84643b992c382d68b:details",
-    "translation": "根据单位风格系列及风格索引计算目标目录，只生成供审阅的移动列表；此入口不执行 AssetTools 移动。",
-    "translated_source_hash": "a0ffa56af037e729cee9488c2100b90ce952df7ef9b15cbf8345500ddb72d46f",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
-    "name": "UMassBattleStyleMCPApi::MCP_StylePlanOrganizeUnits",
-    "field": "details",
-    "source_text": "Calculates destination folders from each unit style family and style index. It produces a reviewable move list only; this entry does not execute AssetTools moves.",
-    "source_hash": "a0ffa56af037e729cee9488c2100b90ce952df7ef9b15cbf8345500ddb72d46f"
-  },
-  {
-    "id": "d4646de84643b992c382d68b:param/OptionsJson",
-    "translation": "JSON 对象；{} 使用默认选项。target_root 指定整理根目录；单位扫描选项选择源资产。",
-    "translated_source_hash": "3e394ac473bf7ce13b8e28d1392d57f69a401f982b8384bcf638537a24679231",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
-    "name": "UMassBattleStyleMCPApi::MCP_StylePlanOrganizeUnits",
-    "field": "param/OptionsJson",
-    "source_text": "JSON object; pass {} to use the defaults. target_root selects the organization root; unit scan options select the source assets.",
-    "source_hash": "3e394ac473bf7ce13b8e28d1392d57f69a401f982b8384bcf638537a24679231"
-  },
-  {
-    "id": "d4646de84643b992c382d68b:returns",
-    "translation": "target_root 下的资产移动建议，逐项列出源路径和目标路径；dry_run_only=true 表示这只是方案。",
-    "translated_source_hash": "5f06f37bf118181adf082977c1c57fc5fd85d411b431753454302b5fd57db7e8",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
-    "name": "UMassBattleStyleMCPApi::MCP_StylePlanOrganizeUnits",
-    "field": "returns",
-    "source_text": "A move proposal containing source and destination paths under target_root; dry_run_only=true identifies it as a plan rather than executed moves.",
-    "source_hash": "5f06f37bf118181adf082977c1c57fc5fd85d411b431753454302b5fd57db7e8"
-  },
-  {
-    "id": "d4646de84643b992c382d68b:term/OptionsJson",
-    "translation": "选项 JSON",
-    "translated_source_hash": "a0f14957c58f02a60e9117fccc518532f585fb2162c355fddc249812432496d8",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
-    "name": "UMassBattleStyleMCPApi::MCP_StylePlanOrganizeUnits",
-    "field": "term/OptionsJson",
-    "source_text": "OptionsJson",
-    "source_hash": "a0f14957c58f02a60e9117fccc518532f585fb2162c355fddc249812432496d8"
-  },
-  {
-    "id": "d4646de84643b992c382d68b:title/user",
-    "translation": "规划单位风格目录整理",
-    "translated_source_hash": "5840d12a893fc8e94cb2f2eb54ae4ebecede33b26c8c462c148490afe9ae03ef",
-    "reviewed": true,
-    "file": "Source/MassBattleEditorMCP/Public/MassBattleUnitMCPApi.h",
-    "name": "UMassBattleStyleMCPApi::MCP_StylePlanOrganizeUnits",
-    "field": "title/user",
-    "source_text": "MCP Style Plan Organize Units",
-    "source_hash": "5840d12a893fc8e94cb2f2eb54ae4ebecede33b26c8c462c148490afe9ae03ef"
   },
   {
     "id": "d4ef2affa58f66bfde166f8e:brief",

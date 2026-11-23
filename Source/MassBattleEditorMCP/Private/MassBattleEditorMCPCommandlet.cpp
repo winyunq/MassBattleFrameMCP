@@ -156,10 +156,6 @@ FString CommandletDispatchInvocation(const TSharedPtr<FJsonObject>& Invocation)
 	{
 		return UMassBattleUnitEditorMCPApi::MCP_EditorPlanCreateVatUnitFromSelection(CommandletJsonFieldByNamesAsString(Params, { TEXT("OptionsJson"), TEXT("options") }));
 	}
-	if (Command == TEXT("MCP_EditorApplyCreateVatUnitFromSelection") || Command == TEXT("editor_apply_create_vat_unit_from_selection"))
-	{
-		return UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnitFromSelection(CommandletJsonFieldByNamesAsString(Params, { TEXT("OptionsJson"), TEXT("options") }), bSaveAssets);
-	}
 	if (Command == TEXT("MCP_EditorInspectActorAssembly") || Command == TEXT("editor_inspect_actor_assembly"))
 	{
 		FString ActorPath;
@@ -199,15 +195,6 @@ FString CommandletDispatchInvocation(const TSharedPtr<FJsonObject>& Invocation)
 			AssetPath,
 			CommandletJsonFieldByNamesAsString(Params, { TEXT("OptionsJson"), TEXT("options") }));
 	}
-	if (Command == TEXT("MCP_EditorPlanOrganizeUnitAssets") || Command == TEXT("editor_plan_organize_unit_assets"))
-	{
-		FString UnitPath;
-		Params->TryGetStringField(TEXT("UnitPath"), UnitPath);
-		Params->TryGetStringField(TEXT("unit_path"), UnitPath);
-		return UMassBattleUnitEditorMCPApi::MCP_EditorPlanOrganizeUnitAssets(
-			UnitPath,
-			CommandletJsonFieldByNamesAsString(Params, { TEXT("OptionsJson"), TEXT("options") }));
-	}
 	if (Command == TEXT("MCP_EditorApplyOrganizeUnitAssets") || Command == TEXT("editor_apply_organize_unit_assets"))
 	{
 		FString UnitPath;
@@ -225,10 +212,6 @@ FString CommandletDispatchInvocation(const TSharedPtr<FJsonObject>& Invocation)
 	if (Command == TEXT("MCP_ProjectileList") || Command == TEXT("projectile_list"))
 	{
 		return UMassBattleProjectileMCPApi::MCP_ProjectileList(CommandletJsonFieldByNamesAsString(Params, { TEXT("OptionsJson"), TEXT("options") }));
-	}
-	if (Command == TEXT("MCP_ProjectileQuery") || Command == TEXT("projectile_query"))
-	{
-		return UMassBattleProjectileMCPApi::MCP_ProjectileQuery(CommandletJsonFieldByNamesAsString(Params, { TEXT("QueryJson"), TEXT("query") }));
 	}
 	if (Command == TEXT("MCP_ProjectileGet") || Command == TEXT("projectile_get"))
 	{

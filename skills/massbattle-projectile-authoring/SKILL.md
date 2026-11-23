@@ -107,7 +107,7 @@ Call Unit, Effect, Niagara, and `projectile_get_api_status` first. The intended 
 
 ```text
 projectile_get_api_status
-projectile_list / projectile_query
+projectile_list
 projectile_get
 projectile_get_schema
 projectile_create
@@ -116,7 +116,7 @@ projectile_validate
 projectile_delete
 ```
 
-Use `projectile_get_schema` before unfamiliar writes. `projectile_write` is a source-aligned union write: omitted fields remain unchanged; array append or replacement must be explicit. Run `projectile_validate` after every create/write and read the asset back.
+Use `projectile_list` with the `query` option to find projectile assets by path or name. Use `projectile_get_schema` before unfamiliar writes. `projectile_write` is a source-aligned union write: omitted fields remain unchanged; array append or replacement must be explicit. Run `projectile_validate` after every create/write and read the asset back.
 
 If the running editor has not yet loaded this Projectile MCP version:
 

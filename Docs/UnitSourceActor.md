@@ -42,7 +42,7 @@ MCP 删除源码路径默认仅删除源码，保留原 dry_run、soft/hard 行�
 
 将上面的 JSON 传给 `MCP_UnitCreate`，也可提供 `template_unit`。省略 `asset_type` 时保留原单位创建流程。
 
-`MCP_UnitMergeUpdate` 指向源码时，保存的写操作会执行 Update；`bSaveAssets=false` 只修改源码内存，便于继续编辑。修改输出路径使用同一 JSON：
+将源码蓝图路径与下面的局部 JSON 传给 `unit_plan_write`。用 `unit_preview_plan` 检查变更字段和计划中的 `export_path`。确认 `success` 和 `applicable` 均为 `true` 后，将 `plan_id` 传给 `unit_apply_plan`。保存时 Update 会把导出单位移到新路径。`save_assets=false` 只修改源码内存。
 
 ```json
 {
@@ -50,6 +50,8 @@ MCP 删除源码路径默认仅删除源码，保留原 dry_run、soft/hard 行�
   "Data": { "Health": { "Maximum": 350 } }
 }
 ```
+
+需要汇总单位风格索引时，用 `unit_export` 指定 `format="json"`、`fields=["StyleType.Index"]` 和项目扫描目录 `roots`。从返回的 `output_path` 读取单位路径和索引，再按项目规则分组。
 
 ## 共用导出规则与语言
 

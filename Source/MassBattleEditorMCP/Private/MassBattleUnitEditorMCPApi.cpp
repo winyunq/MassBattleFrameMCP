@@ -3998,22 +3998,22 @@ FString UMassBattleUnitEditorMCPApi::MCP_EditorPlanUnitAuthoringWorkflow(const F
 	{
 		if (ResolvedUnitPath.IsEmpty())
 		{
-			MassBattleUnitEditorMCP::AddStep(Steps, TEXT("organize_unit_assets"), TEXT("MCP_EditorPlanOrganizeUnitAssets"), TEXT("blocked"), TEXT("A resolved unit path is required for linked-asset organization."));
+			MassBattleUnitEditorMCP::AddStep(Steps, TEXT("organize_unit_assets"), TEXT("MCP_EditorApplyOrganizeUnitAssets"), TEXT("blocked"), TEXT("A resolved unit path is required for linked-asset organization."));
 			MassBattleUnitEditorMCP::AddIssue(Issues, TEXT("error"), TEXT("missing_unit_for_organization"), TEXT("A resolved unit path is required for linked-asset organization."));
 		}
 		else if (!MassBattleUnitEditorMCP::AssetExists(ResolvedUnitPath))
 		{
-			TSharedPtr<FJsonObject> Step = MassBattleUnitEditorMCP::MakeStep(TEXT("organize_unit_assets"), TEXT("MCP_EditorPlanOrganizeUnitAssets"), TEXT("planned_after_unit_write"), TEXT("Unit does not exist yet; organize after create/apply writes the unit asset."));
+			TSharedPtr<FJsonObject> Step = MassBattleUnitEditorMCP::MakeStep(TEXT("organize_unit_assets"), TEXT("MCP_EditorApplyOrganizeUnitAssets"), TEXT("planned_after_unit_write"), TEXT("Unit does not exist yet; organize after create/apply writes the unit asset."));
 			Step->SetStringField(TEXT("unit_path"), ResolvedUnitPath);
 			Steps.Add(MakeShared<FJsonValueObject>(Step));
 		}
 		else
 		{
-			const FString OrganizePlanResult = MCP_EditorPlanOrganizeUnitAssets(ResolvedUnitPath, SpecJson);
+			const FString OrganizePlanResult = PlanOrganizeUnitAssets(ResolvedUnitPath, SpecJson);
 			TSharedPtr<FJsonObject> OrganizePlan = MassBattleUnitEditorMCP::ParseObject(OrganizePlanResult);
 			const bool bOrganizeSuccess = OrganizePlan.IsValid() && MassBattleUnitEditorMCP::JsonObjectFieldBool(OrganizePlan, TEXT("success"), false);
 			const bool bOrganizeApplicable = bOrganizeSuccess && MassBattleUnitEditorMCP::JsonObjectFieldBool(OrganizePlan, TEXT("applicable"), false);
-			AddPlanStep(TEXT("organize_unit_assets"), TEXT("MCP_EditorPlanOrganizeUnitAssets"), bOrganizeApplicable ? TEXT("ready") : TEXT("blocked"), TEXT("Plan linked generated/source asset organization for the resolved unit."), OrganizePlanResult);
+			AddPlanStep(TEXT("organize_unit_assets"), TEXT("MCP_EditorApplyOrganizeUnitAssets"), bOrganizeApplicable ? TEXT("ready") : TEXT("blocked"), TEXT("Plan linked generated/source asset organization for the resolved unit."), OrganizePlanResult);
 			if (!bOrganizeApplicable)
 			{
 				MassBattleUnitEditorMCP::AddIssue(Issues, TEXT("error"), TEXT("organization_not_applicable"), TEXT("Unit linked-asset organization plan is not applicable."));
@@ -4022,7 +4022,7 @@ FString UMassBattleUnitEditorMCPApi::MCP_EditorPlanUnitAuthoringWorkflow(const F
 	}
 	else
 	{
-		MassBattleUnitEditorMCP::AddStep(Steps, TEXT("organize_unit_assets"), TEXT("MCP_EditorPlanOrganizeUnitAssets"), TEXT("skipped"), TEXT("include_organize=false."));
+		MassBattleUnitEditorMCP::AddStep(Steps, TEXT("organize_unit_assets"), TEXT("MCP_EditorApplyOrganizeUnitAssets"), TEXT("skipped"), TEXT("include_organize=false."));
 	}
 
 	TSharedPtr<FJsonObject> Root = MassBattleUnitEditorMCP::MakeSuccess();
@@ -4129,8 +4129,8 @@ FString UMassBattleUnitEditorMCPApi::MCP_EditorApplyUnitAuthoringWorkflow(const 
 
 	if (bIncludeAddAnimations && !ResolvedUnitPath.IsEmpty())
 	{
-		const FString AnimResult = MCP_EditorApplyAddAnimationsToUnit(ResolvedUnitPath, ApplySpecJson, bSaveAssets);
-		if (!AddApplyStep(TEXT("add_animations_to_unit"), TEXT("MCP_EditorApplyAddAnimationsToUnit"), TEXT("Apply AnimShared update to the resolved unit."), AnimResult) && !bAllowPartial)
+		const FString AnimResult = ApplyAddAnimationsToUnit(ResolvedUnitPath, ApplySpecJson, bSaveAssets);
+		if (!AddApplyStep(TEXT("add_animations_to_unit"), TEXT("MCP_EditorPlanAddAnimationsToUnit -> MCP_UnitApplyPlan"), TEXT("Apply AnimShared update to the resolved unit."), AnimResult) && !bAllowPartial)
 		{
 			Root->SetArrayField(TEXT("execution_steps"), ExecutionSteps);
 			return MassBattleUnitEditorMCP::ToJsonString(Root);
@@ -4807,7 +4807,7 @@ FString UMassBattleUnitEditorMCPApi::MCP_EditorValidateAddAnimationsToUnit(const
 	return MassBattleUnitEditorMCP::ToJsonString(Root);
 }
 
-FString UMassBattleUnitEditorMCPApi::MCP_EditorApplyAddAnimationsToUnit(const FString& UnitPath, const FString& SpecJson, bool bSaveAssets)
+FString UMassBattleUnitEditorMCPApi::ApplyAddAnimationsToUnit(const FString& UnitPath, const FString& SpecJson, bool bSaveAssets)
 {
 	const FString PlanResult = MCP_EditorPlanAddAnimationsToUnit(UnitPath, SpecJson);
 	TSharedPtr<FJsonObject> PlanJson = MassBattleUnitEditorMCP::ParseObject(PlanResult);
@@ -4869,59 +4869,6 @@ FString UMassBattleUnitEditorMCPApi::MCP_EditorPlanCreateVatUnitFromSelection(co
 		Root->SetBoolField(TEXT("success"), false);
 		Root->SetStringField(TEXT("error"), TEXT("MCP_EditorPlanCreateVatUnit returned invalid JSON."));
 		Root->SetStringField(TEXT("create_plan_raw"), PlanResult);
-	}
-	return MassBattleUnitEditorMCP::ToJsonString(Root);
-}
-
-FString UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnitFromSelection(const FString& OptionsJson, bool bSaveAssets)
-{
-	TSharedPtr<FJsonObject> Options = MassBattleUnitEditorMCP::ParseObject(OptionsJson);
-	if (!Options.IsValid())
-	{
-		return MassBattleUnitEditorMCP::MakeErrorJson(TEXT("OptionsJson is not valid JSON"));
-	}
-
-	TSharedPtr<FJsonObject> Selection = MassBattleUnitEditorMCP::BuildResolvedCreateVatUnitSpecFromSelection(Options);
-	if (!Selection.IsValid())
-	{
-		return MassBattleUnitEditorMCP::MakeErrorJson(TEXT("Failed to build create VAT unit spec from selection."));
-	}
-
-	const TSharedPtr<FJsonObject>* SpecPtr = nullptr;
-	if (!Selection->TryGetObjectField(TEXT("spec"), SpecPtr) || !SpecPtr || !SpecPtr->IsValid())
-	{
-		return MassBattleUnitEditorMCP::MakeErrorJson(TEXT("Selection resolver did not produce a spec."));
-	}
-
-	const bool bCompactResponse = MassBattleUnitEditorMCP::BoolFieldByNamesOrDefault(Options, { TEXT("compact_response") }, false);
-	const FString ApplyResult = MCP_EditorApplyCreateVatUnit(MassBattleUnitEditorMCP::ToJsonString(*SpecPtr), bSaveAssets);
-	TSharedPtr<FJsonObject> ApplyJson = MassBattleUnitEditorMCP::ParseObject(ApplyResult);
-
-	TSharedPtr<FJsonObject> Root = MassBattleUnitEditorMCP::MakeSuccess();
-	Root->SetStringField(TEXT("editor_workflow"), TEXT("MassBattleEditor selection -> VAT skeletal unit authoring apply"));
-	Root->SetBoolField(TEXT("save_assets"), bSaveAssets);
-	Root->SetBoolField(TEXT("compact_response"), bCompactResponse);
-	if (ApplyJson.IsValid())
-	{
-		Root->SetBoolField(TEXT("success"), MassBattleUnitEditorMCP::JsonObjectFieldBool(ApplyJson, TEXT("success"), false));
-		if (bCompactResponse)
-		{
-			MassBattleUnitEditorMCP::CopyArrayField(Selection, Root, TEXT("selected_assets"));
-			MassBattleUnitEditorMCP::CopyArrayField(Selection, Root, TEXT("warnings"));
-			Root->SetObjectField(TEXT("apply_summary"), MassBattleUnitEditorMCP::MakeCompactCreateVatApplySummary(ApplyJson));
-		}
-		else
-		{
-			Root->SetObjectField(TEXT("selection"), Selection);
-			Root->SetObjectField(TEXT("resolved_spec"), *SpecPtr);
-			Root->SetObjectField(TEXT("apply_result"), ApplyJson);
-		}
-	}
-	else
-	{
-		Root->SetBoolField(TEXT("success"), false);
-		Root->SetStringField(TEXT("error"), TEXT("MCP_EditorApplyCreateVatUnit returned invalid JSON."));
-		Root->SetStringField(TEXT("apply_result_raw"), ApplyResult);
 	}
 	return MassBattleUnitEditorMCP::ToJsonString(Root);
 }
@@ -6169,7 +6116,7 @@ FString UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnit(const FString&
 	return MassBattleUnitEditorMCP::ToJsonString(Root);
 }
 
-FString UMassBattleUnitEditorMCPApi::MCP_EditorPlanOrganizeUnitAssets(const FString& UnitPath, const FString& OptionsJson)
+FString UMassBattleUnitEditorMCPApi::PlanOrganizeUnitAssets(const FString& UnitPath, const FString& OptionsJson)
 {
 	TSharedPtr<FJsonObject> Options = MassBattleUnitEditorMCP::ParseObject(OptionsJson);
 	if (!Options.IsValid())
@@ -6379,7 +6326,7 @@ FString UMassBattleUnitEditorMCPApi::MCP_EditorApplyOrganizeUnitAssets(const FSt
 		return MassBattleUnitEditorMCP::MakeErrorJson(TEXT("OptionsJson is not valid JSON"));
 	}
 
-	const FString PlanResult = MCP_EditorPlanOrganizeUnitAssets(UnitPath, OptionsJson);
+	const FString PlanResult = PlanOrganizeUnitAssets(UnitPath, OptionsJson);
 	TSharedPtr<FJsonObject> Plan = MassBattleUnitEditorMCP::ParseObject(PlanResult);
 	if (!Plan.IsValid() || !MassBattleUnitEditorMCP::JsonObjectFieldBool(Plan, TEXT("success"), false))
 	{
@@ -6534,18 +6481,15 @@ FString UMassBattleUnitEditorMCPApi::MCP_EditorGetStatus()
 	Tools.Add(Tool(TEXT("MCP_EditorDiscoverCompatibleAnimations"), TEXT("unit_editor.animation"), TEXT("Discover compatible animation sequences across explicit and style-configured search roots.")));
 	Tools.Add(Tool(TEXT("MCP_EditorPlanAddAnimationsToUnit"), TEXT("unit_editor.animation"), TEXT("Use MassBattleEditor functions to plan an AnimShared update for an existing unit.")));
 	Tools.Add(Tool(TEXT("MCP_EditorValidateAddAnimationsToUnit"), TEXT("unit_editor.animation"), TEXT("Validate whether an animation-set edit can produce an applicable unit merge plan.")));
-	Tools.Add(Tool(TEXT("MCP_EditorApplyAddAnimationsToUnit"), TEXT("unit_editor.animation"), TEXT("Plan and apply an AnimShared update for an existing unit.")));
 	Tools.Add(Tool(TEXT("MCP_EditorPlanCreateVatUnit"), TEXT("unit_editor.create.diagnostic"), TEXT("Diagnostic: preview the MassBattleTools DoAll-equivalent VAT unit plan. Strict apply still requires canonical complete inputs.")));
 	Tools.Add(Tool(TEXT("MCP_EditorValidateCreateVatUnit"), TEXT("unit_editor.create.diagnostic"), TEXT("Diagnostic: validate DoAll-equivalent VAT unit inputs without writing assets.")));
 	Tools.Add(Tool(TEXT("MCP_EditorApplyCreateVatUnit"), TEXT("unit_editor.create"), TEXT("Primary non-selection DoAll-equivalent VAT unit authoring entry. Requires canonical complete inputs and validates before writing assets.")));
-	Tools.Add(Tool(TEXT("MCP_EditorPlanCreateVatUnitFromSelection"), TEXT("unit_editor.create.diagnostic"), TEXT("Diagnostic: infer the DoAll spec from current selection or selected_assets and return it for review.")));
-	Tools.Add(Tool(TEXT("MCP_EditorApplyCreateVatUnitFromSelection"), TEXT("unit_editor.create"), TEXT("Primary one-click current selection -> generate entry matching the MassBattleTools DoAll workflow.")));
+	Tools.Add(Tool(TEXT("MCP_EditorPlanCreateVatUnitFromSelection"), TEXT("unit_editor.create.diagnostic"), TEXT("Resolve the selection and return the DoAll spec for review and use with MCP_EditorApplyCreateVatUnit.")));
 	Tools.Add(Tool(TEXT("MCP_EditorInspectActorAssembly"), TEXT("unit_editor.actor"), TEXT("Inspect an Actor's modular skeletal/static component assembly and resolved weapon bind bones.")));
 	Tools.Add(Tool(TEXT("MCP_EditorInspectVatAnimation"), TEXT("unit_editor.actor"), TEXT("Audit assembled skin weights, baked VAT position-frame motion, lookup UVs, and the selected animation profile.")));
 	Tools.Add(Tool(TEXT("MCP_EditorPlanCreateVatUnitFromActor"), TEXT("unit_editor.actor"), TEXT("Plan Actor component assembly followed by strict VAT unit authoring.")));
 	Tools.Add(Tool(TEXT("MCP_EditorApplyCreateVatUnitFromActor"), TEXT("unit_editor.actor"), TEXT("Assemble an Actor and its configured weapon into one animation-compatible SkeletalMesh, then author the VAT unit.")));
-	Tools.Add(Tool(TEXT("MCP_EditorPlanOrganizeUnitAssets"), TEXT("unit_editor.organize"), TEXT("Plan moving a unit and its editor-generated linked assets into the selected style layout.")));
-	Tools.Add(Tool(TEXT("MCP_EditorApplyOrganizeUnitAssets"), TEXT("unit_editor.organize"), TEXT("Apply a reviewed linked-asset organization plan; dry_run=true by default.")));
+	Tools.Add(Tool(TEXT("MCP_EditorApplyOrganizeUnitAssets"), TEXT("unit_editor.organize"), TEXT("Preview linked-asset organization with dry_run=true, or move assets with dry_run=false.")));
 
 	TSharedPtr<FJsonObject> Root = MassBattleUnitEditorMCP::MakeSuccess();
 	Root->SetStringField(TEXT("api_name"), TEXT("MassBattleUnitEditorMCPApi"));

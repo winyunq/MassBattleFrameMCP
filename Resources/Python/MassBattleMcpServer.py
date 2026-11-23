@@ -172,21 +172,6 @@ async def unit_export(options: Any = None) -> Dict[str, Any]:
 
 
 @mcp.tool()
-async def unit_write(unit_path: str, unit_data: Any, save_assets: bool = True) -> Dict[str, Any]:
-    """Change selected unit fields while retaining unspecified data.
-    Plans and applies a partial update to the Unit Source Actor or unit DataAsset selected by UnitPath. For routine maintenance, target the source Actor so the edit is retained in UnitData. With bSaveAssets=true, a source write runs Update to export the unit. A DataAsset path edits that asset directly. Omitted fields are retained. Validation failures return the plan.
-    UnitPath: Unreal object path of the existing MassBattle unit config or supported Unit Source Actor Blueprint.
-    UnitDataJson: Partial source-aligned authored unit data. Obtain exact editable field names from the unit schema.
-    bSaveAssets: Whether to save the assets modified or created by this operation to disk.
-    Returns: The applied field changes and persistence result, or the planning result when the proposed update cannot be applied.
-    UMassBattleUnitMCPApi::MCP_UnitGetSchema for editable fields."""
-    return await get_connection().send_command(
-        "MCP_UnitMergeUpdate",
-        {"UnitPath": unit_path, "UnitDataJson": _json_arg(unit_data), "bSaveAssets": save_assets},
-    )
-
-
-@mcp.tool()
 async def unit_create(create_spec: Any, save_assets: bool = True) -> Dict[str, Any]:
     """Use a template to create unit data or a Unit Source Actor.
     Creates a unit from the default or explicit template and optionally merges initial authored data. asset_type=source_actor creates a Unit Source Actor Blueprint; the ordinary branch creates the unit config. Target names must resolve to an unoccupied Unreal asset path.
@@ -238,18 +223,6 @@ async def projectile_list(options: Any = None) -> Dict[str, Any]:
     return await get_connection().send_command(
         "MCP_ProjectileList",
         {"OptionsJson": _json_arg(options)},
-    )
-
-
-@mcp.tool()
-async def projectile_query(query: Any = None) -> Dict[str, Any]:
-    """Locate projectile configuration assets by name or path.
-    Uses the projectile listing query path to find configurations by path or name. It returns the same stable summaries and scan metadata as the projectile list entry.
-    QueryJson: JSON object; pass {} to use the defaults. Uses the projectile-list query and scope options.
-    Returns: Projectile search results in the same format as projectile_list, including matching assets, counts and searched roots."""
-    return await get_connection().send_command(
-        "MCP_ProjectileQuery",
-        {"QueryJson": _json_arg(query)},
     )
 
 
@@ -341,24 +314,6 @@ async def projectile_delete(projectile_path: str, options: Any = None) -> Dict[s
 
 
 @mcp.tool()
-async def style_summarize_units(options: Any = None) -> Dict[str, Any]:
-    """Count units by style family, style index and path category.
-    Scans the selected unit assets and aggregates their authored style indices, inferred style families and path categories. It reports organization counts without moving assets.
-    OptionsJson: JSON object; pass {} to use the defaults. Use the unit scan options to choose the assets included in the summary.
-    Returns: The unit count and distributions across style families, path categories and style indices."""
-    return await get_connection().send_command("MCP_StyleSummarizeUnits", {"OptionsJson": _json_arg(options)})
-
-
-@mcp.tool()
-async def style_plan_organize_units(options: Any = None) -> Dict[str, Any]:
-    """Calculate destination folders and a move list from unit styles.
-    Calculates destination folders from each unit style family and style index. It produces a reviewable move list only; this entry does not execute AssetTools moves.
-    OptionsJson: JSON object; pass {} to use the defaults. target_root selects the organization root; unit scan options select the source assets.
-    Returns: A move proposal containing source and destination paths under target_root; dry_run_only=true identifies it as a plan rather than executed moves."""
-    return await get_connection().send_command("MCP_StylePlanOrganizeUnits", {"OptionsJson": _json_arg(options)})
-
-
-@mcp.tool()
 async def editor_get_status() -> Dict[str, Any]:
     """Discover VAT authoring and asset organization capabilities in the editor.
     Returns categorized capabilities for the non-UI counterpart of the MassBattleTools editor widget. The list describes available profile, VAT, Actor assembly and organization workflows without executing them.
@@ -429,7 +384,7 @@ async def editor_apply_create_vat_unit(
 @mcp.tool()
 async def unit_plan_write(unit_path: str, unit_data: Any) -> Dict[str, Any]:
     """Review field changes before writing a partial unit update.
-    Builds and stores a union-merge plan from a partial source-aligned unit object. Omitted unit fields are retained. The asset is not modified; applicable and merge_errors describe whether the planned field changes can be applied.
+    Stores a partial update plan for the selected Unit Source Actor or unit DataAsset. Target the source Actor for routine maintenance so edits are retained in UnitData. Omitted fields are retained. The plan reports whether the proposed update can be applied.
     UnitPath: Unreal object path of the existing MassBattle unit config or supported Unit Source Actor Blueprint.
     UnitDataJson: Partial unit JSON using source property names. Include the fields to change; a Unit Source Actor patch may also contain export_path.
     Returns: A stored update plan: plan_id identifies it for later review or application, diff describes field changes, and applicable with merge_errors explains whether it can run."""
@@ -455,7 +410,7 @@ async def unit_preview_plan(plan_id: str) -> Dict[str, Any]:
 @mcp.tool()
 async def unit_apply_plan(plan_id: str, save_assets: bool = True) -> Dict[str, Any]:
     """Write the changes recorded in a reviewed unit plan.
-    Loads the stored plan, rejects a plan marked inapplicable, and executes its supported mutation type. The result records applied changes and the requested persistence behavior.
+    Loads the stored plan, rejects a plan marked inapplicable, and executes its supported mutation type. With bSaveAssets=true, applying a source Actor update runs Update to export the unit at its configured ExportPath. A plan targeting a DataAsset writes directly to that asset.
     PlanId: Identifier of the reviewed stored unit mutation plan.
     bSaveAssets: Whether to save the assets modified or created by this operation to disk.
     Returns: The executed plan's ID, applied_diff and saved state; rejected plans, failed mutations and save errors report their failure.
@@ -469,29 +424,12 @@ async def unit_apply_plan(plan_id: str, save_assets: bool = True) -> Dict[str, A
 @mcp.tool()
 async def editor_plan_create_vat_unit_from_selection(options: Any = None) -> Dict[str, Any]:
     """Inspect the VAT specification resolved from selected assets.
-    The editor selection or selected_assets is resolved into a source mesh and animation set, then passed as a specification to UMassBattleUnitEditorMCPApi::MCP_EditorPlanCreateVatUnit.
-    OptionsJson: JSON object; pass {} to use the defaults. selected_assets supplies an explicit selection. Additional generation options feed the selection resolver and returned resolved_spec.
+    Review the selected assets and generation plan, then pass resolved_spec to UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnit to generate the unit.
+    OptionsJson: JSON object. Pass {} to use the defaults. selected_assets supplies asset paths for selection resolution. Additional generation options are included in resolved_spec.
     Returns: The resolved selection, VAT specification and generation plan; ready_to_apply identifies whether the resolved request is ready for execution."""
     return await get_connection().send_command(
         "MCP_EditorPlanCreateVatUnitFromSelection",
         {"OptionsJson": _json_arg(options)},
-    )
-
-
-@mcp.tool()
-async def editor_apply_create_vat_unit_from_selection(
-    options: Any = None,
-    save_assets: bool = True,
-    compact_response: bool = True,
-) -> Dict[str, Any]:
-    """Resolve selected source assets into a specification and generate a VAT unit.
-    Selection resolution produces the mesh, animation and output settings used by UMassBattleUnitEditorMCPApi::MCP_EditorApplyCreateVatUnit. The resolved selection and specification are included with the generation result.
-    OptionsJson: JSON options for selection resolution and VAT generation. selected_assets overrides the current selection. compact_response controls response detail; its MCP wrapper default is true and an explicit JSON value takes precedence.
-    bSaveAssets: Whether to save the assets modified or created by this operation to disk.
-    Returns: The resolved selection and specification together with apply_result or apply_summary; failures identify selection resolution or generation problems."""
-    return await get_connection().send_command(
-        "MCP_EditorApplyCreateVatUnitFromSelection",
-        {"OptionsJson": _json_arg_with_defaults(options, {"compact_response": compact_response}), "bSaveAssets": save_assets},
     )
 
 
@@ -551,30 +489,17 @@ async def editor_apply_create_vat_unit_from_actor(
 
 
 @mcp.tool()
-async def editor_plan_organize_unit_assets(unit_path: str, options: Any = None) -> Dict[str, Any]:
-    """Inspect destination folders for a unit and its linked assets.
-    Resolves the style layout and discovers the unit and linked generated/source assets selected by the organization policy. It calculates source/destination moves and collision status without moving or saving assets.
-    UnitPath: Unreal object path of the existing MassBattle unit config or supported Unit Source Actor Blueprint.
-    OptionsJson: JSON object; pass {} to use the defaults. style_profile chooses defaults; target_root or target_package_path selects the destination. unit_name, use_family_folder, generated_folder_name/target_folder_name and managed_roots customize the existing layout policy.
-    Returns: A move list giving source paths, destination paths and checks for each asset, together with the resolved style layout."""
-    return await get_connection().send_command(
-        "MCP_EditorPlanOrganizeUnitAssets",
-        {"UnitPath": unit_path, "OptionsJson": _json_arg(options)},
-    )
-
-
-@mcp.tool()
 async def editor_apply_organize_unit_assets(
     unit_path: str,
     options: Any = None,
     save_assets: bool = True,
 ) -> Dict[str, Any]:
-    """Move a unit and its linked source and generated assets into a style layout.
-    Rebuilds the same organization plan and returns it by default because dry_run=true. With dry_run=false it executes the eligible AssetTools moves and reports each performed move and actual failure.
+    """Preview or move a unit and its linked source and generated assets into a style layout.
+    With dry_run=true it returns the proposed moves and collision checks in plan. With dry_run=false it executes the eligible AssetTools moves and reports each performed move and actual failure.
     UnitPath: Unreal object path of the existing MassBattle unit config or supported Unit Source Actor Blueprint.
-    OptionsJson: JSON object; pass {} to use the defaults. Uses the same layout options as the organization planner. dry_run defaults to true; preview_only is also accepted.
+    OptionsJson: JSON object. dry_run defaults to true, and preview_only takes precedence when supplied. style_profile chooses defaults, and target_root or target_package_path selects the destination. unit_name, use_family_folder, generated_folder_name/target_folder_name and managed_roots customize the layout.
     bSaveAssets: Whether to save the assets modified or created by this operation to disk.
-    Returns: The move plan for a preview, or per-step results and the actual moved count after execution; failure reports retain the performed move results."""
+    Returns: With dry_run=true, plan contains the proposed moves and the resolved style layout. After execution, the response includes per-step results and the actual moved count."""
     return await get_connection().send_command(
         "MCP_EditorApplyOrganizeUnitAssets",
         {"UnitPath": unit_path, "OptionsJson": _json_arg(options), "bSaveAssets": save_assets},
@@ -878,254 +803,6 @@ async def niagara_apply_graph_edit(
         "MCP_NiagaraApplyGraphEdit",
         {"SystemPath": system_path, "EditJson": _json_arg(edit), "bSaveAssets": save_assets},
     )
-
-
-@mcp.tool()
-async def niagara_batch_translate(
-    manifest: Any,
-    apply: bool = False,
-    save_assets: bool = True,
-) -> Dict[str, Any]:
-    """Preflight or execute an explicit source-first Niagara translation manifest; never guesses visual edits."""
-    if isinstance(manifest, str):
-        try:
-            manifest = json.loads(manifest)
-        except Exception as exc:
-            return {"success": False, "error": f"Manifest is not valid JSON: {exc}"}
-    if not isinstance(manifest, dict):
-        return {"success": False, "error": "Manifest must be a JSON object."}
-
-    schema = manifest.get("schema", "massbattle.niagara.translation_manifest.v1")
-    if schema != "massbattle.niagara.translation_manifest.v1":
-        return {"success": False, "error": f"Unsupported manifest schema: {schema}"}
-    items = manifest.get("items")
-    if not isinstance(items, list) or not items:
-        return {"success": False, "error": "Manifest requires a non-empty items array."}
-    if len(items) > 256:
-        return {"success": False, "error": "Manifest items is limited to 256 entries."}
-
-    stop_on_error = bool(manifest.get("stop_on_error", True))
-    preflight: list[Dict[str, Any]] = []
-    preflight_errors: list[Dict[str, Any]] = []
-    seen_ids: set[str] = set()
-    seen_targets: set[str] = set()
-
-    for index, raw_item in enumerate(items):
-        item_errors: list[str] = []
-        if not isinstance(raw_item, dict):
-            preflight_errors.append({"index": index, "errors": ["item must be an object"]})
-            continue
-
-        item_id = str(raw_item.get("id") or f"item_{index:03d}")
-        source = raw_item.get("source_system_path")
-        new_name = raw_item.get("new_asset_name")
-        package_path = raw_item.get("package_path")
-        edit = raw_item.get("edit", {"operations": []})
-        comparison = raw_item.get("comparison", {})
-        if isinstance(edit, str):
-            try:
-                edit = json.loads(edit)
-            except Exception as exc:
-                item_errors.append(f"edit is not valid JSON: {exc}")
-        if isinstance(comparison, str):
-            try:
-                comparison = json.loads(comparison)
-            except Exception as exc:
-                item_errors.append(f"comparison is not valid JSON: {exc}")
-
-        if item_id in seen_ids:
-            item_errors.append(f"duplicate id: {item_id}")
-        seen_ids.add(item_id)
-        if not isinstance(source, str) or not source.strip():
-            item_errors.append("source_system_path is required")
-        if not isinstance(new_name, str) or not new_name.strip():
-            item_errors.append("new_asset_name is required")
-        if not isinstance(package_path, str) or not package_path.startswith("/Game/"):
-            item_errors.append("package_path must start with /Game/")
-        if not isinstance(edit, dict) or not isinstance(edit.get("operations"), list):
-            item_errors.append("edit must be an object with an operations array")
-        if not isinstance(comparison, dict):
-            item_errors.append("comparison must be an object")
-
-        target = ""
-        if isinstance(new_name, str) and isinstance(package_path, str):
-            package_path = package_path.rstrip("/")
-            target = f"{package_path}/{new_name}.{new_name}"
-            if target in seen_targets:
-                item_errors.append(f"duplicate target: {target}")
-            seen_targets.add(target)
-            if source == target:
-                item_errors.append("source and target must be different assets")
-
-        source_read: Dict[str, Any] = {}
-        target_read: Dict[str, Any] = {}
-        if not item_errors:
-            source_read = await get_connection().send_command(
-                "MCP_NiagaraReadSummary",
-                {"SystemPath": source, "OptionsJson": '{"include_modules":false}'},
-            )
-            if not source_read.get("success"):
-                item_errors.append(f"source read failed: {source_read.get('error', source_read)}")
-            else:
-                target_read = await get_connection().send_command(
-                    "MCP_NiagaraReadSummary",
-                    {"SystemPath": target, "OptionsJson": '{"include_modules":false}'},
-                )
-                if target_read.get("success"):
-                    item_errors.append(f"target already exists: {target}")
-
-        record = {
-            "index": index,
-            "id": item_id,
-            "source": source,
-            "target": target,
-            "edit": edit,
-            "comparison": comparison,
-            "source_ready_to_run": source_read.get("ready_to_run"),
-            "errors": item_errors,
-        }
-        preflight.append(record)
-        if item_errors:
-            preflight_errors.append({"index": index, "id": item_id, "errors": item_errors})
-
-    if preflight_errors or not apply:
-        return {
-            "success": not preflight_errors,
-            "schema": schema,
-            "apply_requested": apply,
-            "mutated": False,
-            "item_count": len(items),
-            "preflight": preflight,
-            "errors": preflight_errors,
-        }
-
-    results: list[Dict[str, Any]] = []
-
-    async def discard_failed_duplicate(result: Dict[str, Any], target: str) -> None:
-        cleanup = await get_connection().send_command(
-            "MCP_EffectDiscardUnsavedDuplicate",
-            {"AssetPath": target},
-        )
-        result["cleanup"] = cleanup
-
-    for item in preflight:
-        result: Dict[str, Any] = {
-            "index": item["index"],
-            "id": item["id"],
-            "source": item["source"],
-            "target": item["target"],
-            "success": False,
-            "saved": False,
-        }
-        duplicate = await get_connection().send_command(
-            "MCP_EffectDuplicateAsset",
-            {
-                "SourceAssetPath": item["source"],
-                "NewAssetName": item["target"].rsplit("/", 1)[-1].split(".", 1)[0],
-                "PackagePath": item["target"].rsplit("/", 1)[0],
-                "bSaveAssets": False,
-            },
-        )
-        result["duplicate"] = duplicate
-        if not duplicate.get("success"):
-            result["error"] = f"duplicate failed: {duplicate.get('error', duplicate)}"
-            results.append(result)
-            if stop_on_error:
-                break
-            continue
-
-        target = duplicate.get("asset_path", item["target"])
-        clone_compare = await get_connection().send_command(
-            "MCP_NiagaraCompareSystems",
-            {
-                "SourceSystemPath": item["source"],
-                "TargetSystemPath": target,
-                # Asset duplication is intentionally unsaved and may not have entered Niagara's
-                # compile queue yet.  This gate proves source-neutral structural identity; the
-                # following graph-edit barrier compiles and enforces ready-to-run before save.
-                "OptionsJson": '{"mode":"exact","require_ready_to_run":false}',
-            },
-        )
-        result["clone_comparison"] = clone_compare
-        if not clone_compare.get("success"):
-            result["error"] = "duplicate is not an exact source-neutral clone"
-            await discard_failed_duplicate(result, target)
-            results.append(result)
-            if stop_on_error:
-                break
-            continue
-
-        edit_result = await get_connection().send_command(
-            "MCP_NiagaraApplyGraphEdit",
-            {
-                "SystemPath": target,
-                "EditJson": _json_arg(item["edit"]),
-                "bSaveAssets": False,
-            },
-        )
-        result["edit"] = edit_result
-        if not edit_result.get("success"):
-            result["error"] = f"graph edit failed: {edit_result.get('error', edit_result)}"
-            await discard_failed_duplicate(result, target)
-            results.append(result)
-            if stop_on_error:
-                break
-            continue
-
-        comparison = dict(item["comparison"])
-        comparison.setdefault("mode", "translation")
-        comparison.setdefault("require_ready_to_run", True)
-        translation_compare = await get_connection().send_command(
-            "MCP_NiagaraCompareSystems",
-            {
-                "SourceSystemPath": item["source"],
-                "TargetSystemPath": target,
-                "OptionsJson": _json_arg(comparison),
-            },
-        )
-        result["translation_comparison"] = translation_compare
-        if not translation_compare.get("success"):
-            result["error"] = "translation did not satisfy the declared source-preservation policy"
-            await discard_failed_duplicate(result, target)
-            results.append(result)
-            if stop_on_error:
-                break
-            continue
-
-        if save_assets:
-            save_result = await get_connection().send_command(
-                "MCP_NiagaraApplyGraphEdit",
-                {
-                    "SystemPath": target,
-                    "EditJson": '{"operations":[],"validation":{"require_ready_to_run":true}}',
-                    "bSaveAssets": True,
-                },
-            )
-            result["save"] = save_result
-            if not save_result.get("success") or not save_result.get("saved"):
-                result["error"] = f"save validation failed: {save_result.get('error', save_result)}"
-                await discard_failed_duplicate(result, target)
-                results.append(result)
-                if stop_on_error:
-                    break
-                continue
-            result["saved"] = True
-
-        result["success"] = True
-        results.append(result)
-
-    failed = [item for item in results if not item.get("success")]
-    return {
-        "success": not failed and len(results) == len(items),
-        "schema": schema,
-        "apply_requested": True,
-        "mutated": bool(results),
-        "save_requested": save_assets,
-        "item_count": len(items),
-        "processed_count": len(results),
-        "failed_count": len(failed),
-        "results": results,
-    }
 
 
 @mcp.tool()

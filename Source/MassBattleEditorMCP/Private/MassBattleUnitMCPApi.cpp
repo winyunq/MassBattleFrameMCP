@@ -1358,20 +1358,6 @@ static TSharedPtr<FJsonObject> BuildIgnorePolicyJson()
 	return Policy;
 }
 
-static FString InferPathCategory(const FString& ObjectPath)
-{
-	if (ObjectPath.Contains(TEXT("/Demo/Agent/"))) return TEXT("Demo.Agent");
-	if (ObjectPath.Contains(TEXT("/Demo/Building/"))) return TEXT("Demo.Building");
-	if (ObjectPath.Contains(TEXT("/Demo/Player/"))) return TEXT("Demo.Player");
-	if (ObjectPath.Contains(TEXT("/Test/CompoundUnitAsset/Weapon/"))) return TEXT("Test.CompoundWeapon");
-	if (ObjectPath.Contains(TEXT("/Test/CompoundUnitAsset/"))) return TEXT("Test.CompoundUnit");
-	if (ObjectPath.Contains(TEXT("/Test/"))) return TEXT("Test");
-	if (ObjectPath.Contains(TEXT("/Army/"))) return TEXT("Project.Army");
-	if (ObjectPath.Contains(TEXT("/Aircraft/"))) return TEXT("Project.Aircraft");
-	if (ObjectPath.Contains(TEXT("/Building/"))) return TEXT("Project.Building");
-	return TEXT("Uncategorized");
-}
-
 static FString InferStyleFamily(const FString& ObjectPath)
 {
 	const FString Lower = ObjectPath.ToLower();
@@ -2645,7 +2631,7 @@ FString UMassBattleUnitMCPApi::MCP_UnitPlanMergeUpdate(const FString& UnitPath, 
 	return ToJsonString(Root);
 }
 
-FString UMassBattleUnitMCPApi::MCP_UnitMergeUpdate(const FString& UnitPath, const FString& UnitDataJson, bool bSaveAssets)
+FString UMassBattleUnitMCPApi::ApplyInitialSourceUnitData(const FString& UnitPath, const FString& UnitDataJson)
 {
 	const FString PlanResult = MCP_UnitPlanMergeUpdate(UnitPath, UnitDataJson);
 	TSharedPtr<FJsonObject> PlanResultJson = ParseObject(PlanResult);
@@ -2662,7 +2648,7 @@ FString UMassBattleUnitMCPApi::MCP_UnitMergeUpdate(const FString& UnitPath, cons
 	}
 
 	const FString PlanId = PlanResultJson->GetStringField(TEXT("plan_id"));
-	return MCP_UnitApplyPlan(PlanId, bSaveAssets);
+	return MCP_UnitApplyPlan(PlanId, false);
 }
 
 FString UMassBattleUnitMCPApi::MCP_UnitCreate(const FString& CreateSpecJson, bool bSaveAssets)
@@ -2701,7 +2687,7 @@ FString UMassBattleUnitMCPApi::MCP_UnitCreate(const FString& CreateSpecJson, boo
 		const TSharedPtr<FJsonObject>* InitialData = nullptr;
 		if (Spec->TryGetObjectField(TEXT("unit_data"), InitialData))
 		{
-			const FString Result = MCP_UnitMergeUpdate(ObjectPath, ToJsonString(*InitialData), false);
+			const FString Result = ApplyInitialSourceUnitData(ObjectPath, ToJsonString(*InitialData));
 			if (!ParseObject(Result)->GetBoolField(TEXT("success"))) return Result;
 		}
 		FBlueprintEditorUtils::MarkBlueprintAsModified(Blueprint);
@@ -3534,12 +3520,9 @@ FString UMassBattleUnitMCPApi::MCP_UnitGetApiStatus()
 	Tools.Add(Tool(TEXT("MCP_UnitPlanMergeUpdate"), TEXT("unit.plan"), TEXT("Plan a union-write and return its diff without mutating the unit.")));
 	Tools.Add(Tool(TEXT("MCP_UnitPreviewDiff"), TEXT("unit.plan"), TEXT("Preview a saved unit mutation plan and its complete diff.")));
 	Tools.Add(Tool(TEXT("MCP_UnitApplyPlan"), TEXT("unit.write"), TEXT("Apply a reviewed unit mutation plan and optionally save the unit.")));
-	Tools.Add(Tool(TEXT("MCP_UnitMergeUpdate"), TEXT("unit.write"), TEXT("Union-write partial source-aligned JSON to an existing unit and optionally save.")));
 	Tools.Add(Tool(TEXT("MCP_UnitDeleteSoft"), TEXT("unit.lifecycle"), TEXT("Move a unit to trash after referencer scan.")));
 	Tools.Add(Tool(TEXT("MCP_UnitDelete"), TEXT("unit.delete"), TEXT("Delete a unit explicitly; dry_run=true by default.")));
 	Tools.Add(Tool(TEXT("MCP_UnitFindAssets"), TEXT("unit.assets"), TEXT("Find existing assets for unit generation.")));
-	Tools.Add(Tool(TEXT("MCP_StyleSummarizeUnits"), TEXT("style.query"), TEXT("Summarize style organization.")));
-	Tools.Add(Tool(TEXT("MCP_StylePlanOrganizeUnits"), TEXT("style.organize"), TEXT("Plan style-based folder organization.")));
 	Tools.Add(Tool(TEXT("MCP_EditorListProfiles"), TEXT("unit_editor.profile"), TEXT("List style profiles and authoring recipes.")));
 	Tools.Add(Tool(TEXT("MCP_EditorGetProfile"), TEXT("unit_editor.profile"), TEXT("Read one style profile or authoring recipe.")));
 	Tools.Add(Tool(TEXT("MCP_EditorPlanUnitAuthoringWorkflow"), TEXT("unit_editor.workflow"), TEXT("Plan a staged workflow across prepare, animation update, VAT create/refresh, and organization.")));
@@ -3549,108 +3532,16 @@ FString UMassBattleUnitMCPApi::MCP_UnitGetApiStatus()
 	Tools.Add(Tool(TEXT("MCP_EditorDiscoverCompatibleAnimations"), TEXT("unit_editor.animation"), TEXT("Discover compatible animation sequences across explicit and style-configured search roots.")));
 	Tools.Add(Tool(TEXT("MCP_EditorPlanAddAnimationsToUnit"), TEXT("unit_editor.animation"), TEXT("Use MassBattleEditor functions to plan an AnimShared update for an existing unit.")));
 	Tools.Add(Tool(TEXT("MCP_EditorValidateAddAnimationsToUnit"), TEXT("unit_editor.animation"), TEXT("Validate whether an animation-set edit can produce an applicable unit merge plan.")));
-	Tools.Add(Tool(TEXT("MCP_EditorApplyAddAnimationsToUnit"), TEXT("unit_editor.animation"), TEXT("Plan and apply an AnimShared update for an existing unit.")));
 	Tools.Add(Tool(TEXT("MCP_EditorPlanCreateVatUnit"), TEXT("unit_editor.create.diagnostic"), TEXT("Diagnostic: preview the MassBattleTools DoAll-equivalent VAT unit plan. Strict apply still requires canonical complete inputs.")));
 	Tools.Add(Tool(TEXT("MCP_EditorValidateCreateVatUnit"), TEXT("unit_editor.create.diagnostic"), TEXT("Diagnostic: validate DoAll-equivalent VAT unit inputs without writing assets.")));
 	Tools.Add(Tool(TEXT("MCP_EditorApplyCreateVatUnit"), TEXT("unit_editor.create"), TEXT("Primary non-selection DoAll-equivalent VAT unit authoring entry. Requires canonical complete inputs and validates before writing assets.")));
-	Tools.Add(Tool(TEXT("MCP_EditorPlanCreateVatUnitFromSelection"), TEXT("unit_editor.create.diagnostic"), TEXT("Diagnostic: infer the DoAll spec from current selection or selected_assets and return it for review.")));
-	Tools.Add(Tool(TEXT("MCP_EditorApplyCreateVatUnitFromSelection"), TEXT("unit_editor.create"), TEXT("Primary one-click current selection -> generate entry matching the MassBattleTools DoAll workflow.")));
+	Tools.Add(Tool(TEXT("MCP_EditorPlanCreateVatUnitFromSelection"), TEXT("unit_editor.create.diagnostic"), TEXT("Resolve the selection to a DoAll spec to review and pass to MCP_EditorApplyCreateVatUnit.")));
 	Tools.Add(Tool(TEXT("MCP_EditorInspectActorAssembly"), TEXT("unit_editor.actor"), TEXT("Inspect an Actor's modular skeletal/static component assembly and weapon bindings.")));
 	Tools.Add(Tool(TEXT("MCP_EditorInspectVatAnimation"), TEXT("unit_editor.actor"), TEXT("Audit assembled skin weights, baked VAT position-frame motion, lookup UVs, and the selected animation profile.")));
 	Tools.Add(Tool(TEXT("MCP_EditorPlanCreateVatUnitFromActor"), TEXT("unit_editor.actor"), TEXT("Plan Actor assembly followed by strict VAT unit authoring.")));
 	Tools.Add(Tool(TEXT("MCP_EditorApplyCreateVatUnitFromActor"), TEXT("unit_editor.actor"), TEXT("Assemble an Actor and weapon into an animation-compatible SkeletalMesh, then author the VAT unit.")));
-	Tools.Add(Tool(TEXT("MCP_EditorPlanOrganizeUnitAssets"), TEXT("unit_editor.organize"), TEXT("Plan moving a unit and its editor-generated linked assets into the selected style layout.")));
-	Tools.Add(Tool(TEXT("MCP_EditorApplyOrganizeUnitAssets"), TEXT("unit_editor.organize"), TEXT("Apply a reviewed linked-asset organization plan; dry_run=true by default.")));
+	Tools.Add(Tool(TEXT("MCP_EditorApplyOrganizeUnitAssets"), TEXT("unit_editor.organize"), TEXT("Preview a linked-asset organization plan with dry_run=true, or apply it with dry_run=false.")));
 	Root->SetArrayField(TEXT("tools"), Tools);
 	Root->SetObjectField(TEXT("default_ignore_policy"), BuildIgnorePolicyJson());
-	return ToJsonString(Root);
-}
-
-FString UMassBattleStyleMCPApi::MCP_StyleSummarizeUnits(const FString& OptionsJson)
-{
-	TSharedPtr<FJsonObject> Options = ParseObject(OptionsJson);
-	if (!Options.IsValid())
-	{
-		return MakeErrorJson(TEXT("OptionsJson is not valid JSON"));
-	}
-
-	TMap<FString, int32> FamilyCounts;
-	TMap<FString, int32> CategoryCounts;
-	TMap<FString, int32> StyleIndexCounts;
-	int32 UnitCount = 0;
-
-	for (const FAssetData& Asset : ScanUnitAssets(Options))
-	{
-		UnitCount++;
-		const FString ObjectPath = Asset.GetObjectPathString();
-		FamilyCounts.FindOrAdd(InferStyleFamily(ObjectPath))++;
-		CategoryCounts.FindOrAdd(InferPathCategory(ObjectPath))++;
-
-		FString StyleIndex = TEXT("unknown");
-		if (UObject* Loaded = Asset.GetAsset())
-		{
-			TryExportPath(Loaded, TEXT("StyleType.Index"), StyleIndex);
-		}
-		StyleIndexCounts.FindOrAdd(StyleIndex)++;
-	}
-
-	auto MapToObject = [](const TMap<FString, int32>& Map)
-	{
-		TSharedPtr<FJsonObject> Obj = MakeShared<FJsonObject>();
-		for (const TPair<FString, int32>& Pair : Map)
-		{
-			Obj->SetNumberField(Pair.Key, Pair.Value);
-		}
-		return Obj;
-	};
-
-	TSharedPtr<FJsonObject> Root = MakeSuccess();
-	AddRootsToJson(Root, Options);
-	Root->SetNumberField(TEXT("unit_count"), UnitCount);
-	Root->SetObjectField(TEXT("style_families"), MapToObject(FamilyCounts));
-	Root->SetObjectField(TEXT("path_categories"), MapToObject(CategoryCounts));
-	Root->SetObjectField(TEXT("style_indices"), MapToObject(StyleIndexCounts));
-	return ToJsonString(Root);
-}
-
-FString UMassBattleStyleMCPApi::MCP_StylePlanOrganizeUnits(const FString& OptionsJson)
-{
-	TSharedPtr<FJsonObject> Options = ParseObject(OptionsJson);
-	if (!Options.IsValid())
-	{
-		return MakeErrorJson(TEXT("OptionsJson is not valid JSON"));
-	}
-
-	FString TargetRoot = TEXT("/Game/MassBattle/Units");
-	Options->TryGetStringField(TEXT("target_root"), TargetRoot);
-
-	TArray<TSharedPtr<FJsonValue>> Moves;
-	for (const FAssetData& Asset : ScanUnitAssets(Options))
-	{
-		const FString ObjectPath = Asset.GetObjectPathString();
-		const FString Family = InferStyleFamily(ObjectPath);
-		FString StyleIndex = TEXT("0");
-		if (UObject* Loaded = Asset.GetAsset())
-		{
-			TryExportPath(Loaded, TEXT("StyleType.Index"), StyleIndex);
-		}
-
-		const FString DestinationPackagePath = TargetRoot / Family / (TEXT("Style") + StyleIndex);
-		TSharedPtr<FJsonObject> Move = MakeShared<FJsonObject>();
-		Move->SetStringField(TEXT("source_path"), ObjectPath);
-		Move->SetStringField(TEXT("asset_name"), Asset.AssetName.ToString());
-		Move->SetStringField(TEXT("style_family"), Family);
-		Move->SetStringField(TEXT("style_index"), StyleIndex);
-		Move->SetStringField(TEXT("destination_package_path"), DestinationPackagePath);
-		Move->SetStringField(TEXT("destination_path"), DestinationPackagePath / Asset.AssetName.ToString() + TEXT(".") + Asset.AssetName.ToString());
-		Moves.Add(MakeShared<FJsonValueObject>(Move));
-	}
-
-	TSharedPtr<FJsonObject> Root = MakeSuccess();
-	Root->SetStringField(TEXT("plan_type"), TEXT("style_organize_units"));
-	Root->SetStringField(TEXT("target_root"), TargetRoot);
-	Root->SetBoolField(TEXT("dry_run_only"), true);
-	Root->SetStringField(TEXT("note"), TEXT("This style MCP currently produces a reviewable move plan only; use AssetTools-based move support after confirming folder conventions."));
-	Root->SetArrayField(TEXT("moves"), Moves);
 	return ToJsonString(Root);
 }

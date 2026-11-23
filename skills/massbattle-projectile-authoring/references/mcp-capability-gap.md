@@ -8,7 +8,7 @@ When the API is present, use:
 
 ```text
 projectile_get_api_status
-projectile_list / projectile_query
+projectile_list
 projectile_get
 projectile_get_schema
 projectile_create

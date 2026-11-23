@@ -70,7 +70,6 @@ Use these Niagara MCP tools when available:
 - `MCP_NiagaraApplyGraphEdit(SystemPath, EditJson, bSaveAssets)`: apply an ordered graph-edit batch. Operations include `add_user_parameter`, `add_user_data_interface`, `insert_module`, `insert_assignment`, `set_module_enabled`, `set_stack_input`, bulk `set_stack_inputs`, `connect_pins`, `disconnect_pins`, `disconnect_pin`, and `rewire_pin`. `insert_assignment` adds typed targets to any selected Niagara stack without requiring a one-off module asset. The edit compiles once, waits for CPU/GPU completion, validates preservation, and saves only on success.
 - `MCP_NiagaraSetEmitterEnabled(SystemPath, EmitterName, bEnabled, bSaveAssets)`: explicitly enable or disable one emitter handle.
 - `MCP_NiagaraDelete(SystemPath, DeleteJson, bSaveAssets)`: explicit deletion actions such as renderer removal, user parameter removal, or destructive emitter disabling.
-- `niagara_batch_translate(manifest, apply=false, save_assets=true)`: preflight or execute an explicit `massbattle.niagara.translation_manifest.v1`. It performs source read, duplicate, exact-clone comparison, graph edit, translation comparison, and gated save per item. `apply=false` is read-only and is the default.
 
 Use these generic effect-asset and MassBattle batch-FX MCP tools when available:
 
@@ -100,7 +99,13 @@ Use Unit MCP only to apply an already-designed effect to a unit config. Use Niag
 9. Save only after the graph-edit compile barrier, readiness, preservation, and translation comparison pass. Translation mode requires `ready_to_run` by default. Reload and compare again.
 10. Validate behavior in a paired test scene: original and translation receive the same transforms, parameters, seed policy, and trigger times. Capture synchronized frames or SimCache evidence. Report any difference; never label an untested result “perfect”.
 
-For many systems, build one explicit `massbattle.niagara.translation_manifest.v1`. Run `niagara_batch_translate(..., apply=false)` first, review every source/target/edit/comparison entry, then run with `apply=true`. A failed item is not counted as converted; the batch tool attempts to discard its MCP-created unsaved duplicate and reports the cleanup result.
+For many systems, build one explicit `massbattle.niagara.translation_manifest.v1`. Run the manifest script from the MassBattleEditorMCP plugin root. The default is read-only preflight.
+
+```shell
+uv run --project Resources/Python Resources/Python/TranslateNiagaraManifest.py manifest.json
+```
+
+Review every source, target, edit, and comparison entry, then run the same command with `--apply`. The script uses the bridge to duplicate the source, compare the exact clone, edit and compile the unsaved clone, compare the translation, and save after validation. `--apply --no-save` leaves successful edits in memory. A failed item triggers best-effort cleanup of the unsaved duplicate and reports the cleanup result.
 
 ## Runtime Translation Gates
 

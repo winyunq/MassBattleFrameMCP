@@ -12,6 +12,7 @@
     "found_anims": "Optional FFoundAnimSequences JSON. If provided with data_asset, this can produce an AnimShared merge patch directly.",
     "unit_patch": "Optional extra source-aligned unit Data JSON to merge with AnimShared."
   },
+  "pipeline_note": "Through the editor bridge, run MCP_EditorPlanAddAnimationsToUnit and pass its plan_id to MCP_UnitApplyPlan when success and applicable are true.",
   "pipeline": [
     {
       "id": "find_animations",
@@ -28,7 +29,12 @@
     {
       "id": "merge_animshared",
       "tool": "MCP_UnitPlanMergeUpdate",
-      "description": "Union-merge AnimShared.AnimData into the existing unit without touching unrelated fields."
+      "description": "Plan a union-merge of AnimShared.AnimData into the existing unit."
+    },
+    {
+      "id": "apply_animshared_merge",
+      "tool": "MCP_UnitApplyPlan",
+      "description": "Apply the merge using its plan_id once the plan is applicable."
     }
   ],
   "default_unit_patch": {

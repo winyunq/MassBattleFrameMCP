@@ -69,26 +69,13 @@ public:
 	/**
 	 * @ProductDocument
 	 * @brief Review field changes before writing a partial unit update.
-	 * @details Builds and stores a union-merge plan from a partial source-aligned unit object. Omitted unit fields are retained. The asset is not modified; applicable and merge_errors describe whether the planned field changes can be applied.
+	 * @details Stores a partial update plan for the selected Unit Source Actor or unit DataAsset. Target the source Actor for routine maintenance so edits are retained in UnitData. Omitted fields are retained. The plan reports whether the proposed update can be applied.
 	 * @param[in] UnitPath Unreal object path of the existing MassBattle unit config or supported Unit Source Actor Blueprint.
 	 * @param[in] UnitDataJson Partial unit JSON using source property names. Include the fields to change; a Unit Source Actor patch may also contain export_path.
 	 * @return A stored update plan: plan_id identifies it for later review or application, diff describes field changes, and applicable with merge_errors explains whether it can run.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "MassBattleEditorMCP|Unit")
 	static FString MCP_UnitPlanMergeUpdate(const FString& UnitPath, const FString& UnitDataJson);
-
-	/**
-	 * @ProductDocument
-	 * @brief Change selected unit fields while retaining unspecified data.
-	 * @details Plans and applies a partial update to the Unit Source Actor or unit DataAsset selected by UnitPath. For routine maintenance, target the source Actor so the edit is retained in UnitData. With bSaveAssets=true, a source write runs Update to export the unit. A DataAsset path edits that asset directly. Omitted fields are retained. Validation failures return the plan.
-	 * @param[in] UnitPath Unreal object path of the existing MassBattle unit config or supported Unit Source Actor Blueprint.
-	 * @param[in] UnitDataJson Partial source-aligned authored unit data. Obtain exact editable field names from the unit schema.
-	 * @param[in] bSaveAssets Whether to save the assets modified or created by this operation to disk.
-	 * @return The applied field changes and persistence result, or the planning result when the proposed update cannot be applied.
-	 * @see @ref UMassBattleUnitMCPApi::MCP_UnitGetSchema for editable fields.
-	 */
-	UFUNCTION(BlueprintCallable, Category = "MassBattleEditorMCP|Unit")
-	static FString MCP_UnitMergeUpdate(const FString& UnitPath, const FString& UnitDataJson, bool bSaveAssets);
 
 	/**
 	 * @ProductDocument
@@ -115,7 +102,7 @@ public:
 	/**
 	 * @ProductDocument
 	 * @brief Write the changes recorded in a reviewed unit plan.
-	 * @details Loads the stored plan, rejects a plan marked inapplicable, and executes its supported mutation type. The result records applied changes and the requested persistence behavior.
+	 * @details Loads the stored plan, rejects a plan marked inapplicable, and executes its supported mutation type. With bSaveAssets=true, applying a source Actor update runs Update to export the unit at its configured ExportPath. A plan targeting a DataAsset writes directly to that asset.
 	 * @param[in] PlanId Identifier of the reviewed stored unit mutation plan.
 	 * @param[in] bSaveAssets Whether to save the assets modified or created by this operation to disk.
 	 * @return The executed plan's ID, applied_diff and saved state; rejected plans, failed mutations and save errors report their failure.
@@ -160,34 +147,8 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "MassBattleEditorMCP|Unit")
 	static FString MCP_UnitGetApiStatus();
-};
 
-/**
- * @brief Report unit style distributions and plan asset folder organization.
- */
-UCLASS()
-class MASSBATTLEEDITORMCP_API UMassBattleStyleMCPApi : public UBlueprintFunctionLibrary
-{
-	GENERATED_BODY()
-
-public:
-	/**
-	 * @ProductDocument
-	 * @brief Count units by style family, style index and path category.
-	 * @details Scans the selected unit assets and aggregates their authored style indices, inferred style families and path categories. It reports organization counts without moving assets.
-	 * @param[in] OptionsJson JSON object; pass {} to use the defaults. Use the unit scan options to choose the assets included in the summary.
-	 * @return The unit count and distributions across style families, path categories and style indices.
-	 */
-	UFUNCTION(BlueprintCallable, Category = "MassBattleEditorMCP|Style")
-	static FString MCP_StyleSummarizeUnits(const FString& OptionsJson);
-
-	/**
-	 * @ProductDocument
-	 * @brief Calculate destination folders and a move list from unit styles.
-	 * @details Calculates destination folders from each unit style family and style index. It produces a reviewable move list only; this entry does not execute AssetTools moves.
-	 * @param[in] OptionsJson JSON object; pass {} to use the defaults. target_root selects the organization root; unit scan options select the source assets.
-	 * @return A move proposal containing source and destination paths under target_root; dry_run_only=true identifies it as a plan rather than executed moves.
-	 */
-	UFUNCTION(BlueprintCallable, Category = "MassBattleEditorMCP|Style")
-	static FString MCP_StylePlanOrganizeUnits(const FString& OptionsJson);
+private:
+	/// @brief Apply initial authored data when creating a unit source.
+	static FString ApplyInitialSourceUnitData(const FString& UnitPath, const FString& UnitDataJson);
 };

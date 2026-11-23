@@ -55,13 +55,13 @@ Treat MCP as the asset-registry hand, not as judgement. Build the relationship g
 
 1. Start from the unit with `MCP_UnitGet`, then inspect its linked renderer and generated assets with `MCP_EffectAssetReadSummary(include_dependencies=true, include_referencers=true)`.
 2. Treat `missing_hard_dependencies` and `missing_soft_dependencies` as blockers. Repair or replace references before cleanup.
-3. Use `MCP_EditorPlanOrganizeUnitAssets` for linked generated/source assets because it follows the Asset Registry from the unit. Review `moves`, `blocked_count`, and referencers before any apply.
+3. Preview linked-asset organization with `editor_apply_organize_unit_assets(unit_path, options={"dry_run": true})`. Review `plan.moves`, `plan.blocked_count`, and referencers before using `dry_run=false`.
 4. `MCP_EffectAssetSoftDelete` is a review tool by default. It blocks live asset moves unless `allow_unsafe_asset_move=true` is explicitly supplied after referencers and editor state are reviewed.
 5. Keep one canonical generated asset set per playable unit. Old generated folders, tests, and marketplace source folders are duplicates until their referencers prove otherwise.
 
 ## Create Unit
 
-Mirror the official `/MassBattle/Core/MassBattleTools` editor widget. Normal AI authoring should use one DoAll-equivalent apply call, not manually sequence internal stages.
+Mirror the official `/MassBattle/Core/MassBattleTools` editor widget by using one DoAll-equivalent apply call with the resolved generation specification.
 
 ### Create From An Actor Blueprint
 
@@ -78,9 +78,9 @@ Use `editor_apply_create_vat_unit_from_actor` when an Actor Blueprint defines th
 
 ### Create From Selection Or A Skeletal Mesh
 
-1. If the user selected assets in the editor, or asks for "current/selected -> generate", call `MCP_EditorApplyCreateVatUnitFromSelection` directly. It infers `skeletal_mesh`, target/template unit, selected animations, materials, VAT data asset, Niagara, and renderer template from current selection or explicit `selected_assets`; if anything required cannot be inferred, validation blocks the write.
-2. Otherwise call `MCP_EditorApplyCreateVatUnit` directly with a complete canonical spec. Do not rely on defaults, aliases, automatic animation fallback, or static fallback.
-3. Use `MCP_EditorPlanCreateVatUnit`, `MCP_EditorValidateCreateVatUnit`, or `MCP_EditorPlanCreateVatUnitFromSelection` only as diagnostics after an apply warning/failure, or when the user explicitly asks for a dry-run plan.
+1. Call `editor_plan_create_vat_unit_from_selection` when generation starts from selected assets. Review the selection, warnings and `resolved_spec`, especially the target unit. Pass `resolved_spec` as `spec` to `editor_apply_create_vat_unit` to generate the unit.
+2. For a supplied skeletal mesh, call `editor_apply_create_vat_unit` with a complete canonical spec.
+3. Use `MCP_EditorPlanCreateVatUnit` or `MCP_EditorValidateCreateVatUnit` for separate diagnostics or when the user requests a dry-run plan.
 4. Inspect `validation.issues` and `execution_steps` from the apply result. Any `error` means no assets were modified.
 5. Always pass an explicit `animations` category map when using the non-selection entry. Nonstandard names are not guessed in strict create.
 6. Read back the generated unit with `MCP_UnitGet` and verify asset existence, renderer class, material slot, attack enabled state, projectile/effect arrays, range, damage, and subtype.
@@ -108,7 +108,7 @@ The editor MCP must reject incomplete VAT unit creation instead of generating pa
 - Do not pass old aliases such as `unit_path`, `existing_unit`, `mesh`, `source_mesh`, `sub_type`, `renderer_template_class`, `template_renderer_class`, `niagara`, `sample_rate`, or `VATSampleRate`.
 - Do not pass fallback switches such as `allow_static_fallback`, `allow_missing_anims`, `allow_no_vat`, or `allow_missing_renderer`.
 - `MCP_EditorApplyCreateVatUnit` runs `MCP_EditorValidateCreateVatUnit` before any asset write. Validation failure means no mesh, material, VAT texture, renderer, or unit data is modified.
-- Selection-based tools accept `selected_assets` to simulate current editor selection in scripted runs. Select a unit plus a mesh to patch that unit; pass `selected_unit_role="template"` when the selected unit should be cloned instead.
+- The selection planner accepts `selected_assets` and also considers the current editor selection. Review the resolved target before applying. Pass `selected_unit_role="template"` when the selected unit should serve as the template for a new unit.
 
 ## Defaults
 
