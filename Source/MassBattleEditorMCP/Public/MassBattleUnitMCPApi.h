@@ -19,7 +19,8 @@ class MASSBATTLEEDITORMCP_API UMassBattleUnitMCPApi : public UBlueprintFunctionL
 
 public:
 	/** Shared implementation for the source Actor's Update action; no new MCP command. */
-	static FString UpdateSource(class AMassBattleUnitSource* Source, bool bSaveAssets, bool bRebakeVAT = true);
+	static FString UpdateSource(class AMassBattleUnitSource* Source, bool bSaveAssets, bool bRebakeVAT = true,
+		const TSet<FString>* RequestedPaths = nullptr);
 	static FString DestroySourceUnit(class AMassBattleUnitSource* Source);
 
 	/**

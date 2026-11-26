@@ -132,6 +132,14 @@ bool FMassBattleSourceRenderScaleTest::RunTest(const FString& Parameters)
 	FStaticMeshCompilingManager::Get().FinishCompilation({ OutputMesh });
 	TestTrue(TEXT("Re-export does not compound the scale"),
 		OutputMesh->GetBounds().BoxExtent.Equals(OriginalMesh->GetBounds().BoxExtent * 0.5));
+	const auto OutputStyle = Output->StyleType.Index;
+	Source->UnitData->StyleType.Index = OutputStyle + 1;
+	const FString Resize = UMassBattleUnitMCPApi::MCP_UnitMergeUpdate(SourcePath,
+		TEXT("{\"update_export\":true,\"rebake_vat\":false,\"bake_render_scale\":true,\"options\":{\"properties_only\":true},\"Scaling\":{\"Scale\":0.5}}"), false);
+	TSharedPtr<FJsonObject> ResizeReport;
+	TestTrue(*Resize, FJsonSerializer::Deserialize(TJsonReaderFactory<>::Create(Resize), ResizeReport)
+		&& ResizeReport.IsValid() && ResizeReport->GetBoolField(TEXT("success")));
+	TestEqual(TEXT("A size update leaves pending stat edits in the Source"), Output->StyleType.Index, OutputStyle);
 	return !HasAnyErrors();
 }
 #endif

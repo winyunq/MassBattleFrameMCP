@@ -2402,7 +2402,14 @@ static bool BakeSourceRenderScale(UMassBattleAgentConfigDataAsset& Unit, const F
 	return true;
 }
 
-FString UMassBattleUnitMCPApi::UpdateSource(AMassBattleUnitSource* Source, bool bSaveAssets, bool bRebakeVAT)
+static bool IsRenderSizeField(const FString& Path)
+{
+	return Path == TEXT("Scaling.Scale") || Path == TEXT("Collider.Radius") || Path == TEXT("Collider.Height")
+		|| Path == TEXT("Visualize.RendererClass") || Path.StartsWith(TEXT("Visualize.Transform"));
+}
+
+FString UMassBattleUnitMCPApi::UpdateSource(AMassBattleUnitSource* Source, bool bSaveAssets, bool bRebakeVAT,
+	const TSet<FString>* RequestedPaths)
 {
 	if (!Source || !Source->UnitData || !Source->GetSourceAsset())
 		return MakeErrorJson(TEXT("Update requires a saved source Actor Blueprint with UnitData."));
@@ -2416,7 +2423,7 @@ FString UMassBattleUnitMCPApi::UpdateSource(AMassBattleUnitSource* Source, bool 
 		Defaults->VATData = Source->VATData;
 		Defaults->VATDriver = Source->VATDriver;
 		Defaults->bBakeRenderScale = Source->bBakeRenderScale;
-		const FString Result = UpdateSource(Defaults, bSaveAssets, bRebakeVAT);
+		const FString Result = UpdateSource(Defaults, bSaveAssets, bRebakeVAT, RequestedPaths);
 		Source->ExportedUnit = Defaults->ExportedUnit;
 		return Result;
 	}
@@ -2541,6 +2548,11 @@ FString UMassBattleUnitMCPApi::UpdateSource(AMassBattleUnitSource* Source, bool 
 		if (!BakeSourceRenderScale(*BakedUnit.Get(), Destination, VatAssetsToSave, BakeError))
 			return MakeErrorJson(BakeError);
 		ExportData = BakedUnit.Get();
+		if (TargetUnit && RequestedPaths && !RequestedPaths->Contains(TEXT("Visualize.Transform")))
+		{
+			ExportData->Visualize.Transform = TargetUnit->Visualize.Transform;
+			ExportData->Visualize.Transform.SetScale3D(FVector3f::OneVector);
+		}
 	}
 	TArray<TSharedPtr<FJsonObject>> Patches;
 	TArray<TSharedPtr<FJsonValue>> Errors;
@@ -2548,8 +2560,16 @@ FString UMassBattleUnitMCPApi::UpdateSource(AMassBattleUnitSource* Source, bool 
 	if (TargetUnit)
 	{
 		TSharedPtr<FJsonObject> Options = ParseObject(TEXT("{\"replace_arrays\":true,\"expected_before\":false}"));
-		Patches = BuildUnionMergePatches(Source->bHasUpdated ? Source->LastUpdatedSource.Get() : TargetUnit,
+		Patches = BuildUnionMergePatches(!RequestedPaths && Source->bHasUpdated ? Source->LastUpdatedSource.Get() : TargetUnit,
 			BuildSourceAlignedUnitJson(ExportData, ReadOptions), Options, Errors, ExportData);
+		if (RequestedPaths)
+		{
+			Patches.RemoveAll([&](const TSharedPtr<FJsonObject>& Patch)
+			{
+				const FString Path = Patch->GetStringField(TEXT("path"));
+				return !IsRenderSizeField(Path) && !RequestedPaths->Contains(Path);
+			});
+		}
 	}
 	if (!Errors.IsEmpty()) return MakeErrorJson(TEXT("Source fields could not be converted to update patches."));
 	bool bInvalid = false;
@@ -2599,10 +2619,13 @@ FString UMassBattleUnitMCPApi::UpdateSource(AMassBattleUnitSource* Source, bool 
 	}
 	if (bSaveAssets && !SaveAsset(Source->ExportedUnit, Error)) return MakeErrorJson(Error);
 	Source->Modify();
-	UEngine::FCopyPropertiesForUnrelatedObjectsParams CopyOptions;
-	CopyOptions.bDoDelta = false;
-	UEngine::CopyPropertiesForUnrelatedObjects(ExportData, Source->LastUpdatedSource, CopyOptions);
-	Source->bHasUpdated = true;
+	if (!RequestedPaths)
+	{
+		UEngine::FCopyPropertiesForUnrelatedObjectsParams CopyOptions;
+		CopyOptions.bDoDelta = false;
+		UEngine::CopyPropertiesForUnrelatedObjects(ExportData, Source->LastUpdatedSource, CopyOptions);
+		Source->bHasUpdated = true;
+	}
 	TSharedPtr<FJsonObject> Result = MakeSuccess();
 	Result->SetStringField(TEXT("asset_path"), Source->ExportedUnit->GetPathName());
 	Result->SetBoolField(TEXT("created"), bCreated);
@@ -2687,6 +2710,7 @@ FString UMassBattleUnitMCPApi::MCP_UnitGet(const FString& UnitPath, const FStrin
 		Root->SetStringField(TEXT("export_path"), Source->ExportPath);
 		Root->SetStringField(TEXT("exported_unit"), GetObjectPathString(Source->ExportedUnit));
 		Root->SetStringField(TEXT("last_report"), Source->LastReport);
+		Root->SetBoolField(TEXT("bake_render_scale"), Source->bBakeRenderScale);
 	}
 	Root->SetStringField(TEXT("detail"), GetDetailLabel(Options));
 	Root->SetObjectField(TEXT("default_ignore_policy"), BuildIgnorePolicyJson());
@@ -2985,14 +3009,11 @@ FString UMassBattleUnitMCPApi::MCP_UnitMergeUpdate(const FString& UnitPath, cons
 	bool bPropertiesOnly = false;
 	PlanResultJson->TryGetBoolField(TEXT("properties_only"), bPropertiesOnly);
 	const TArray<TSharedPtr<FJsonValue>>* Diff = nullptr;
-	const bool bRecompileSize = Source && Source->bBakeRenderScale && bPropertiesOnly
-		&& PlanResultJson->TryGetArrayField(TEXT("diff"), Diff)
+	if (Source && bPropertiesOnly) PlanResultJson->TryGetArrayField(TEXT("diff"), Diff);
+	const bool bRecompileSize = Source && Source->bBakeRenderScale && Diff
 		&& Diff->ContainsByPredicate([](const TSharedPtr<FJsonValue>& Change)
 		{
-			const FString Path = Change->AsObject()->GetStringField(TEXT("path"));
-			return Path == TEXT("Scaling.Scale") || Path == TEXT("Collider.Radius")
-				|| Path == TEXT("Collider.Height") || Path == TEXT("Visualize.RendererClass")
-				|| Path.StartsWith(TEXT("Visualize.Transform"));
+			return IsRenderSizeField(Change->AsObject()->GetStringField(TEXT("path")));
 		});
 	if (Source && bPropertiesOnly && !bSetBakeRenderScale && !bRecompileSize)
 	{
@@ -3032,7 +3053,13 @@ FString UMassBattleUnitMCPApi::MCP_UnitMergeUpdate(const FString& UnitPath, cons
 		Source->Modify();
 		Source->bBakeRenderScale = bBakeRenderScale;
 	}
-	return UpdateSource(Source, bSaveAssets, bRebakeVAT && !bPropertiesOnly);
+	TSet<FString> RequestedPaths;
+	if (Diff)
+	{
+		for (const TSharedPtr<FJsonValue>& Change : *Diff)
+			RequestedPaths.Add(Change->AsObject()->GetStringField(TEXT("path")));
+	}
+	return UpdateSource(Source, bSaveAssets, bRebakeVAT && !bPropertiesOnly, bPropertiesOnly ? &RequestedPaths : nullptr);
 }
 
 FString UMassBattleUnitMCPApi::MCP_UnitCreate(const FString& CreateSpecJson, bool bSaveAssets)
