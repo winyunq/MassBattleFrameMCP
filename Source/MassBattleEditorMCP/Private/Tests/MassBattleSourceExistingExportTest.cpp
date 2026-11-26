@@ -6,11 +6,15 @@
 #include "Engine/Texture2D.h"
 #include "Engine/Blueprint.h"
 #include "Engine/SimpleConstructionScript.h"
+#include "Engine/StaticMesh.h"
+#include "Kismet2/KismetEditorUtilities.h"
 #include "Misc/AutomationTest.h"
 #include "Misc/ScopeExit.h"
 #include "ObjectTools.h"
+#include "Rendering/MassBattleAgentRenderer.h"
 #include "Serialization/JsonReader.h"
 #include "Serialization/JsonSerializer.h"
+#include "StaticMeshCompiler.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMassBattleSourceExistingExportTest, "MassBattle.MCP.SourceExistingExport",
@@ -72,6 +76,62 @@ bool FMassBattleSourceExistingExportTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("Different asset type is rejected"), Rejected.Contains(TEXT("different type")));
 	TestTrue(TEXT("Failed export preserves the existing association"), Source->ExportedUnit == Existing);
 	TestTrue(TEXT("Other asset survives"), LoadObject<UObject>(nullptr, *OtherPath) == Other);
+	return !HasAnyErrors();
+}
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMassBattleSourceRenderScaleTest, "MassBattle.MCP.SourceRenderScale",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FMassBattleSourceRenderScaleTest::RunTest(const FString& Parameters)
+{
+	const FString Folder = TEXT("/Game/__MCPSourceRenderScaleTest");
+	const FString SourcePath = Folder / TEXT("BP_Source");
+	const FString RendererPath = Folder / TEXT("BP_Renderer");
+	UStaticMesh* OriginalMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube"));
+	if (!TestNotNull(TEXT("Fixture mesh"), OriginalMesh)) return false;
+	UBlueprint* InputRenderer = FKismetEditorUtilities::CreateBlueprint(AMassBattleAgentRenderer::StaticClass(),
+		CreatePackage(*RendererPath), TEXT("BP_Renderer"), BPTYPE_Normal,
+		UBlueprint::StaticClass(), UBlueprintGeneratedClass::StaticClass());
+	if (!TestNotNull(TEXT("Fixture renderer"), InputRenderer)) return false;
+	auto* InputDefaults = InputRenderer->GeneratedClass->GetDefaultObject<AMassBattleAgentRenderer>();
+	InputDefaults->AgentMesh = OriginalMesh;
+
+	UMassBattleUnitMCPApi::MCP_UnitCreate(TEXT("{\"asset_type\":\"source_actor\",\"unit_path\":\"/Game/__MCPSourceRenderScaleTest/BP_Source\",\"export_path\":\"/Game/__MCPSourceRenderScaleTest/DA_Unit\"}"), false);
+	AMassBattleUnitSource* Source = AMassBattleUnitSource::Resolve(LoadObject<UObject>(nullptr, *SourcePath));
+	if (!TestNotNull(TEXT("Fixture Source"), Source)) return false;
+	Source->UnitData->Visualize.RendererClass = InputRenderer->GeneratedClass.Get();
+	Source->UnitData->Scaling.Scale = 0.5f;
+	Source->UnitData->Collider.Radius = 40.0f;
+
+	const FString Result = UMassBattleUnitMCPApi::MCP_UnitMergeUpdate(SourcePath,
+		TEXT("{\"update_export\":true,\"rebake_vat\":false,\"bake_render_scale\":true}"), false);
+	TSharedPtr<FJsonObject> Report;
+	const bool bParsed = FJsonSerializer::Deserialize(TJsonReaderFactory<>::Create(Result), Report);
+	if (!TestTrue(*Result, bParsed && Report.IsValid() && Report->GetBoolField(TEXT("success")))) return false;
+	UMassBattleAgentConfigDataAsset* Output = Source->ExportedUnit;
+	if (!TestNotNull(TEXT("Unit is exported"), Output)) return false;
+	auto* OutputClass = Output->Visualize.RendererClass.LoadSynchronous();
+	if (!TestNotNull(TEXT("Compiled renderer"), OutputClass)) return false;
+	UStaticMesh* OutputMesh = OutputClass->GetDefaultObject<AMassBattleAgentRenderer>()->AgentMesh;
+	if (!TestNotNull(TEXT("Compiled mesh"), OutputMesh)) return false;
+	ON_SCOPE_EXIT
+	{
+		Source->ExportedUnit = nullptr;
+		ObjectTools::DeleteObjects({ Source->GetSourceAsset(), Output, OutputClass->ClassGeneratedBy,
+			OutputMesh, InputRenderer }, false);
+	};
+	FStaticMeshCompilingManager::Get().FinishCompilation({ OutputMesh });
+	TestEqual(TEXT("Runtime scale"), Output->Scaling.Scale, 1.0f);
+	TestTrue(TEXT("Renderer transform is identity scale"), Output->Visualize.Transform.GetScale3D() == FVector3f::OneVector);
+	TestEqual(TEXT("World collider radius"), Output->Collider.Radius, 20.0f);
+	TestEqual(TEXT("Authored scale"), Source->UnitData->Scaling.Scale, 0.5f);
+	TestTrue(TEXT("Original renderer binding"), InputDefaults->AgentMesh == OriginalMesh);
+	TestTrue(TEXT("Render bounds follow authored scale"),
+		OutputMesh->GetBounds().BoxExtent.Equals(OriginalMesh->GetBounds().BoxExtent * 0.5));
+
+	UMassBattleUnitMCPApi::UpdateSource(Source, false, false);
+	FStaticMeshCompilingManager::Get().FinishCompilation({ OutputMesh });
+	TestTrue(TEXT("Re-export does not compound the scale"),
+		OutputMesh->GetBounds().BoxExtent.Equals(OriginalMesh->GetBounds().BoxExtent * 0.5));
 	return !HasAnyErrors();
 }
 #endif

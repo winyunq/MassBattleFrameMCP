@@ -21,6 +21,7 @@
 #include "Engine/Engine.h"
 #include "Engine/SkeletalMesh.h"
 #include "Engine/StaticMesh.h"
+#include "Engine/StaticMeshSocket.h"
 #include "HAL/FileManager.h"
 #include "IAssetTools.h"
 #include "MassBattleEnums.h"
@@ -32,10 +33,12 @@
 #include "NiagaraEmitter.h"
 #include "NiagaraMeshRendererProperties.h"
 #include "Materials/MaterialInstanceConstant.h"
+#include "MeshDescription.h"
 #include "PreviewScene.h"
 #include "MassBattleMCPBridge.h"
 #include "Editor.h"
 #include "ObjectTools.h"
+#include "PhysicsEngine/BodySetup.h"
 #include "Rendering/MassBattleAgentRenderer.h"
 #include "Serialization/JsonReader.h"
 #include "Serialization/JsonSerializer.h"
@@ -44,6 +47,7 @@
 #include "UObject/Package.h"
 #include "UObject/SavePackage.h"
 #include "UObject/SoftObjectPath.h"
+#include "UObject/StrongObjectPtr.h"
 #include "UObject/UnrealType.h"
 
 DEFINE_LOG_CATEGORY(LogMassBattleUnitMCPApi);
@@ -2253,6 +2257,151 @@ FString UMassBattleUnitMCPApi::DestroySourceUnit(AMassBattleUnitSource* Source)
 	return Result;
 }
 
+static bool BakeSourceRenderScale(UMassBattleAgentConfigDataAsset& Unit, const FString& Destination,
+	TArray<UObject*>& AssetsToSave, FString& Error)
+{
+	const float UnitScale = Unit.Scaling.Scale;
+	const FVector3f RenderScale = Unit.Visualize.Transform.GetScale3D() * UnitScale;
+	if (UnitScale == 1.0f && RenderScale == FVector3f::OneVector) return true;
+	if (!FMath::IsFinite(UnitScale) || UnitScale <= 0.0f || RenderScale.ContainsNaN()
+		|| RenderScale.X <= 0.0 || !RenderScale.IsUniform())
+	{
+		Error = TEXT("Baking render scale requires a positive uniform scale.");
+		return false;
+	}
+
+	UClass* SourceClass = Unit.Visualize.RendererClass.LoadSynchronous();
+	UBlueprint* SourceBlueprint = SourceClass ? Cast<UBlueprint>(SourceClass->ClassGeneratedBy) : nullptr;
+	const AMassBattleAgentRenderer* SourceRenderer = SourceClass ? SourceClass->GetDefaultObject<AMassBattleAgentRenderer>() : nullptr;
+	UStaticMesh* SourceMesh = SourceRenderer ? SourceRenderer->AgentMesh.Get() : nullptr;
+	if (!SourceBlueprint || !SourceMesh || !SourceMesh->GetMeshDescription(0))
+	{
+		Error = TEXT("Baking render scale requires a renderer Blueprint with editable mesh geometry.");
+		return false;
+	}
+
+	const FString RendererPackage = SourceBlueprint->GetOutermost()->GetName();
+	const FString Folder = FPackageName::GetLongPackagePath(
+		RendererPackage.StartsWith(TEXT("/Game/")) ? RendererPackage : Destination);
+	const FString Name = SourceBlueprint->GetName() + FString::Printf(TEXT("_Scale_%08x"), GetTypeHash(RenderScale.X));
+	IAssetTools& AssetTools = FModuleManager::LoadModuleChecked<FAssetToolsModule>(TEXT("AssetTools")).Get();
+	auto FindOrDuplicate = [&](UObject* Original, const FString& Suffix) -> UObject*
+	{
+		const FString AssetName = Name + Suffix;
+		UObject* Existing = LoadObject<UObject>(nullptr, *(Folder / AssetName + TEXT(".") + AssetName));
+		return Existing ? Existing : AssetTools.DuplicateAsset(AssetName, Folder, Original);
+	};
+
+	UStaticMesh* Mesh = Cast<UStaticMesh>(FindOrDuplicate(SourceMesh, TEXT("_BakedScaleMesh")));
+	UBlueprint* RendererBlueprint = Cast<UBlueprint>(FindOrDuplicate(SourceBlueprint, TEXT("_BakedScaleRenderer")));
+	AMassBattleAgentRenderer* Renderer = RendererBlueprint && RendererBlueprint->GeneratedClass
+		? RendererBlueprint->GeneratedClass->GetDefaultObject<AMassBattleAgentRenderer>() : nullptr;
+	if (!Mesh || Mesh == SourceMesh || !Renderer || Renderer == SourceRenderer)
+	{
+		Error = TEXT("Could not create the baked mesh and renderer outputs.");
+		return false;
+	}
+
+	const double Scale = RenderScale.X;
+	Mesh->Modify();
+	Mesh->SetNumSourceModels(SourceMesh->GetNumSourceModels());
+	for (int32 LOD = 0; LOD < SourceMesh->GetNumSourceModels(); ++LOD)
+	{
+		const FStaticMeshSourceModel& Input = SourceMesh->GetSourceModel(LOD);
+		FStaticMeshSourceModel& Output = Mesh->GetSourceModel(LOD);
+		Output.BuildSettings = Input.BuildSettings;
+		Output.BuildSettings.BuildScale3D *= Scale;
+		Output.ReductionSettings = Input.ReductionSettings;
+		Output.ScreenSize = Input.ScreenSize;
+		if (const FMeshDescription* Description = SourceMesh->GetMeshDescription(LOD))
+		{
+			Mesh->CreateMeshDescription(LOD, *Description);
+			Mesh->CommitMeshDescription(LOD);
+		}
+		else
+		{
+			Mesh->ClearMeshDescription(LOD);
+		}
+	}
+	if (const FMeshDescription* HiRes = SourceMesh->GetHiResMeshDescription())
+	{
+		Mesh->GetHiResSourceModel().BuildSettings = SourceMesh->GetHiResSourceModel().BuildSettings;
+		Mesh->GetHiResSourceModel().BuildSettings.BuildScale3D *= Scale;
+		Mesh->CreateHiResMeshDescription(*HiRes);
+		Mesh->CommitHiResMeshDescription();
+	}
+	Mesh->SetPositiveBoundsExtension(SourceMesh->GetPositiveBoundsExtension() * Scale);
+	Mesh->SetNegativeBoundsExtension(SourceMesh->GetNegativeBoundsExtension() * Scale);
+	if (const UBodySetup* SourceBody = SourceMesh->GetBodySetup())
+	{
+		UBodySetup* Body = DuplicateObject<UBodySetup>(SourceBody, Mesh);
+		Body->RescaleSimpleCollision(SourceBody->BuildScale3D * Scale);
+		Body->InvalidatePhysicsData();
+		Mesh->SetBodySetup(Body);
+	}
+	Mesh->Sockets.Reset();
+	for (const UStaticMeshSocket* SourceSocket : SourceMesh->Sockets)
+	{
+		if (!SourceSocket) continue;
+		UStaticMeshSocket* Socket = DuplicateObject<UStaticMeshSocket>(SourceSocket, Mesh);
+		Socket->RelativeLocation *= Scale;
+		Socket->RelativeScale *= Scale;
+		Mesh->Sockets.Add(Socket);
+	}
+
+	Mesh->SetStaticMaterials(SourceMesh->GetStaticMaterials());
+	for (int32 Slot = 0; Slot < SourceMesh->GetStaticMaterials().Num(); ++Slot)
+	{
+		UMaterialInstanceConstant* SourceMaterial = Cast<UMaterialInstanceConstant>(
+			SourceMesh->GetStaticMaterials()[Slot].MaterialInterface);
+		if (!SourceMaterial) continue;
+		UMaterialInstanceConstant* Material = nullptr;
+		for (const FMaterialParameterInfo& Parameter : {
+			FMaterialParameterInfo(MassBattleATTParamNames::MinBBox),
+			FMaterialParameterInfo(MassBattleATTParamNames::SizeBBox),
+			FMaterialParameterInfo(MassBattleATTParamNames::MinBBox, EMaterialParameterAssociation::LayerParameter, 0),
+			FMaterialParameterInfo(MassBattleATTParamNames::SizeBBox, EMaterialParameterAssociation::LayerParameter, 0) })
+		{
+			FLinearColor Bounds;
+			if (!SourceMaterial->GetVectorParameterValue(Parameter, Bounds)) continue;
+			if (!Material)
+			{
+				Material = Cast<UMaterialInstanceConstant>(
+					FindOrDuplicate(SourceMaterial, FString::Printf(TEXT("_BakedScaleMaterial_%d"), Slot)));
+				if (!Material || Material == SourceMaterial)
+				{
+					Error = TEXT("Could not create the baked VAT material output.");
+					return false;
+				}
+				Material->Modify();
+				Material->SetParentEditorOnly(SourceMaterial);
+				AssetsToSave.Add(Material);
+				Mesh->SetMaterial(Slot, Material);
+			}
+			// VAT textures store normalized positions. Scaling their decoded bounds
+			// also scales the animated positions while preserving the lookup UVs.
+			Bounds.R *= Scale;
+			Bounds.G *= Scale;
+			Bounds.B *= Scale;
+			Material->SetVectorParameterValueEditorOnly(Parameter, Bounds);
+		}
+		if (Material) Material->PostEditChange();
+	}
+	Mesh->PostEditChange();
+	RendererBlueprint->Modify();
+	Renderer->Modify();
+	Renderer->AgentMesh = Mesh;
+	FBlueprintEditorUtils::MarkBlueprintAsModified(RendererBlueprint);
+	AssetsToSave.Add(Mesh);
+	AssetsToSave.Add(RendererBlueprint);
+	Unit.Visualize.RendererClass = RendererBlueprint->GeneratedClass.Get();
+	Unit.Visualize.Transform.SetScale3D(FVector3f::OneVector);
+	Unit.Collider.Radius *= UnitScale;
+	Unit.Collider.Height *= UnitScale;
+	Unit.Scaling.Scale = 1.0f;
+	return true;
+}
+
 FString UMassBattleUnitMCPApi::UpdateSource(AMassBattleUnitSource* Source, bool bSaveAssets, bool bRebakeVAT)
 {
 	if (!Source || !Source->UnitData || !Source->GetSourceAsset())
@@ -2266,6 +2415,7 @@ FString UMassBattleUnitMCPApi::UpdateSource(AMassBattleUnitSource* Source, bool 
 		Defaults->ExportPath = Source->ExportPath;
 		Defaults->VATData = Source->VATData;
 		Defaults->VATDriver = Source->VATDriver;
+		Defaults->bBakeRenderScale = Source->bBakeRenderScale;
 		const FString Result = UpdateSource(Defaults, bSaveAssets, bRebakeVAT);
 		Source->ExportedUnit = Defaults->ExportedUnit;
 		return Result;
@@ -2382,6 +2532,16 @@ FString UMassBattleUnitMCPApi::UpdateSource(AMassBattleUnitSource* Source, bool 
 			}
 		}
 	}
+	TStrongObjectPtr<UMassBattleAgentConfigDataAsset> BakedUnit;
+	UMassBattleAgentConfigDataAsset* ExportData = Source->UnitData;
+	if (Source->bBakeRenderScale)
+	{
+		BakedUnit.Reset(DuplicateObject<UMassBattleAgentConfigDataAsset>(ExportData, GetTransientPackage()));
+		FString BakeError;
+		if (!BakeSourceRenderScale(*BakedUnit.Get(), Destination, VatAssetsToSave, BakeError))
+			return MakeErrorJson(BakeError);
+		ExportData = BakedUnit.Get();
+	}
 	TArray<TSharedPtr<FJsonObject>> Patches;
 	TArray<TSharedPtr<FJsonValue>> Errors;
 	TSharedPtr<FJsonObject> ReadOptions = ParseObject(TEXT("{\"detail\":\"full\",\"include_defaults\":true}"));
@@ -2389,7 +2549,7 @@ FString UMassBattleUnitMCPApi::UpdateSource(AMassBattleUnitSource* Source, bool 
 	{
 		TSharedPtr<FJsonObject> Options = ParseObject(TEXT("{\"replace_arrays\":true,\"expected_before\":false}"));
 		Patches = BuildUnionMergePatches(Source->bHasUpdated ? Source->LastUpdatedSource.Get() : TargetUnit,
-			BuildSourceAlignedUnitJson(Source->UnitData, ReadOptions), Options, Errors, Source->UnitData);
+			BuildSourceAlignedUnitJson(ExportData, ReadOptions), Options, Errors, ExportData);
 	}
 	if (!Errors.IsEmpty()) return MakeErrorJson(TEXT("Source fields could not be converted to update patches."));
 	bool bInvalid = false;
@@ -2407,7 +2567,7 @@ FString UMassBattleUnitMCPApi::UpdateSource(AMassBattleUnitSource* Source, bool 
 	if (!Source->ExportedUnit)
 	{
 		Source->Modify();
-		Source->ExportedUnit = DuplicateObject<UMassBattleAgentConfigDataAsset>(Source->UnitData, CreatePackage(*Destination), *Name);
+		Source->ExportedUnit = DuplicateObject<UMassBattleAgentConfigDataAsset>(ExportData, CreatePackage(*Destination), *Name);
 		Source->ExportedUnit->SetFlags(RF_Public | RF_Standalone);
 		FAssetRegistryModule::AssetCreated(Source->ExportedUnit);
 		bCreated = true;
@@ -2421,16 +2581,17 @@ FString UMassBattleUnitMCPApi::UpdateSource(AMassBattleUnitSource* Source, bool 
 		bMoved = true;
 	}
 	if (Source->VATData) Source->ExportedUnit->Animating.SampleRate = FMath::RoundToInt(Source->VATData->SampleRate);
+	const bool bSaveWithUnitPatch = bSaveAssets && !Source->bBakeRenderScale;
 	if (!Patches.IsEmpty())
 	{
 		TSharedPtr<FJsonObject> PatchRoot = MakeShared<FJsonObject>();
 		PatchRoot->SetArrayField(TEXT("patches"), CopyPatchesToJsonValues(Patches));
 		TSharedPtr<FJsonObject> Plan = ParseObject(MCP_UnitPlanUpdate(Source->ExportedUnit->GetPathName(), ToJsonString(PatchRoot)));
 		if (!Plan.IsValid() || !Plan->GetBoolField(TEXT("success"))) return ToJsonString(Plan);
-		const FString Result = MCP_UnitApplyPlan(Plan->GetStringField(TEXT("plan_id")), bSaveAssets);
+		const FString Result = MCP_UnitApplyPlan(Plan->GetStringField(TEXT("plan_id")), bSaveWithUnitPatch);
 		if (!ParseObject(Result)->GetBoolField(TEXT("success"))) return Result;
 	}
-	if (Patches.IsEmpty() && !ApplyHealthBarDefaults(Source->ExportedUnit, bSaveAssets, Error)) return MakeErrorJson(Error);
+	if (Patches.IsEmpty() && !ApplyHealthBarDefaults(Source->ExportedUnit, bSaveWithUnitPatch, Error)) return MakeErrorJson(Error);
 	if (bSaveAssets)
 	{
 		for (UObject* Asset : VatAssetsToSave)
@@ -2440,13 +2601,14 @@ FString UMassBattleUnitMCPApi::UpdateSource(AMassBattleUnitSource* Source, bool 
 	Source->Modify();
 	UEngine::FCopyPropertiesForUnrelatedObjectsParams CopyOptions;
 	CopyOptions.bDoDelta = false;
-	UEngine::CopyPropertiesForUnrelatedObjects(Source->UnitData, Source->LastUpdatedSource, CopyOptions);
+	UEngine::CopyPropertiesForUnrelatedObjects(ExportData, Source->LastUpdatedSource, CopyOptions);
 	Source->bHasUpdated = true;
 	TSharedPtr<FJsonObject> Result = MakeSuccess();
 	Result->SetStringField(TEXT("asset_path"), Source->ExportedUnit->GetPathName());
 	Result->SetBoolField(TEXT("created"), bCreated);
 	Result->SetBoolField(TEXT("moved"), bMoved);
 	Result->SetBoolField(TEXT("vat_rebaked"), Source->VATData && bRebakeVAT);
+	Result->SetBoolField(TEXT("render_scale_baked"), Source->bBakeRenderScale);
 	Result->SetArrayField(TEXT("applied_diff"), Diff);
 	Source->LastReport = ToJsonString(Result);
 	FBlueprintEditorUtils::MarkBlueprintAsModified(CastChecked<UBlueprint>(Source->GetSourceAsset()));
@@ -2781,6 +2943,8 @@ FString UMassBattleUnitMCPApi::MCP_UnitMergeUpdate(const FString& UnitPath, cons
 	TSharedPtr<FJsonObject> Request = ParseObject(UnitDataJson);
 	bool bUpdateExport = false;
 	bool bRebakeVAT = true;
+	bool bBakeRenderScale = false;
+	bool bSetBakeRenderScale = false;
 	AMassBattleUnitSource* Source = nullptr;
 	FString DataJson = UnitDataJson;
 	if (Request.IsValid() && Request->TryGetBoolField(TEXT("update_export"), bUpdateExport) && bUpdateExport)
@@ -2790,7 +2954,17 @@ FString UMassBattleUnitMCPApi::MCP_UnitMergeUpdate(const FString& UnitPath, cons
 		Request->RemoveField(TEXT("update_export"));
 		Request->TryGetBoolField(TEXT("rebake_vat"), bRebakeVAT);
 		Request->RemoveField(TEXT("rebake_vat"));
-		if (Request->Values.IsEmpty()) return UpdateSource(Source, bSaveAssets, bRebakeVAT);
+		bSetBakeRenderScale = Request->TryGetBoolField(TEXT("bake_render_scale"), bBakeRenderScale);
+		Request->RemoveField(TEXT("bake_render_scale"));
+		if (Request->Values.IsEmpty())
+		{
+			if (bSetBakeRenderScale)
+			{
+				Source->Modify();
+				Source->bBakeRenderScale = bBakeRenderScale;
+			}
+			return UpdateSource(Source, bSaveAssets, bRebakeVAT);
+		}
 		DataJson = ToJsonString(Request);
 	}
 	const FString PlanResult = MCP_UnitPlanMergeUpdate(UnitPath, DataJson);
@@ -2810,7 +2984,17 @@ FString UMassBattleUnitMCPApi::MCP_UnitMergeUpdate(const FString& UnitPath, cons
 	const FString PlanId = PlanResultJson->GetStringField(TEXT("plan_id"));
 	bool bPropertiesOnly = false;
 	PlanResultJson->TryGetBoolField(TEXT("properties_only"), bPropertiesOnly);
-	if (Source && bPropertiesOnly)
+	const TArray<TSharedPtr<FJsonValue>>* Diff = nullptr;
+	const bool bRecompileSize = Source && Source->bBakeRenderScale && bPropertiesOnly
+		&& PlanResultJson->TryGetArrayField(TEXT("diff"), Diff)
+		&& Diff->ContainsByPredicate([](const TSharedPtr<FJsonValue>& Change)
+		{
+			const FString Path = Change->AsObject()->GetStringField(TEXT("path"));
+			return Path == TEXT("Scaling.Scale") || Path == TEXT("Collider.Radius")
+				|| Path == TEXT("Collider.Height") || Path == TEXT("Visualize.RendererClass")
+				|| Path.StartsWith(TEXT("Visualize.Transform"));
+		});
+	if (Source && bPropertiesOnly && !bSetBakeRenderScale && !bRecompileSize)
 	{
 		const FString Destination = Source->ExportPath.IsEmpty()
 			? GetDefault<UMassBattleUnitSourceSettings>()->ExportRoot / Source->GetSourceAsset()->GetName()
@@ -2838,11 +3022,17 @@ FString UMassBattleUnitMCPApi::MCP_UnitMergeUpdate(const FString& UnitPath, cons
 		Export->SetBoolField(TEXT("properties_only"), true);
 		return ToJsonString(Export);
 	}
-	const bool bDeferredExport = Source && !bRebakeVAT;
+	const bool bDeferredExport = Source && (!bRebakeVAT || bSetBakeRenderScale || bRecompileSize);
 	const FString Applied = MCP_UnitApplyPlan(PlanId, bDeferredExport ? false : bSaveAssets);
 	const TSharedPtr<FJsonObject> AppliedJson = ParseObject(Applied);
-	return Source && (!bSaveAssets || bDeferredExport) && AppliedJson.IsValid() && AppliedJson->GetBoolField(TEXT("success"))
-		? UpdateSource(Source, bSaveAssets, bRebakeVAT) : Applied;
+	if (!Source || (bSaveAssets && !bDeferredExport) || !AppliedJson.IsValid() || !AppliedJson->GetBoolField(TEXT("success")))
+		return Applied;
+	if (bSetBakeRenderScale)
+	{
+		Source->Modify();
+		Source->bBakeRenderScale = bBakeRenderScale;
+	}
+	return UpdateSource(Source, bSaveAssets, bRebakeVAT && !bPropertiesOnly);
 }
 
 FString UMassBattleUnitMCPApi::MCP_UnitCreate(const FString& CreateSpecJson, bool bSaveAssets)

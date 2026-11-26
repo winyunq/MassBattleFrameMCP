@@ -78,6 +78,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Export", meta=(LongPackageName))
 	FString ExportPath;
 
+	/** Bake the authored size into the exported mesh and leave the runtime unit at identity scale. */
+	UPROPERTY(EditAnywhere, Category="Export")
+	bool bBakeRenderScale = false;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Export")
 	TObjectPtr<UMassBattleAgentConfigDataAsset> ExportedUnit;
 
