@@ -34,6 +34,8 @@
 #include "NiagaraMeshRendererProperties.h"
 #include "Materials/MaterialInstanceConstant.h"
 #include "MeshDescription.h"
+#include "StaticMeshCompiler.h"
+#include "StaticMeshOperations.h"
 #include "PreviewScene.h"
 #include "MassBattleMCPBridge.h"
 #include "Editor.h"
@@ -2303,6 +2305,7 @@ static bool BakeSourceRenderScale(UMassBattleAgentConfigDataAsset& Unit, const F
 	}
 
 	const double Scale = RenderScale.X;
+	const FTransform MeshScale(FQuat::Identity, FVector::ZeroVector, FVector(Scale));
 	Mesh->Modify();
 	Mesh->SetNumSourceModels(SourceMesh->GetNumSourceModels());
 	for (int32 LOD = 0; LOD < SourceMesh->GetNumSourceModels(); ++LOD)
@@ -2310,12 +2313,13 @@ static bool BakeSourceRenderScale(UMassBattleAgentConfigDataAsset& Unit, const F
 		const FStaticMeshSourceModel& Input = SourceMesh->GetSourceModel(LOD);
 		FStaticMeshSourceModel& Output = Mesh->GetSourceModel(LOD);
 		Output.BuildSettings = Input.BuildSettings;
-		Output.BuildSettings.BuildScale3D *= Scale;
 		Output.ReductionSettings = Input.ReductionSettings;
 		Output.ScreenSize = Input.ScreenSize;
 		if (const FMeshDescription* Description = SourceMesh->GetMeshDescription(LOD))
 		{
-			Mesh->CreateMeshDescription(LOD, *Description);
+			FMeshDescription Scaled = *Description;
+			FStaticMeshOperations::ApplyTransform(Scaled, MeshScale);
+			Mesh->CreateMeshDescription(LOD, MoveTemp(Scaled));
 			Mesh->CommitMeshDescription(LOD);
 		}
 		else
@@ -2326,8 +2330,9 @@ static bool BakeSourceRenderScale(UMassBattleAgentConfigDataAsset& Unit, const F
 	if (const FMeshDescription* HiRes = SourceMesh->GetHiResMeshDescription())
 	{
 		Mesh->GetHiResSourceModel().BuildSettings = SourceMesh->GetHiResSourceModel().BuildSettings;
-		Mesh->GetHiResSourceModel().BuildSettings.BuildScale3D *= Scale;
-		Mesh->CreateHiResMeshDescription(*HiRes);
+		FMeshDescription Scaled = *HiRes;
+		FStaticMeshOperations::ApplyTransform(Scaled, MeshScale);
+		Mesh->CreateHiResMeshDescription(MoveTemp(Scaled));
 		Mesh->CommitHiResMeshDescription();
 	}
 	Mesh->SetPositiveBoundsExtension(SourceMesh->GetPositiveBoundsExtension() * Scale);
@@ -2388,6 +2393,7 @@ static bool BakeSourceRenderScale(UMassBattleAgentConfigDataAsset& Unit, const F
 		if (Material) Material->PostEditChange();
 	}
 	Mesh->PostEditChange();
+	FStaticMeshCompilingManager::Get().FinishCompilation({ Mesh });
 	RendererBlueprint->Modify();
 	Renderer->Modify();
 	Renderer->AgentMesh = Mesh;
@@ -2606,12 +2612,18 @@ FString UMassBattleUnitMCPApi::UpdateSource(AMassBattleUnitSource* Source, bool 
 	{
 		TSharedPtr<FJsonObject> PatchRoot = MakeShared<FJsonObject>();
 		PatchRoot->SetArrayField(TEXT("patches"), CopyPatchesToJsonValues(Patches));
+		if (RequestedPaths)
+		{
+			const TSharedPtr<FJsonObject> PatchOptions = MakeShared<FJsonObject>();
+			PatchOptions->SetBoolField(TEXT("properties_only"), true);
+			PatchRoot->SetObjectField(TEXT("options"), PatchOptions);
+		}
 		TSharedPtr<FJsonObject> Plan = ParseObject(MCP_UnitPlanUpdate(Source->ExportedUnit->GetPathName(), ToJsonString(PatchRoot)));
 		if (!Plan.IsValid() || !Plan->GetBoolField(TEXT("success"))) return ToJsonString(Plan);
 		const FString Result = MCP_UnitApplyPlan(Plan->GetStringField(TEXT("plan_id")), bSaveWithUnitPatch);
 		if (!ParseObject(Result)->GetBoolField(TEXT("success"))) return Result;
 	}
-	if (Patches.IsEmpty() && !ApplyHealthBarDefaults(Source->ExportedUnit, bSaveWithUnitPatch, Error)) return MakeErrorJson(Error);
+	if (!RequestedPaths && Patches.IsEmpty() && !ApplyHealthBarDefaults(Source->ExportedUnit, bSaveWithUnitPatch, Error)) return MakeErrorJson(Error);
 	if (bSaveAssets)
 	{
 		for (UObject* Asset : VatAssetsToSave)
@@ -2882,6 +2894,9 @@ FString UMassBattleUnitMCPApi::MCP_UnitPlanUpdate(const FString& UnitPath, const
 
 	TSharedPtr<FJsonObject> Plan = BuildPlanBase(TEXT("update_unit"));
 	Plan->SetStringField(TEXT("target_path"), UnitPath);
+	bool bPropertiesOnly = false;
+	ExtractMergeOptions(PatchRoot)->TryGetBoolField(TEXT("properties_only"), bPropertiesOnly);
+	Plan->SetBoolField(TEXT("properties_only"), bPropertiesOnly);
 	Plan->SetArrayField(TEXT("patches"), CopyPatchesToJsonValues(Patches));
 	Plan->SetArrayField(TEXT("diff"), Diff);
 	Plan->SetBoolField(TEXT("applicable"), !bHasError);
